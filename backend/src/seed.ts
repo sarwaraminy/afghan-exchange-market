@@ -11,7 +11,7 @@ async function seed() {
   const adminPassword = await bcrypt.hash('admin123', 12);
   db.prepare(`
     INSERT OR IGNORE INTO users (username, email, password, full_name, role)
-    VALUES ('admin', 'admin@sarafi.af', ?, 'System Administrator', 'admin')
+    VALUES ('admin', 'admin@afghanexchange.com', ?, 'System Administrator', 'admin')
   `).run(adminPassword);
 
   // Create markets
@@ -154,7 +154,7 @@ async function seed() {
   }
 
   console.log('Seed completed successfully!');
-  console.log('Admin credentials: admin@sarafi.af / admin123');
+  console.log('Admin credentials: admin@afghanexchange.com / admin123');
 }
 
 seed().catch(console.error);

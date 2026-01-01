@@ -1,4 +1,4 @@
-# Sarafi.AF - Afghanistan Exchange Market
+# Afghan Exchange - Afghanistan Exchange Market
 
 A full-stack web application for real-time currency exchange rates from Afghanistan's markets, including Sarai Shahzada, Khorasan Market, and Da Afghanistan Bank.
 
@@ -15,8 +15,8 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **News Section** - Stay updated with market news and announcements
 - **User Accounts** - Register, save favorite currencies, and set price alerts
-- **Admin Panel** - Manage exchange rates, gold prices, and news content
-- **Multi-language Support** - English, Dari (فارسی), and Pashto (پښتو) with full RTL support
+- **Admin Panel** - Full CRUD operations for exchange rates, gold prices, and news content
+- **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
 
 ## Tech Stack
@@ -24,7 +24,7 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 ### Backend
 - **Node.js** + **Express.js** - REST API server
 - **TypeScript** - Type-safe development
-- **SQLite** (better-sqlite3) - Lightweight database
+- **SQLite** (sql.js) - Pure JavaScript SQLite database (cross-platform compatible)
 - **JWT** - Authentication
 - **bcryptjs** - Password hashing
 
@@ -32,9 +32,9 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **React 18** + **TypeScript** - UI framework
 - **Vite** - Build tool
 - **Material-UI (MUI)** - Component library
-- **Material React Table** - Advanced data tables
+- **Material React Table** - Advanced data tables with RTL support
 - **React Router** - Client-side routing
-- **i18next** - Internationalization
+- **i18next** - Internationalization (English, Dari, Pashto)
 - **Axios** - HTTP client
 - **React Query** - Data fetching
 
@@ -106,7 +106,7 @@ afghan-exchange-market/
 
 ### Default Admin Credentials
 
-- **Email:** admin@sarafi.af
+- **Email:** admin@afghanexchange.com
 - **Password:** admin123
 
 ## API Endpoints
@@ -149,8 +149,12 @@ afghan-exchange-market/
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| POST | `/api/rates/exchange` | Create exchange rate |
 | PUT | `/api/rates/exchange/:id` | Update exchange rate |
+| DELETE | `/api/rates/exchange/:id` | Delete exchange rate |
+| POST | `/api/rates/gold` | Create gold rate |
 | PUT | `/api/rates/gold/:id` | Update gold rate |
+| DELETE | `/api/rates/gold/:id` | Delete gold rate |
 | POST | `/api/news` | Create news |
 | PUT | `/api/news/:id` | Update news |
 | DELETE | `/api/news/:id` | Delete news |
@@ -193,7 +197,16 @@ Detailed rates table with search, filtering, and market selection.
 Real-time currency conversion with swap functionality.
 
 ### Admin Panel
-Manage exchange rates, gold prices, and news content.
+Full CRUD operations for managing exchange rates, gold prices, and news content.
+
+## Multi-language Support
+
+The application supports three languages with full RTL (Right-to-Left) support:
+- **English** - Default language
+- **Dari (دری)** - Afghan Persian
+- **Pashto (پښتو)** - Afghan Pashto
+
+Users can switch languages using the dropdown in the header. The selected language is persisted in localStorage.
 
 ## Contributing
 
@@ -209,6 +222,7 @@ This project is licensed under the ISC License.
 
 ## Acknowledgments
 
-- Exchange rate data inspired by [Sarafi.AF](https://sarafi.af)
 - Sarai Shahzada - Afghanistan's largest money exchange market
 - Flag icons from [FlagCDN](https://flagcdn.com)
+- Material-UI for the component library
+- sql.js for cross-platform SQLite support
