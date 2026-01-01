@@ -11,7 +11,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 
-import { Home } from './pages/Home';
 import { Rates } from './pages/Rates';
 import { Converter } from './pages/Converter';
 import { Gold } from './pages/Gold';
@@ -41,21 +40,25 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" />;
-  if (!isAdmin) return <Navigate to="/dashboard" />;
   return <>{children}</>;
+};
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/dashboard" /> : <>{children}</>;
 };
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Home />} />
-    <Route path="/rates" element={<Rates />} />
-    <Route path="/converter" element={<Converter />} />
-    <Route path="/gold" element={<Gold />} />
-    <Route path="/news" element={<News />} />
-    <Route path="/login" element={<Login />} />
+    <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/register" element={<Register />} />
+    <Route path="/rates" element={<PrivateRoute><Rates /></PrivateRoute>} />
+    <Route path="/converter" element={<PrivateRoute><Converter /></PrivateRoute>} />
+    <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />
+    <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
     <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
   </Routes>

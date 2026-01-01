@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -16,12 +16,15 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  ListItemIcon,
   Divider,
   FormControl,
   Select,
   Avatar,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Tabs,
+  Tab
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { Language } from '@mui/icons-material';
@@ -35,13 +38,14 @@ import {
   TrendingUp,
   Newspaper,
   Calculate,
-  Home
+  PersonAdd
 } from '@mui/icons-material';
 
 export const Header = () => {
   const { t, i18n } = useTranslation();
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -69,18 +73,28 @@ export const Header = () => {
     navigate('/');
   };
 
-  const navItems = [
-    { label: t('nav.home'), path: '/', icon: <Home /> },
+  const navItems = isAuthenticated ? [
     { label: t('nav.rates'), path: '/rates', icon: <CurrencyExchange /> },
     { label: t('nav.converter'), path: '/converter', icon: <Calculate /> },
     { label: t('nav.gold'), path: '/gold', icon: <TrendingUp /> },
     { label: t('nav.news'), path: '/news', icon: <Newspaper /> },
-  ];
+  ] : [];
+
+  // Get current tab value based on path
+  const getCurrentTab = () => {
+    const currentPath = location.pathname;
+    const tabIndex = navItems.findIndex(item => item.path === currentPath);
+    return tabIndex >= 0 ? tabIndex : false;
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    navigate(navItems[newValue].path);
+  };
 
   const drawer = (
     <Box sx={{ width: 250 }}>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" color="primary" fontWeight="bold">
+      <Box sx={{ p: 2, bgcolor: '#1e3a5f', color: 'white' }}>
+        <Typography variant="h6" fontWeight="bold">
           {t('common.appName')}
         </Typography>
       </Box>
@@ -92,9 +106,12 @@ export const Header = () => {
               component={Link}
               to={item.path}
               onClick={() => setMobileOpen(false)}
+              selected={location.pathname === item.path}
             >
-              {item.icon}
-              <ListItemText primary={item.label} sx={{ ml: 2 }} />
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.label} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -120,13 +137,20 @@ export const Header = () => {
 
   return (
     <>
-      <AppBar position="sticky" color="default" elevation={1}>
+      <AppBar
+        position="sticky"
+        elevation={2}
+        sx={{
+          bgcolor: '#1e3a5f',
+          color: 'white'
+        }}
+      >
         <Toolbar>
           {isMobile && (
             <IconButton
               edge="start"
               onClick={() => setMobileOpen(true)}
-              sx={{ mr: 2 }}
+              sx={{ mr: 2, color: 'white' }}
             >
               <MenuIcon />
             </IconButton>
@@ -135,10 +159,10 @@ export const Header = () => {
           <Typography
             variant="h6"
             component={Link}
-            to="/"
+            to={isAuthenticated ? "/dashboard" : "/"}
             sx={{
               fontWeight: 700,
-              color: 'primary.main',
+              color: 'white',
               textDecoration: 'none',
               flexGrow: isMobile ? 1 : 0,
               mr: 4
@@ -147,25 +171,46 @@ export const Header = () => {
             {t('common.appName')}
           </Typography>
 
-          {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
+          {!isMobile && isAuthenticated && navItems.length > 0 && (
+            <Tabs
+              value={getCurrentTab()}
+              onChange={handleTabChange}
+              TabIndicatorProps={{ style: { display: 'none' } }}
+              sx={{
+                flexGrow: 1,
+                alignSelf: 'flex-end',
+                minHeight: 'auto',
+                '& .MuiTab-root': {
+                  color: 'rgba(255,255,255,0.7)',
+                  minHeight: 58,
+                  py: 1,
+                  px: 2,
+                  textTransform: 'none',
+                  fontSize: '0.9rem',
+                  borderRadius: '8px 8px 0 0',
+                  mx: 0.3,
+                  transition: 'all 0.2s ease',
+                  '&.Mui-selected': {
+                    color: '#1e3a5f',
+                    bgcolor: 'white',
+                    fontWeight: 600,
+                  },
+                  '&:hover:not(.Mui-selected)': {
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  },
+                },
+              }}
+            >
               {navItems.map((item) => (
-                <Button
+                <Tab
                   key={item.path}
-                  component={NavLink}
-                  to={item.path}
-                  sx={{
-                    color: 'text.secondary',
-                    '&.active': {
-                      color: 'primary.main',
-                      bgcolor: 'primary.lighter',
-                    }
-                  }}
-                >
-                  {item.label}
-                </Button>
+                  icon={item.icon}
+                  label={item.label}
+                  iconPosition="start"
+                  sx={{ gap: 1 }}
+                />
               ))}
-            </Box>
+            </Tabs>
           )}
 
           {!isMobile && (
@@ -173,7 +218,22 @@ export const Header = () => {
               <Select
                 value={i18n.language}
                 onChange={changeLanguage}
-                startAdornment={<Language sx={{ mr: 1, color: 'text.secondary' }} />}
+                startAdornment={<Language sx={{ mr: 1, color: 'rgba(255,255,255,0.7)' }} />}
+                sx={{
+                  color: 'white',
+                  '.MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'white',
+                  },
+                  '.MuiSvgIcon-root': {
+                    color: 'white',
+                  },
+                }}
               >
                 {languages.map((lang) => (
                   <MenuItem key={lang.code} value={lang.code}>
@@ -186,18 +246,22 @@ export const Header = () => {
 
           {isAuthenticated ? (
             <>
-              {isAdmin && (
-                <Button
-                  component={Link}
-                  to="/admin"
-                  startIcon={<AdminPanelSettings />}
-                  sx={{ mr: 1 }}
-                >
-                  {!isMobile && t('nav.admin')}
-                </Button>
-              )}
+              <Button
+                component={Link}
+                to="/admin"
+                startIcon={<AdminPanelSettings />}
+                sx={{
+                  mr: 1,
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  }
+                }}
+              >
+                {!isMobile && t('nav.admin')}
+              </Button>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: '#4fc3f7', color: '#1e3a5f' }}>
                   {user?.username?.charAt(0).toUpperCase()}
                 </Avatar>
               </IconButton>
@@ -213,6 +277,9 @@ export const Header = () => {
                   <Person sx={{ mr: 1 }} /> {t('nav.profile')}
                 </MenuItem>
                 <Divider />
+                <MenuItem component={Link} to="/register" onClick={() => setAnchorEl(null)}>
+                  <PersonAdd sx={{ mr: 1 }} /> {t('nav.register')}
+                </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <Logout sx={{ mr: 1 }} /> {t('nav.logout')}
                 </MenuItem>
@@ -220,11 +287,20 @@ export const Header = () => {
             </>
           ) : (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button component={Link} to="/login" variant="outlined">
+              <Button
+                component={Link}
+                to="/login"
+                variant="contained"
+                sx={{
+                  bgcolor: '#4fc3f7',
+                  color: '#1e3a5f',
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: '#81d4fa',
+                  }
+                }}
+              >
                 {t('nav.login')}
-              </Button>
-              <Button component={Link} to="/register" variant="contained">
-                {t('nav.register')}
               </Button>
             </Box>
           )}

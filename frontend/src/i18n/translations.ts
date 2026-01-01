@@ -86,7 +86,9 @@ export const translations = {
         passwordMismatch: 'Passwords do not match',
         preferredLanguage: 'Preferred Language',
         loginFailed: 'Login failed',
-        registrationFailed: 'Registration failed'
+        registrationFailed: 'Registration failed',
+        createUser: 'Create New User',
+        userCreated: 'User created successfully'
       },
       // User
       user: {
@@ -284,7 +286,9 @@ export const translations = {
         passwordMismatch: 'رمزهای عبور مطابقت ندارند',
         preferredLanguage: 'زبان ترجیحی',
         loginFailed: 'ورود ناموفق بود',
-        registrationFailed: 'ثبت نام ناموفق بود'
+        registrationFailed: 'ثبت نام ناموفق بود',
+        createUser: 'ایجاد کاربر جدید',
+        userCreated: 'کاربر با موفقیت ایجاد شد'
       },
       // User
       user: {
@@ -482,7 +486,9 @@ export const translations = {
         passwordMismatch: 'پټنومونه سره برابر نه دي',
         preferredLanguage: 'غوره ژبه',
         loginFailed: 'ننوتل ناکام شول',
-        registrationFailed: 'نوم لیکنه ناکامه شوه'
+        registrationFailed: 'نوم لیکنه ناکامه شوه',
+        createUser: 'نوی کارن جوړ کړئ',
+        userCreated: 'کارن په بریالیتوب سره جوړ شو'
       },
       // User
       user: {

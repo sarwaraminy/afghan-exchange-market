@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 export const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -29,6 +29,7 @@ export const Register = () => {
     language: 'en'
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +39,7 @@ export const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
       setError(t('auth.passwordMismatch'));
@@ -54,8 +56,23 @@ export const Register = () => {
         full_name: formData.full_name,
         language: formData.language
       });
-      login(data.token, data.user);
-      navigate('/dashboard');
+
+      if (isAuthenticated) {
+        // If admin is registering a new user, show success and clear form
+        setSuccess(t('auth.userCreated'));
+        setFormData({
+          username: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          full_name: '',
+          language: 'en'
+        });
+      } else {
+        // If self-registration, login and redirect
+        login(data.token, data.user);
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || t('auth.registrationFailed'));
     } finally {
@@ -67,12 +84,18 @@ export const Register = () => {
     <Container maxWidth="sm" sx={{ py: 8 }}>
       <Paper sx={{ p: 4 }}>
         <Typography variant="h4" fontWeight={700} textAlign="center" gutterBottom>
-          {t('auth.register')}
+          {isAuthenticated ? t('auth.createUser') : t('auth.register')}
         </Typography>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
           </Alert>
         )}
 
@@ -150,10 +173,12 @@ export const Register = () => {
           </Button>
         </Box>
 
-        <Typography textAlign="center" sx={{ mt: 2 }}>
-          {t('auth.hasAccount')}{' '}
-          <Link to="/login">{t('auth.login')}</Link>
-        </Typography>
+        {!isAuthenticated && (
+          <Typography textAlign="center" sx={{ mt: 2 }}>
+            {t('auth.hasAccount')}{' '}
+            <Link to="/login">{t('auth.login')}</Link>
+          </Typography>
+        )}
       </Paper>
     </Container>
   );
