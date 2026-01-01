@@ -4,15 +4,24 @@ import {
   Container,
   Typography,
   Paper,
-  ToggleButtonGroup,
-  ToggleButton
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
+import { Store } from '@mui/icons-material';
 import { getExchangeRates, getMarkets } from '../services/api';
 import type { ExchangeRate, Market } from '../types';
 import { RatesTable } from '../components/rates/RatesTable';
 
 export const Rates = () => {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<number | null>(null);
@@ -59,33 +68,83 @@ export const Rates = () => {
     fetchRates();
   }, [selectedMarket]);
 
+  const sidebar = (
+    <Paper
+      elevation={2}
+      sx={{
+        width: isMobile ? '100%' : 250,
+        flexShrink: 0,
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+    >
+      <Box
+        sx={{
+          bgcolor: '#1e3a5f',
+          color: 'white',
+          p: 2
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={600}>
+          {t('rates.market')}
+        </Typography>
+      </Box>
+      <List disablePadding>
+        {markets.map((market) => (
+          <ListItem key={market.id} disablePadding>
+            <ListItemButton
+              selected={selectedMarket === market.id}
+              onClick={() => setSelectedMarket(market.id)}
+              sx={{
+                py: 1.5,
+                '&.Mui-selected': {
+                  bgcolor: '#e3f2fd',
+                  borderRight: '3px solid #1e3a5f',
+                  '&:hover': {
+                    bgcolor: '#bbdefb',
+                  },
+                },
+                '&:hover': {
+                  bgcolor: '#f5f5f5',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <Store sx={{ color: selectedMarket === market.id ? '#1e3a5f' : 'text.secondary' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={getMarketName(market)}
+                primaryTypographyProps={{
+                  fontWeight: selectedMarket === market.id ? 600 : 400,
+                  color: selectedMarket === market.id ? '#1e3a5f' : 'text.primary',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Paper>
+  );
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t('rates.title')}
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          {t('rates.market')}
-        </Typography>
-        <ToggleButtonGroup
-          value={selectedMarket}
-          exclusive
-          onChange={(_, value) => value !== null && setSelectedMarket(value)}
-          sx={{ flexWrap: 'wrap' }}
-        >
-          {markets.map((market) => (
-            <ToggleButton key={market.id} value={market.id}>
-              {getMarketName(market)}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Paper>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 3,
+        }}
+      >
+        {sidebar}
 
-      <Paper sx={{ p: 2 }}>
-        <RatesTable rates={rates} isLoading={loading} />
-      </Paper>
+        <Paper sx={{ flex: 1, p: 2, borderRadius: 2 }}>
+          <RatesTable rates={rates} isLoading={loading} />
+        </Paper>
+      </Box>
     </Container>
   );
 };

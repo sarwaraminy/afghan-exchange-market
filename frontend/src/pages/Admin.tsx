@@ -4,8 +4,6 @@ import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
   Container,
   Typography,
-  Tabs,
-  Tab,
   Box,
   Paper,
   Button,
@@ -18,9 +16,23 @@ import {
   IconButton,
   Chip,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
-import { Edit, Delete, Add } from '@mui/icons-material';
+import {
+  Edit,
+  Delete,
+  Add,
+  CurrencyExchange,
+  Diamond,
+  Newspaper
+} from '@mui/icons-material';
 import {
   getExchangeRates,
   getGoldRates,
@@ -40,20 +52,10 @@ import {
 import type { ExchangeRate, GoldRate, News, Market, Currency } from '../types';
 import { Loading } from '../components/common/Loading';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = ({ children, value, index }: TabPanelProps) => (
-  <div hidden={value !== index}>
-    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-  </div>
-);
-
 export const Admin = () => {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const getCurrencyName = (code: string) => {
     const translated = t(`currencies.${code}`, { defaultValue: '' });
@@ -76,7 +78,7 @@ export const Admin = () => {
 
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
-  const [tab, setTab] = useState(0);
+  const [selectedSection, setSelectedSection] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [rates, setRates] = useState<ExchangeRate[]>([]);
@@ -128,6 +130,12 @@ export const Admin = () => {
   });
 
   const [error, setError] = useState('');
+
+  const menuItems = [
+    { label: t('admin.manageRates'), icon: <CurrencyExchange /> },
+    { label: t('admin.manageGold'), icon: <Diamond /> },
+    { label: t('admin.manageNews'), icon: <Newspaper /> }
+  ];
 
   const fetchData = async () => {
     setLoading(true);
@@ -416,24 +424,71 @@ export const Admin = () => {
     [t, i18n.language]
   );
 
-  if (loading) return <Loading />;
+  const sidebar = (
+    <Paper
+      elevation={2}
+      sx={{
+        width: isMobile ? '100%' : 250,
+        flexShrink: 0,
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+    >
+      <Box
+        sx={{
+          bgcolor: '#1e3a5f',
+          color: 'white',
+          p: 2
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={600}>
+          {t('admin.panel')}
+        </Typography>
+      </Box>
+      <List disablePadding>
+        {menuItems.map((item, index) => (
+          <ListItem key={index} disablePadding>
+            <ListItemButton
+              selected={selectedSection === index}
+              onClick={() => setSelectedSection(index)}
+              sx={{
+                py: 1.5,
+                '&.Mui-selected': {
+                  bgcolor: '#e3f2fd',
+                  borderRight: '3px solid #1e3a5f',
+                  '&:hover': {
+                    bgcolor: '#bbdefb',
+                  },
+                },
+                '&:hover': {
+                  bgcolor: '#f5f5f5',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{
+                  fontWeight: selectedSection === index ? 600 : 400,
+                  color: selectedSection === index ? '#1e3a5f' : 'text.primary',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Paper>
+  );
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
-        {t('admin.panel')}
-      </Typography>
-
-      <Paper sx={{ mt: 2 }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          <Tab label={t('admin.manageRates')} />
-          <Tab label={t('admin.manageGold')} />
-          <Tab label={t('admin.manageNews')} />
-        </Tabs>
-
-        <Box sx={{ p: 3 }}>
-          <TabPanel value={tab} index={0}>
-            <Box sx={{ mb: 2 }}>
+  const renderContent = () => {
+    switch (selectedSection) {
+      case 0:
+        return (
+          <>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" fontWeight={600}>{t('admin.manageRates')}</Typography>
               <Button variant="contained" startIcon={<Add />} onClick={handleNewRate}>
                 {t('admin.addNew')}
               </Button>
@@ -454,10 +509,13 @@ export const Admin = () => {
                 sx: { textAlign: isRtl ? 'right' : 'left' }
               }}
             />
-          </TabPanel>
-
-          <TabPanel value={tab} index={1}>
-            <Box sx={{ mb: 2 }}>
+          </>
+        );
+      case 1:
+        return (
+          <>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" fontWeight={600}>{t('admin.manageGold')}</Typography>
               <Button variant="contained" startIcon={<Add />} onClick={handleNewGold}>
                 {t('admin.addNew')}
               </Button>
@@ -476,10 +534,13 @@ export const Admin = () => {
                 sx: { textAlign: isRtl ? 'right' : 'left' }
               }}
             />
-          </TabPanel>
-
-          <TabPanel value={tab} index={2}>
-            <Box sx={{ mb: 2 }}>
+          </>
+        );
+      case 2:
+        return (
+          <>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" fontWeight={600}>{t('admin.manageNews')}</Typography>
               <Button variant="contained" startIcon={<Add />} onClick={handleNewNews}>
                 {t('admin.addNew')}
               </Button>
@@ -500,9 +561,34 @@ export const Admin = () => {
                 sx: { textAlign: isRtl ? 'right' : 'left' }
               }}
             />
-          </TabPanel>
-        </Box>
-      </Paper>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Typography variant="h4" fontWeight={700} gutterBottom>
+        {t('admin.panel')}
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 3,
+        }}
+      >
+        {sidebar}
+
+        <Paper sx={{ flex: 1, p: 3, borderRadius: 2 }}>
+          {renderContent()}
+        </Paper>
+      </Box>
 
       {/* Edit Rate Dialog */}
       <Dialog open={editRateDialog} onClose={() => setEditRateDialog(false)}>
