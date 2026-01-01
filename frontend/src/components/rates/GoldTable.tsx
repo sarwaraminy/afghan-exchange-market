@@ -13,13 +13,23 @@ export const GoldTable = ({ rates, isLoading = false }: GoldTableProps) => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
+  const getGoldTypeName = (type: string) => {
+    const translated = t(`gold.types.${type}`, { defaultValue: '' });
+    return translated || type;
+  };
+
+  const getUnitName = (unit: string) => {
+    const translated = t(`gold.units.${unit}`, { defaultValue: '' });
+    return translated || unit;
+  };
+
   const columns = useMemo<MRT_ColumnDef<GoldRate>[]>(
     () => [
       {
         accessorKey: 'type',
         header: t('gold.type'),
         Cell: ({ cell }) => (
-          <Typography fontWeight={600}>{cell.getValue<string>()}</Typography>
+          <Typography fontWeight={600}>{getGoldTypeName(cell.getValue<string>())}</Typography>
         ),
       },
       {
@@ -44,7 +54,7 @@ export const GoldTable = ({ rates, isLoading = false }: GoldTableProps) => {
         accessorKey: 'unit',
         header: t('gold.unit'),
         Cell: ({ cell }) => (
-          <Chip label={cell.getValue<string>()} size="small" variant="outlined" />
+          <Chip label={getUnitName(cell.getValue<string>())} size="small" variant="outlined" />
         ),
       },
     ],

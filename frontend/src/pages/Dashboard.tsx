@@ -85,7 +85,7 @@ export const Dashboard = () => {
       setSelectedCurrency('');
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add favorite');
+      setError(err.response?.data?.error || t('user.failedAddFavorite'));
     }
   };
 
@@ -107,7 +107,7 @@ export const Dashboard = () => {
       setTargetRate('');
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create alert');
+      setError(err.response?.data?.error || t('user.failedCreateAlert'));
     }
   };
 
@@ -128,7 +128,7 @@ export const Dashboard = () => {
         {t('user.dashboard')}
       </Typography>
       <Typography color="text.secondary" gutterBottom>
-        Welcome back, {user?.full_name || user?.username}!
+        {t('user.welcomeBack')}, {user?.full_name || user?.username}!
       </Typography>
 
       {/* Stats */}
@@ -219,7 +219,7 @@ export const Dashboard = () => {
                           />
                         </Box>
                       }
-                      secondary={`Target: ${alert.target_rate} AFN`}
+                      secondary={`${t('user.target')}: ${alert.target_rate} AFN`}
                     />
                     <ListItemSecondaryAction>
                       <IconButton edge="end" onClick={() => handleDeleteAlert(alert.id)}>

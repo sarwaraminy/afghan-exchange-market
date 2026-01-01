@@ -31,7 +31,12 @@ export const translations = {
         market: 'Market',
         currency: 'Currency',
         lastUpdate: 'Last Updated',
-        noData: 'No rates available'
+        noData: 'No rates available',
+        markets: {
+          'Sarai Shahzada': 'Sarai Shahzada',
+          'Khorasan Market': 'Khorasan Market',
+          'Da Afghanistan Bank': 'Da Afghanistan Bank'
+        }
       },
       // Gold
       gold: {
@@ -39,7 +44,17 @@ export const translations = {
         type: 'Type',
         priceAfn: 'Price (AFN)',
         priceUsd: 'Price (USD)',
-        unit: 'Unit'
+        unit: 'Unit',
+        types: {
+          'Gold 24K': 'Gold 24K',
+          'Gold 22K': 'Gold 22K',
+          'Gold 21K': 'Gold 21K',
+          'Gold 18K': 'Gold 18K',
+          'Silver': 'Silver'
+        },
+        units: {
+          'gram': 'Gram'
+        }
       },
       // Converter
       converter: {
@@ -50,7 +65,8 @@ export const translations = {
         result: 'Result',
         convert: 'Convert',
         rate: 'Exchange Rate',
-        swap: 'Swap currencies'
+        swap: 'Swap currencies',
+        enterAmount: 'Enter an amount to convert'
       },
       // Auth
       auth: {
@@ -66,7 +82,11 @@ export const translations = {
         hasAccount: 'Already have an account?',
         loginSuccess: 'Login successful',
         registerSuccess: 'Registration successful',
-        logoutSuccess: 'Logged out successfully'
+        logoutSuccess: 'Logged out successfully',
+        passwordMismatch: 'Passwords do not match',
+        preferredLanguage: 'Preferred Language',
+        loginFailed: 'Login failed',
+        registrationFailed: 'Registration failed'
       },
       // User
       user: {
@@ -83,12 +103,17 @@ export const translations = {
         above: 'Above',
         below: 'Below',
         noFavorites: 'No favorites yet',
-        noAlerts: 'No price alerts'
+        noAlerts: 'No price alerts',
+        welcomeBack: 'Welcome back',
+        target: 'Target',
+        failedAddFavorite: 'Failed to add favorite',
+        failedCreateAlert: 'Failed to create alert'
       },
       // Admin
       admin: {
         panel: 'Admin Panel',
         manageRates: 'Manage Rates',
+        manageGold: 'Gold Rates',
         manageNews: 'Manage News',
         manageMarkets: 'Manage Markets',
         manageCurrencies: 'Manage Currencies',
@@ -98,7 +123,33 @@ export const translations = {
         save: 'Save',
         cancel: 'Cancel',
         publish: 'Publish',
-        unpublish: 'Unpublish'
+        unpublish: 'Unpublish',
+        actions: 'Actions',
+        published: 'Published',
+        draft: 'Draft',
+        editRate: 'Edit Exchange Rate',
+        createRate: 'Create Exchange Rate',
+        editGold: 'Edit Gold Rate',
+        createGold: 'Create Gold Rate',
+        createNews: 'Create News',
+        editNews: 'Edit News',
+        selectMarket: 'Select Market',
+        selectCurrency: 'Select Currency',
+        titleEn: 'Title (English)',
+        titleFa: 'Title (Dari)',
+        titlePs: 'Title (Pashto)',
+        contentEn: 'Content (English)',
+        contentFa: 'Content (Dari)',
+        contentPs: 'Content (Pashto)',
+        confirmDelete: 'Are you sure you want to delete this news?',
+        confirmDeleteRate: 'Are you sure you want to delete this rate?',
+        confirmDeleteGold: 'Are you sure you want to delete this gold rate?',
+        goldTypePlaceholder: 'e.g. Gold 24K, Gold 22K, Silver',
+        failedUpdateRate: 'Failed to update rate',
+        failedCreateRate: 'Failed to create rate',
+        failedUpdateGold: 'Failed to update gold rate',
+        failedCreateGold: 'Failed to create gold rate',
+        failedSaveNews: 'Failed to save news'
       },
       // News
       news: {
@@ -124,7 +175,11 @@ export const translations = {
         close: 'Close',
         search: 'Search',
         noResults: 'No results found',
-        language: 'Language'
+        language: 'Language',
+        appName: 'Afghan Exchange',
+        appSubtitle: 'Afghanistan Exchange Market',
+        footerNote: 'Real-time exchange rates from Sarai Shahzada and other markets',
+        viewAll: 'View All'
       },
       // Currency
       currencies: {
@@ -174,7 +229,12 @@ export const translations = {
         market: 'بازار',
         currency: 'ارز',
         lastUpdate: 'آخرین بروزرسانی',
-        noData: 'نرخی موجود نیست'
+        noData: 'نرخی موجود نیست',
+        markets: {
+          'Sarai Shahzada': 'سرای شهزاده',
+          'Khorasan Market': 'بازار خراسان',
+          'Da Afghanistan Bank': 'د افغانستان بانک'
+        }
       },
       // Gold
       gold: {
@@ -182,7 +242,17 @@ export const translations = {
         type: 'نوع',
         priceAfn: 'قیمت (افغانی)',
         priceUsd: 'قیمت (دالر)',
-        unit: 'واحد'
+        unit: 'واحد',
+        types: {
+          'Gold 24K': 'طلای ۲۴ عیار',
+          'Gold 22K': 'طلای ۲۲ عیار',
+          'Gold 21K': 'طلای ۲۱ عیار',
+          'Gold 18K': 'طلای ۱۸ عیار',
+          'Silver': 'نقره'
+        },
+        units: {
+          'gram': 'گرم'
+        }
       },
       // Converter
       converter: {
@@ -193,7 +263,8 @@ export const translations = {
         result: 'نتیجه',
         convert: 'تبدیل',
         rate: 'نرخ تبادله',
-        swap: 'تعویض ارزها'
+        swap: 'تعویض ارزها',
+        enterAmount: 'مقداری برای تبدیل وارد کنید'
       },
       // Auth
       auth: {
@@ -209,7 +280,11 @@ export const translations = {
         hasAccount: 'حساب کاربری دارید؟',
         loginSuccess: 'ورود موفقیت آمیز',
         registerSuccess: 'ثبت نام موفقیت آمیز',
-        logoutSuccess: 'با موفقیت خارج شدید'
+        logoutSuccess: 'با موفقیت خارج شدید',
+        passwordMismatch: 'رمزهای عبور مطابقت ندارند',
+        preferredLanguage: 'زبان ترجیحی',
+        loginFailed: 'ورود ناموفق بود',
+        registrationFailed: 'ثبت نام ناموفق بود'
       },
       // User
       user: {
@@ -226,12 +301,17 @@ export const translations = {
         above: 'بالاتر از',
         below: 'پایین‌تر از',
         noFavorites: 'هنوز علاقه‌مندی ندارید',
-        noAlerts: 'هشدار قیمتی ندارید'
+        noAlerts: 'هشدار قیمتی ندارید',
+        welcomeBack: 'خوش آمدید',
+        target: 'هدف',
+        failedAddFavorite: 'افزودن به علاقه‌مندی‌ها ناموفق بود',
+        failedCreateAlert: 'ایجاد هشدار ناموفق بود'
       },
       // Admin
       admin: {
         panel: 'پنل مدیریت',
         manageRates: 'مدیریت نرخ‌ها',
+        manageGold: 'نرخ طلا',
         manageNews: 'مدیریت اخبار',
         manageMarkets: 'مدیریت بازارها',
         manageCurrencies: 'مدیریت ارزها',
@@ -241,7 +321,33 @@ export const translations = {
         save: 'ذخیره',
         cancel: 'لغو',
         publish: 'انتشار',
-        unpublish: 'لغو انتشار'
+        unpublish: 'لغو انتشار',
+        actions: 'عملیات',
+        published: 'منتشر شده',
+        draft: 'پیش‌نویس',
+        editRate: 'ویرایش نرخ ارز',
+        createRate: 'ایجاد نرخ ارز',
+        editGold: 'ویرایش نرخ طلا',
+        createGold: 'ایجاد نرخ طلا',
+        createNews: 'ایجاد خبر',
+        editNews: 'ویرایش خبر',
+        selectMarket: 'انتخاب بازار',
+        selectCurrency: 'انتخاب ارز',
+        titleEn: 'عنوان (انگلیسی)',
+        titleFa: 'عنوان (دری)',
+        titlePs: 'عنوان (پشتو)',
+        contentEn: 'محتوا (انگلیسی)',
+        contentFa: 'محتوا (دری)',
+        contentPs: 'محتوا (پشتو)',
+        confirmDelete: 'آیا مطمئن هستید که می‌خواهید این خبر را حذف کنید؟',
+        confirmDeleteRate: 'آیا مطمئن هستید که می‌خواهید این نرخ را حذف کنید؟',
+        confirmDeleteGold: 'آیا مطمئن هستید که می‌خواهید این نرخ طلا را حذف کنید؟',
+        goldTypePlaceholder: 'مثلا طلای ۲۴ عیار، طلای ۲۲ عیار، نقره',
+        failedUpdateRate: 'بروزرسانی نرخ ناموفق بود',
+        failedCreateRate: 'ایجاد نرخ ناموفق بود',
+        failedUpdateGold: 'بروزرسانی نرخ طلا ناموفق بود',
+        failedCreateGold: 'ایجاد نرخ طلا ناموفق بود',
+        failedSaveNews: 'ذخیره خبر ناموفق بود'
       },
       // News
       news: {
@@ -267,7 +373,11 @@ export const translations = {
         close: 'بستن',
         search: 'جستجو',
         noResults: 'نتیجه‌ای یافت نشد',
-        language: 'زبان'
+        language: 'زبان',
+        appName: 'صرافی افغان',
+        appSubtitle: 'بازار صرافی افغانستان',
+        footerNote: 'نرخ‌های تبادله ارز از سرای شهزاده و بازارهای دیگر',
+        viewAll: 'مشاهده همه'
       },
       // Currency
       currencies: {
@@ -317,7 +427,12 @@ export const translations = {
         market: 'بازار',
         currency: 'اسعار',
         lastUpdate: 'وروستی تازه کول',
-        noData: 'نرخونه شتون نلري'
+        noData: 'نرخونه شتون نلري',
+        markets: {
+          'Sarai Shahzada': 'سرای شهزاده',
+          'Khorasan Market': 'د خراسان بازار',
+          'Da Afghanistan Bank': 'د افغانستان بانک'
+        }
       },
       // Gold
       gold: {
@@ -325,7 +440,17 @@ export const translations = {
         type: 'ډول',
         priceAfn: 'قیمت (افغانۍ)',
         priceUsd: 'قیمت (ډالر)',
-        unit: 'واحد'
+        unit: 'واحد',
+        types: {
+          'Gold 24K': 'سره زر ۲۴ عیار',
+          'Gold 22K': 'سره زر ۲۲ عیار',
+          'Gold 21K': 'سره زر ۲۱ عیار',
+          'Gold 18K': 'سره زر ۱۸ عیار',
+          'Silver': 'سپین زر'
+        },
+        units: {
+          'gram': 'ګرام'
+        }
       },
       // Converter
       converter: {
@@ -336,7 +461,8 @@ export const translations = {
         result: 'پایله',
         convert: 'تبادله',
         rate: 'د تبادلې نرخ',
-        swap: 'اسعارو بدلول'
+        swap: 'اسعارو بدلول',
+        enterAmount: 'د تبادلې لپاره اندازه ولیکئ'
       },
       // Auth
       auth: {
@@ -352,7 +478,11 @@ export const translations = {
         hasAccount: 'حساب لرئ؟',
         loginSuccess: 'په بریالیتوب ننوتل',
         registerSuccess: 'نوم لیکنه بریالۍ شوه',
-        logoutSuccess: 'په بریالیتوب ووتل'
+        logoutSuccess: 'په بریالیتوب ووتل',
+        passwordMismatch: 'پټنومونه سره برابر نه دي',
+        preferredLanguage: 'غوره ژبه',
+        loginFailed: 'ننوتل ناکام شول',
+        registrationFailed: 'نوم لیکنه ناکامه شوه'
       },
       // User
       user: {
@@ -369,12 +499,17 @@ export const translations = {
         above: 'پورته',
         below: 'ښکته',
         noFavorites: 'تر اوسه خوښونه نشته',
-        noAlerts: 'د قیمت خبرتیاوې نشته'
+        noAlerts: 'د قیمت خبرتیاوې نشته',
+        welcomeBack: 'بیرته ښه راغلاست',
+        target: 'موخه',
+        failedAddFavorite: 'خوښونو ته اضافه کول ناکام شول',
+        failedCreateAlert: 'خبرتیا جوړول ناکام شول'
       },
       // Admin
       admin: {
         panel: 'اداري پینل',
         manageRates: 'د نرخونو اداره',
+        manageGold: 'د سرو زرو نرخ',
         manageNews: 'د خبرونو اداره',
         manageMarkets: 'د بازارونو اداره',
         manageCurrencies: 'د اسعارو اداره',
@@ -384,7 +519,33 @@ export const translations = {
         save: 'خوندي کول',
         cancel: 'لغوه کول',
         publish: 'خپرول',
-        unpublish: 'غیر خپرول'
+        unpublish: 'غیر خپرول',
+        actions: 'عملیات',
+        published: 'خپور شوی',
+        draft: 'مسوده',
+        editRate: 'د اسعارو نرخ سمول',
+        createRate: 'د اسعارو نرخ جوړول',
+        editGold: 'د سرو زرو نرخ سمول',
+        createGold: 'د سرو زرو نرخ جوړول',
+        createNews: 'خبر جوړول',
+        editNews: 'خبر سمول',
+        selectMarket: 'بازار غوره کړئ',
+        selectCurrency: 'اسعار غوره کړئ',
+        titleEn: 'سرلیک (انګلیسي)',
+        titleFa: 'سرلیک (دري)',
+        titlePs: 'سرلیک (پښتو)',
+        contentEn: 'منځپانګه (انګلیسي)',
+        contentFa: 'منځپانګه (دري)',
+        contentPs: 'منځپانګه (پښتو)',
+        confirmDelete: 'ایا تاسو ډاډه یاست چې دا خبر ړنګول غواړئ؟',
+        confirmDeleteRate: 'ایا تاسو ډاډه یاست چې دا نرخ ړنګول غواړئ؟',
+        confirmDeleteGold: 'ایا تاسو ډاډه یاست چې د سرو زرو دا نرخ ړنګول غواړئ؟',
+        goldTypePlaceholder: 'لکه سره زر ۲۴ عیار، سره زر ۲۲ عیار، سپین زر',
+        failedUpdateRate: 'د نرخ تازه کول ناکام شول',
+        failedCreateRate: 'د نرخ جوړول ناکام شول',
+        failedUpdateGold: 'د سرو زرو نرخ تازه کول ناکام شول',
+        failedCreateGold: 'د سرو زرو نرخ جوړول ناکام شول',
+        failedSaveNews: 'خبر خوندي کول ناکام شول'
       },
       // News
       news: {
@@ -410,7 +571,11 @@ export const translations = {
         close: 'بندول',
         search: 'لټون',
         noResults: 'پایله ونه موندل شوه',
-        language: 'ژبه'
+        language: 'ژبه',
+        appName: 'افغان صرافي',
+        appSubtitle: 'د افغانستان صرافي بازار',
+        footerNote: 'له سرای شهزاده او نورو بازارونو څخه د اسعارو نرخونه',
+        viewAll: 'ټول وګورئ'
       },
       // Currency
       currencies: {

@@ -17,12 +17,14 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
-  ToggleButtonGroup,
-  ToggleButton,
+  FormControl,
+  Select,
   Avatar,
   useTheme,
   useMediaQuery
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
+import { Language } from '@mui/icons-material';
 import {
   Menu as MenuIcon,
   Person,
@@ -46,13 +48,20 @@ export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const changeLanguage = (lang: string) => {
+  const changeLanguage = (event: SelectChangeEvent) => {
+    const lang = event.target.value;
     if (lang) {
       i18n.changeLanguage(lang);
       localStorage.setItem('language', lang);
       document.dir = lang === 'en' ? 'ltr' : 'rtl';
     }
   };
+
+  const languages = [
+    { code: 'en', label: 'English (en)', flag: '🇺🇸' },
+    { code: 'fa', label: 'دری (fa)', flag: '🇦🇫' },
+    { code: 'ps', label: 'پښتو (ps)', flag: '🇦🇫' }
+  ];
 
   const handleLogout = () => {
     logout();
@@ -72,7 +81,7 @@ export const Header = () => {
     <Box sx={{ width: 250 }}>
       <Box sx={{ p: 2 }}>
         <Typography variant="h6" color="primary" fontWeight="bold">
-          Sarafi.AF
+          {t('common.appName')}
         </Typography>
       </Box>
       <Divider />
@@ -92,17 +101,19 @@ export const Header = () => {
       </List>
       <Divider />
       <Box sx={{ p: 2 }}>
-        <ToggleButtonGroup
-          value={i18n.language}
-          exclusive
-          onChange={(_, val) => changeLanguage(val)}
-          size="small"
-          fullWidth
-        >
-          <ToggleButton value="en">EN</ToggleButton>
-          <ToggleButton value="fa">فا</ToggleButton>
-          <ToggleButton value="ps">پښ</ToggleButton>
-        </ToggleButtonGroup>
+        <FormControl fullWidth size="small">
+          <Select
+            value={i18n.language}
+            onChange={changeLanguage}
+            startAdornment={<Language sx={{ mr: 1, color: 'text.secondary' }} />}
+          >
+            {languages.map((lang) => (
+              <MenuItem key={lang.code} value={lang.code}>
+                {lang.flag} {lang.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
     </Box>
   );
@@ -133,7 +144,7 @@ export const Header = () => {
               mr: 4
             }}
           >
-            Sarafi.AF
+            {t('common.appName')}
           </Typography>
 
           {!isMobile && (
@@ -158,17 +169,19 @@ export const Header = () => {
           )}
 
           {!isMobile && (
-            <ToggleButtonGroup
-              value={i18n.language}
-              exclusive
-              onChange={(_, val) => changeLanguage(val)}
-              size="small"
-              sx={{ mr: 2 }}
-            >
-              <ToggleButton value="en">EN</ToggleButton>
-              <ToggleButton value="fa">فا</ToggleButton>
-              <ToggleButton value="ps">پښ</ToggleButton>
-            </ToggleButtonGroup>
+            <FormControl size="small" sx={{ mr: 2, minWidth: 140 }}>
+              <Select
+                value={i18n.language}
+                onChange={changeLanguage}
+                startAdornment={<Language sx={{ mr: 1, color: 'text.secondary' }} />}
+              >
+                {languages.map((lang) => (
+                  <MenuItem key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           )}
 
           {isAuthenticated ? (

@@ -89,8 +89,21 @@ export const createExchangeRate = async (market_id: number, currency_id: number,
   return data.data!;
 };
 
+export const deleteExchangeRate = async (id: number): Promise<void> => {
+  await api.delete(`/rates/exchange/${id}`);
+};
+
 export const updateGoldRate = async (id: number, price_afn: number, price_usd: number): Promise<void> => {
   await api.put(`/rates/gold/${id}`, { price_afn, price_usd });
+};
+
+export const createGoldRate = async (type: string, price_afn: number, price_usd: number, unit?: string): Promise<{ id: number }> => {
+  const { data } = await api.post<ApiResponse<{ id: number }>>('/rates/gold', { type, price_afn, price_usd, unit });
+  return data.data!;
+};
+
+export const deleteGoldRate = async (id: number): Promise<void> => {
+  await api.delete(`/rates/gold/${id}`);
 };
 
 export const createMarket = async (name: string, name_fa?: string, name_ps?: string, location?: string): Promise<{ id: number }> => {

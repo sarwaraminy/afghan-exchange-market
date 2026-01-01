@@ -25,13 +25,19 @@ import {
   getExchangeRates,
   getGoldRates,
   getAllNews,
+  getMarkets,
+  getCurrencies,
   updateExchangeRate,
+  createExchangeRate,
+  deleteExchangeRate,
   updateGoldRate,
+  createGoldRate,
+  deleteGoldRate,
   createNews,
   updateNews,
   deleteNews
 } from '../services/api';
-import type { ExchangeRate, GoldRate, News } from '../types';
+import type { ExchangeRate, GoldRate, News, Market, Currency } from '../types';
 import { Loading } from '../components/common/Loading';
 
 interface TabPanelProps {
@@ -47,16 +53,42 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => (
 );
 
 export const Admin = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const getCurrencyName = (code: string) => {
+    const translated = t(`currencies.${code}`, { defaultValue: '' });
+    return translated || code;
+  };
+
+  const getMarketName = (name: string) => {
+    const translated = t(`rates.markets.${name}`, { defaultValue: '' });
+    return translated || name;
+  };
+
+  const getGoldTypeName = (type: string) => {
+    const translated = t(`gold.types.${type}`, { defaultValue: '' });
+    return translated || type;
+  };
+
+  const getCategoryName = (category: string) => {
+    return t(`news.${category}`, { defaultValue: category });
+  };
+
+  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
+
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [news, setNews] = useState<News[]>([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   const [editRateDialog, setEditRateDialog] = useState(false);
+  const [createRateDialog, setCreateRateDialog] = useState(false);
   const [editGoldDialog, setEditGoldDialog] = useState(false);
+  const [createGoldDialog, setCreateGoldDialog] = useState(false);
   const [newsDialog, setNewsDialog] = useState(false);
 
   const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
@@ -67,6 +99,22 @@ export const Admin = () => {
   const [sellRate, setSellRate] = useState('');
   const [priceAfn, setPriceAfn] = useState('');
   const [priceUsd, setPriceUsd] = useState('');
+
+  // New rate form
+  const [newRateForm, setNewRateForm] = useState({
+    market_id: '',
+    currency_id: '',
+    buy_rate: '',
+    sell_rate: ''
+  });
+
+  // New gold form
+  const [newGoldForm, setNewGoldForm] = useState({
+    type: '',
+    price_afn: '',
+    price_usd: '',
+    unit: 'gram'
+  });
 
   const [newsForm, setNewsForm] = useState({
     title: '',
@@ -84,14 +132,18 @@ export const Admin = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [ratesData, goldData, newsData] = await Promise.all([
+      const [ratesData, goldData, newsData, marketsData, currenciesData] = await Promise.all([
         getExchangeRates(),
         getGoldRates(),
-        getAllNews()
+        getAllNews(),
+        getMarkets(),
+        getCurrencies()
       ]);
       setRates(ratesData);
       setGoldRates(goldData);
       setNews(newsData.news);
+      setMarkets(marketsData);
+      setCurrencies(currenciesData);
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -117,7 +169,44 @@ export const Admin = () => {
       setEditRateDialog(false);
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update rate');
+      setError(err.response?.data?.error || t('admin.failedUpdateRate'));
+    }
+  };
+
+  const handleNewRate = () => {
+    setNewRateForm({
+      market_id: '',
+      currency_id: '',
+      buy_rate: '',
+      sell_rate: ''
+    });
+    setError('');
+    setCreateRateDialog(true);
+  };
+
+  const handleCreateRate = async () => {
+    try {
+      await createExchangeRate(
+        parseInt(newRateForm.market_id),
+        parseInt(newRateForm.currency_id),
+        parseFloat(newRateForm.buy_rate),
+        parseFloat(newRateForm.sell_rate)
+      );
+      setCreateRateDialog(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedCreateRate'));
+    }
+  };
+
+  const handleDeleteRate = async (id: number) => {
+    if (confirm(t('admin.confirmDeleteRate'))) {
+      try {
+        await deleteExchangeRate(id);
+        fetchData();
+      } catch (error) {
+        console.error('Error deleting rate:', error);
+      }
     }
   };
 
@@ -135,7 +224,44 @@ export const Admin = () => {
       setEditGoldDialog(false);
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update gold rate');
+      setError(err.response?.data?.error || t('admin.failedUpdateGold'));
+    }
+  };
+
+  const handleNewGold = () => {
+    setNewGoldForm({
+      type: '',
+      price_afn: '',
+      price_usd: '',
+      unit: 'gram'
+    });
+    setError('');
+    setCreateGoldDialog(true);
+  };
+
+  const handleCreateGold = async () => {
+    try {
+      await createGoldRate(
+        newGoldForm.type,
+        parseFloat(newGoldForm.price_afn),
+        parseFloat(newGoldForm.price_usd),
+        newGoldForm.unit
+      );
+      setCreateGoldDialog(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedCreateGold'));
+    }
+  };
+
+  const handleDeleteGold = async (id: number) => {
+    if (confirm(t('admin.confirmDeleteGold'))) {
+      try {
+        await deleteGoldRate(id);
+        fetchData();
+      } catch (error) {
+        console.error('Error deleting gold rate:', error);
+      }
     }
   };
 
@@ -179,12 +305,12 @@ export const Admin = () => {
       setNewsDialog(false);
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save news');
+      setError(err.response?.data?.error || t('admin.failedSaveNews'));
     }
   };
 
   const handleDeleteNews = async (id: number) => {
-    if (confirm('Are you sure you want to delete this news?')) {
+    if (confirm(t('admin.confirmDelete'))) {
       try {
         await deleteNews(id);
         fetchData();
@@ -196,55 +322,77 @@ export const Admin = () => {
 
   const rateColumns = useMemo<MRT_ColumnDef<ExchangeRate>[]>(
     () => [
-      { accessorKey: 'currency_code', header: t('rates.currency') },
-      { accessorKey: 'market_name', header: t('rates.market') },
+      {
+        accessorKey: 'currency_code',
+        header: t('rates.currency'),
+        Cell: ({ row }) => `${row.original.currency_code} - ${getCurrencyName(row.original.currency_code)}`
+      },
+      {
+        accessorKey: 'market_name',
+        header: t('rates.market'),
+        Cell: ({ cell }) => getMarketName(cell.getValue<string>())
+      },
       { accessorKey: 'buy_rate', header: t('rates.buy') },
       { accessorKey: 'sell_rate', header: t('rates.sell') },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('admin.actions'),
         Cell: ({ row }) => (
-          <IconButton onClick={() => handleEditRate(row.original)}>
-            <Edit />
-          </IconButton>
+          <Box>
+            <IconButton onClick={() => handleEditRate(row.original)}>
+              <Edit />
+            </IconButton>
+            <IconButton onClick={() => handleDeleteRate(row.original.id)} color="error">
+              <Delete />
+            </IconButton>
+          </Box>
         )
       }
     ],
-    [t]
+    [t, i18n.language]
   );
 
   const goldColumns = useMemo<MRT_ColumnDef<GoldRate>[]>(
     () => [
-      { accessorKey: 'type', header: t('gold.type') },
+      {
+        accessorKey: 'type',
+        header: t('gold.type'),
+        Cell: ({ cell }) => getGoldTypeName(cell.getValue<string>())
+      },
       { accessorKey: 'price_afn', header: t('gold.priceAfn') },
       { accessorKey: 'price_usd', header: t('gold.priceUsd') },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('admin.actions'),
         Cell: ({ row }) => (
-          <IconButton onClick={() => handleEditGold(row.original)}>
-            <Edit />
-          </IconButton>
+          <Box>
+            <IconButton onClick={() => handleEditGold(row.original)}>
+              <Edit />
+            </IconButton>
+            <IconButton onClick={() => handleDeleteGold(row.original.id)} color="error">
+              <Delete />
+            </IconButton>
+          </Box>
         )
       }
     ],
-    [t]
+    [t, i18n.language]
   );
 
   const newsColumns = useMemo<MRT_ColumnDef<News>[]>(
     () => [
-      { accessorKey: 'title', header: 'Title' },
+      { accessorKey: 'title', header: t('admin.titleEn') },
       {
         accessorKey: 'category',
-        header: 'Category',
-        Cell: ({ cell }) => <Chip label={cell.getValue<string>()} size="small" />
+        header: t('news.category'),
+        Cell: ({ cell }) => <Chip label={getCategoryName(cell.getValue<string>())} size="small" />
       },
       {
         accessorKey: 'is_published',
-        header: 'Published',
+        header: t('admin.published'),
         Cell: ({ cell }) => (
           <Chip
-            label={cell.getValue<number>() ? 'Published' : 'Draft'}
+            label={cell.getValue<number>() ? t('admin.published') : t('admin.draft')}
             color={cell.getValue<number>() ? 'success' : 'default'}
             size="small"
           />
@@ -252,7 +400,7 @@ export const Admin = () => {
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('admin.actions'),
         Cell: ({ row }) => (
           <Box>
             <IconButton onClick={() => handleEditNews(row.original)}>
@@ -265,7 +413,7 @@ export const Admin = () => {
         )
       }
     ],
-    []
+    [t, i18n.language]
   );
 
   if (loading) return <Loading />;
@@ -279,26 +427,54 @@ export const Admin = () => {
       <Paper sx={{ mt: 2 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={t('admin.manageRates')} />
-          <Tab label="Gold Rates" />
+          <Tab label={t('admin.manageGold')} />
           <Tab label={t('admin.manageNews')} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
           <TabPanel value={tab} index={0}>
+            <Box sx={{ mb: 2 }}>
+              <Button variant="contained" startIcon={<Add />} onClick={handleNewRate}>
+                {t('admin.addNew')}
+              </Button>
+            </Box>
             <MaterialReactTable
               columns={rateColumns}
               data={rates}
               enablePagination
               enableSorting
               enableGlobalFilter
+              muiTableProps={{
+                sx: { direction: isRtl ? 'rtl' : 'ltr' }
+              }}
+              muiTableHeadCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
+              muiTableBodyCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
             />
           </TabPanel>
 
           <TabPanel value={tab} index={1}>
+            <Box sx={{ mb: 2 }}>
+              <Button variant="contained" startIcon={<Add />} onClick={handleNewGold}>
+                {t('admin.addNew')}
+              </Button>
+            </Box>
             <MaterialReactTable
               columns={goldColumns}
               data={goldRates}
               enablePagination={false}
+              muiTableProps={{
+                sx: { direction: isRtl ? 'rtl' : 'ltr' }
+              }}
+              muiTableHeadCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
+              muiTableBodyCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
             />
           </TabPanel>
 
@@ -314,6 +490,15 @@ export const Admin = () => {
               enablePagination
               enableSorting
               enableGlobalFilter
+              muiTableProps={{
+                sx: { direction: isRtl ? 'rtl' : 'ltr' }
+              }}
+              muiTableHeadCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
+              muiTableBodyCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
             />
           </TabPanel>
         </Box>
@@ -321,7 +506,7 @@ export const Admin = () => {
 
       {/* Edit Rate Dialog */}
       <Dialog open={editRateDialog} onClose={() => setEditRateDialog(false)}>
-        <DialogTitle>Edit Exchange Rate - {selectedRate?.currency_code}</DialogTitle>
+        <DialogTitle>{t('admin.editRate')} - {selectedRate?.currency_code}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
@@ -347,9 +532,69 @@ export const Admin = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Create Rate Dialog */}
+      <Dialog open={createRateDialog} onClose={() => setCreateRateDialog(false)}>
+        <DialogTitle>{t('admin.createRate')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            select
+            label={t('rates.market')}
+            value={newRateForm.market_id}
+            onChange={(e) => setNewRateForm({ ...newRateForm, market_id: e.target.value })}
+            sx={{ mt: 1 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="">{t('admin.selectMarket')}</option>
+            {markets.map((market) => (
+              <option key={market.id} value={market.id}>
+                {getMarketName(market.name)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('rates.currency')}
+            value={newRateForm.currency_id}
+            onChange={(e) => setNewRateForm({ ...newRateForm, currency_id: e.target.value })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="">{t('admin.selectCurrency')}</option>
+            {currencies.map((currency) => (
+              <option key={currency.id} value={currency.id}>
+                {currency.code} - {getCurrencyName(currency.code)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.buy')}
+            value={newRateForm.buy_rate}
+            onChange={(e) => setNewRateForm({ ...newRateForm, buy_rate: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.sell')}
+            value={newRateForm.sell_rate}
+            onChange={(e) => setNewRateForm({ ...newRateForm, sell_rate: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateRateDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleCreateRate}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Edit Gold Dialog */}
       <Dialog open={editGoldDialog} onClose={() => setEditGoldDialog(false)}>
-        <DialogTitle>Edit Gold Rate - {selectedGold?.type}</DialogTitle>
+        <DialogTitle>{t('admin.editGold')} - {selectedGold ? getGoldTypeName(selectedGold.type) : ''}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
@@ -375,28 +620,75 @@ export const Admin = () => {
         </DialogActions>
       </Dialog>
 
-      {/* News Dialog */}
-      <Dialog open={newsDialog} onClose={() => setNewsDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{selectedNews ? 'Edit News' : 'Create News'}</DialogTitle>
+      {/* Create Gold Dialog */}
+      <Dialog open={createGoldDialog} onClose={() => setCreateGoldDialog(false)}>
+        <DialogTitle>{t('admin.createGold')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
             fullWidth
-            label="Title (English)"
+            label={t('gold.type')}
+            value={newGoldForm.type}
+            onChange={(e) => setNewGoldForm({ ...newGoldForm, type: e.target.value })}
+            sx={{ mt: 1 }}
+            placeholder={t('admin.goldTypePlaceholder')}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label={t('gold.priceAfn')}
+            value={newGoldForm.price_afn}
+            onChange={(e) => setNewGoldForm({ ...newGoldForm, price_afn: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label={t('gold.priceUsd')}
+            value={newGoldForm.price_usd}
+            onChange={(e) => setNewGoldForm({ ...newGoldForm, price_usd: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            select
+            label={t('gold.unit')}
+            value={newGoldForm.unit}
+            onChange={(e) => setNewGoldForm({ ...newGoldForm, unit: e.target.value })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="gram">{t('gold.units.gram')}</option>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateGoldDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleCreateGold}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* News Dialog */}
+      <Dialog open={newsDialog} onClose={() => setNewsDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedNews ? t('admin.editNews') : t('admin.createNews')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            label={t('admin.titleEn')}
             value={newsForm.title}
             onChange={(e) => setNewsForm({ ...newsForm, title: e.target.value })}
             sx={{ mt: 1 }}
           />
           <TextField
             fullWidth
-            label="Title (Dari)"
+            label={t('admin.titleFa')}
             value={newsForm.title_fa}
             onChange={(e) => setNewsForm({ ...newsForm, title_fa: e.target.value })}
             sx={{ mt: 2 }}
           />
           <TextField
             fullWidth
-            label="Title (Pashto)"
+            label={t('admin.titlePs')}
             value={newsForm.title_ps}
             onChange={(e) => setNewsForm({ ...newsForm, title_ps: e.target.value })}
             sx={{ mt: 2 }}
@@ -405,7 +697,7 @@ export const Admin = () => {
             fullWidth
             multiline
             rows={4}
-            label="Content (English)"
+            label={t('admin.contentEn')}
             value={newsForm.content}
             onChange={(e) => setNewsForm({ ...newsForm, content: e.target.value })}
             sx={{ mt: 2 }}
@@ -414,7 +706,7 @@ export const Admin = () => {
             fullWidth
             multiline
             rows={4}
-            label="Content (Dari)"
+            label={t('admin.contentFa')}
             value={newsForm.content_fa}
             onChange={(e) => setNewsForm({ ...newsForm, content_fa: e.target.value })}
             sx={{ mt: 2 }}
@@ -423,7 +715,7 @@ export const Admin = () => {
             fullWidth
             multiline
             rows={4}
-            label="Content (Pashto)"
+            label={t('admin.contentPs')}
             value={newsForm.content_ps}
             onChange={(e) => setNewsForm({ ...newsForm, content_ps: e.target.value })}
             sx={{ mt: 2 }}
@@ -431,15 +723,15 @@ export const Admin = () => {
           <TextField
             fullWidth
             select
-            label="Category"
+            label={t('news.category')}
             value={newsForm.category}
             onChange={(e) => setNewsForm({ ...newsForm, category: e.target.value })}
             sx={{ mt: 2 }}
             SelectProps={{ native: true }}
           >
-            <option value="general">General</option>
-            <option value="market">Market</option>
-            <option value="announcement">Announcement</option>
+            <option value="general">{t('news.general')}</option>
+            <option value="market">{t('news.market')}</option>
+            <option value="announcement">{t('news.announcement')}</option>
           </TextField>
           <FormControlLabel
             control={
@@ -448,7 +740,7 @@ export const Admin = () => {
                 onChange={(e) => setNewsForm({ ...newsForm, is_published: e.target.checked })}
               />
             }
-            label="Published"
+            label={t('admin.published')}
             sx={{ mt: 2 }}
           />
         </DialogContent>

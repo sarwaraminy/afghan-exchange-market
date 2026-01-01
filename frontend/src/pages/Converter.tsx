@@ -164,7 +164,7 @@ export const Converter = () => {
               </>
             ) : (
               <Typography color="text.secondary">
-                Enter an amount to convert
+                {t('converter.enterAmount')}
               </Typography>
             )}
           </CardContent>

@@ -123,6 +123,24 @@ export const createExchangeRate = (req: Request, res: Response): void => {
   }
 };
 
+export const deleteExchangeRate = (req: Request, res: Response): void => {
+  try {
+    const { id } = req.params;
+
+    const existing = db.prepare('SELECT id FROM exchange_rates WHERE id = ?').get(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Rate not found' });
+      return;
+    }
+
+    db.prepare('DELETE FROM exchange_rates WHERE id = ?').run(id);
+    res.json({ success: true, message: 'Rate deleted successfully' });
+  } catch (error) {
+    console.error('Delete exchange rate error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete rate' });
+  }
+};
+
 export const updateGoldRate = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
@@ -147,6 +165,47 @@ export const updateGoldRate = (req: Request, res: Response): void => {
   } catch (error) {
     console.error('Update gold rate error:', error);
     res.status(500).json({ success: false, error: 'Failed to update gold rate' });
+  }
+};
+
+export const createGoldRate = (req: Request, res: Response): void => {
+  try {
+    const { type, price_afn, price_usd, unit } = req.body;
+    const userId = req.user?.userId;
+
+    const existing = db.prepare('SELECT id FROM gold_rates WHERE type = ?').get(type);
+    if (existing) {
+      res.status(400).json({ success: false, error: 'Gold rate with this type already exists' });
+      return;
+    }
+
+    const result = db.prepare(`
+      INSERT INTO gold_rates (type, price_afn, price_usd, unit, updated_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(type, price_afn, price_usd, unit || 'gram', userId);
+
+    res.status(201).json({ success: true, data: { id: result.lastInsertRowid } });
+  } catch (error) {
+    console.error('Create gold rate error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create gold rate' });
+  }
+};
+
+export const deleteGoldRate = (req: Request, res: Response): void => {
+  try {
+    const { id } = req.params;
+
+    const existing = db.prepare('SELECT id FROM gold_rates WHERE id = ?').get(id);
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Gold rate not found' });
+      return;
+    }
+
+    db.prepare('DELETE FROM gold_rates WHERE id = ?').run(id);
+    res.json({ success: true, message: 'Gold rate deleted successfully' });
+  } catch (error) {
+    console.error('Delete gold rate error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete gold rate' });
   }
 };
 

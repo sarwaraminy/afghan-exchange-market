@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Container,
   Typography,
-  Box,
   Paper,
   ToggleButtonGroup,
   ToggleButton
@@ -13,19 +12,29 @@ import type { ExchangeRate, Market } from '../types';
 import { RatesTable } from '../components/rates/RatesTable';
 
 export const Rates = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const getMarketName = (market: Market) => {
+    if (i18n.language === 'fa' && market.name_fa) return market.name_fa;
+    if (i18n.language === 'ps' && market.name_ps) return market.name_ps;
+    return market.name;
+  };
+
   useEffect(() => {
     const fetchMarkets = async () => {
       try {
         const data = await getMarkets();
-        setMarkets(data);
-        if (data.length > 0) {
-          setSelectedMarket(data[0].id);
+        // Remove duplicates by id
+        const uniqueMarkets = data.filter(
+          (market, index, self) => index === self.findIndex((m) => m.id === market.id)
+        );
+        setMarkets(uniqueMarkets);
+        if (uniqueMarkets.length > 0) {
+          setSelectedMarket(uniqueMarkets[0].id);
         }
       } catch (error) {
         console.error('Error fetching markets:', error);
@@ -68,7 +77,7 @@ export const Rates = () => {
         >
           {markets.map((market) => (
             <ToggleButton key={market.id} value={market.id}>
-              {market.name}
+              {getMarketName(market)}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>

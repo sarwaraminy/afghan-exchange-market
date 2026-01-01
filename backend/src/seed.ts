@@ -3,7 +3,7 @@ import db, { initializeDatabase } from './config/database';
 
 async function seed() {
   console.log('Initializing database...');
-  initializeDatabase();
+  await initializeDatabase();
 
   console.log('Seeding data...');
 

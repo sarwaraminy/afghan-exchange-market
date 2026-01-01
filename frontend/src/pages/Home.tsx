@@ -114,10 +114,10 @@ export const Home = () => {
               <Paper sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h5" fontWeight={600}>
-                    {t('rates.title')} - Sarai Shahzada
+                    {t('rates.title')} - {t('rates.markets.Sarai Shahzada')}
                   </Typography>
                   <Button component={Link} to="/rates" size="small">
-                    View All
+                    {t('common.viewAll')}
                   </Button>
                 </Box>
                 <Grid container spacing={2}>
@@ -177,7 +177,7 @@ export const Home = () => {
                     {t('gold.title')}
                   </Typography>
                   <Button component={Link} to="/gold" size="small">
-                    View All
+                    {t('common.viewAll')}
                   </Button>
                 </Box>
                 <Grid container spacing={2}>

@@ -34,6 +34,16 @@ export const RatesTable = ({ rates, isLoading = false }: RatesTableProps) => {
     return rate.toFixed(0);
   };
 
+  const getCurrencyName = (code: string, fallback: string) => {
+    const translated = t(`currencies.${code}`, { defaultValue: '' });
+    return translated || fallback;
+  };
+
+  const getMarketName = (name: string) => {
+    const translated = t(`rates.markets.${name}`, { defaultValue: '' });
+    return translated || name;
+  };
+
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   const columns = useMemo<MRT_ColumnDef<ExchangeRate>[]>(
@@ -53,7 +63,7 @@ export const RatesTable = ({ rates, isLoading = false }: RatesTableProps) => {
             <Box>
               <Typography fontWeight={600}>{row.original.currency_code}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {row.original.currency_name}
+                {getCurrencyName(row.original.currency_code, row.original.currency_name)}
               </Typography>
             </Box>
           </Box>
@@ -63,7 +73,7 @@ export const RatesTable = ({ rates, isLoading = false }: RatesTableProps) => {
         accessorKey: 'market_name',
         header: t('rates.market'),
         Cell: ({ cell }) => (
-          <Chip label={cell.getValue<string>()} size="small" variant="outlined" />
+          <Chip label={getMarketName(cell.getValue<string>())} size="small" variant="outlined" />
         ),
       },
       {

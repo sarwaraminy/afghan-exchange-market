@@ -1,6 +1,8 @@
-import { Box, Container, Typography, Link } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 export const Footer = () => {
+  const { t } = useTranslation();
   const year = new Date().getFullYear();
 
   return (
@@ -15,10 +17,10 @@ export const Footer = () => {
     >
       <Container maxWidth="lg">
         <Typography variant="body2" align="center">
-          &copy; {year} Sarafi.AF - Afghanistan Exchange Market
+          &copy; {year} {t('common.appName')} - {t('common.appSubtitle')}
         </Typography>
         <Typography variant="caption" align="center" display="block" sx={{ mt: 1, opacity: 0.7 }}>
-          Real-time exchange rates from Sarai Shahzada and other markets
+          {t('common.footerNote')}
         </Typography>
       </Container>
     </Box>

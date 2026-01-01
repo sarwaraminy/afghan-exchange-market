@@ -40,7 +40,7 @@ export const Register = () => {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
@@ -57,7 +57,7 @@ export const Register = () => {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.response?.data?.error || t('auth.registrationFailed'));
     } finally {
       setLoading(false);
     }

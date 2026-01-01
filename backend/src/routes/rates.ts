@@ -7,7 +7,10 @@ import {
   getGoldRates,
   updateExchangeRate,
   createExchangeRate,
+  deleteExchangeRate,
   updateGoldRate,
+  createGoldRate,
+  deleteGoldRate,
   createMarket,
   createCurrency,
   convert
@@ -48,6 +51,20 @@ router.put(
   updateExchangeRate
 );
 
+router.delete('/exchange/:id', authenticate, isAdmin, deleteExchangeRate);
+
+router.post(
+  '/gold',
+  authenticate,
+  isAdmin,
+  [
+    body('type').trim().notEmpty().withMessage('Gold type required'),
+    body('price_afn').isFloat({ gt: 0 }).withMessage('AFN price must be positive'),
+    body('price_usd').isFloat({ gt: 0 }).withMessage('USD price must be positive')
+  ],
+  createGoldRate
+);
+
 router.put(
   '/gold/:id',
   authenticate,
@@ -58,6 +75,8 @@ router.put(
   ],
   updateGoldRate
 );
+
+router.delete('/gold/:id', authenticate, isAdmin, deleteGoldRate);
 
 router.post(
   '/markets',

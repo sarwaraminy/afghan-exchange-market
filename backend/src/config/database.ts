@@ -1,13 +1,138 @@
-import Database from 'better-sqlite3';
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
+import fs from 'fs';
 import path from 'path';
 
 const dbPath = path.join(__dirname, '../../data/exchange.db');
+const dbDir = path.dirname(dbPath);
 
-const db = new Database(dbPath);
+// Ensure data directory exists
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
 
-db.pragma('journal_mode = WAL');
+let db: SqlJsDatabase | null = null;
+let saveTimeout: NodeJS.Timeout | null = null;
 
-export const initializeDatabase = () => {
+// Debounced save function
+const saveDatabase = () => {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    if (db) {
+      const data = db.export();
+      const buffer = Buffer.from(data);
+      fs.writeFileSync(dbPath, buffer);
+    }
+  }, 100);
+};
+
+// Statement wrapper to mimic better-sqlite3 API
+class StatementWrapper {
+  private db: SqlJsDatabase;
+  private sql: string;
+
+  constructor(db: SqlJsDatabase, sql: string) {
+    this.db = db;
+    this.sql = sql;
+  }
+
+  get(...params: any[]): any {
+    const stmt = this.db.prepare(this.sql);
+    try {
+      if (params.length > 0) {
+        stmt.bind(params);
+      }
+      if (stmt.step()) {
+        return stmt.getAsObject();
+      }
+      return undefined;
+    } finally {
+      stmt.free();
+    }
+  }
+
+  all(...params: any[]): any[] {
+    const results: any[] = [];
+    const stmt = this.db.prepare(this.sql);
+    try {
+      if (params.length > 0) {
+        stmt.bind(params);
+      }
+      while (stmt.step()) {
+        results.push(stmt.getAsObject());
+      }
+      return results;
+    } finally {
+      stmt.free();
+    }
+  }
+
+  run(...params: any[]): { lastInsertRowid: number; changes: number } {
+    if (params.length > 0) {
+      this.db.run(this.sql, params);
+    } else {
+      this.db.run(this.sql);
+    }
+
+    // Get last insert rowid and changes
+    const lastIdResult = this.db.exec('SELECT last_insert_rowid() as id');
+    const changesResult = this.db.exec('SELECT changes() as changes');
+
+    const lastInsertRowid = lastIdResult.length > 0 && lastIdResult[0].values.length > 0
+      ? Number(lastIdResult[0].values[0][0])
+      : 0;
+    const changes = changesResult.length > 0 && changesResult[0].values.length > 0
+      ? Number(changesResult[0].values[0][0])
+      : 0;
+
+    saveDatabase();
+
+    return { lastInsertRowid, changes };
+  }
+}
+
+// Database wrapper
+class DatabaseWrapper {
+  private db: SqlJsDatabase;
+
+  constructor(database: SqlJsDatabase) {
+    this.db = database;
+  }
+
+  prepare(sql: string): StatementWrapper {
+    return new StatementWrapper(this.db, sql);
+  }
+
+  exec(sql: string): void {
+    this.db.exec(sql);
+    saveDatabase();
+  }
+
+  pragma(pragma: string): void {
+    // sql.js doesn't support all pragmas, but we can try
+    try {
+      this.db.exec(`PRAGMA ${pragma}`);
+    } catch (e) {
+      // Ignore pragma errors
+    }
+  }
+}
+
+let dbWrapper: DatabaseWrapper | null = null;
+
+export const initializeDatabase = async (): Promise<void> => {
+  const SQL = await initSqlJs();
+
+  // Load existing database or create new one
+  if (fs.existsSync(dbPath)) {
+    const fileBuffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+  } else {
+    db = new SQL.Database();
+  }
+
+  dbWrapper = new DatabaseWrapper(db);
+
+  // Create tables
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,14 +236,44 @@ export const initializeDatabase = () => {
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (currency_id) REFERENCES currencies(id)
     );
-
-    CREATE INDEX IF NOT EXISTS idx_exchange_rates_market ON exchange_rates(market_id);
-    CREATE INDEX IF NOT EXISTS idx_exchange_rates_currency ON exchange_rates(currency_id);
-    CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
-    CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
   `);
+
+  // Create indexes
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_exchange_rates_market ON exchange_rates(market_id);
+      CREATE INDEX IF NOT EXISTS idx_exchange_rates_currency ON exchange_rates(currency_id);
+      CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
+      CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
+    `);
+  } catch (e) {
+    // Indexes might already exist
+  }
+
+  // Save initial state
+  const data = db.export();
+  const buffer = Buffer.from(data);
+  fs.writeFileSync(dbPath, buffer);
 
   console.log('Database initialized successfully');
 };
 
-export default db;
+// Getter for database - throws if not initialized
+export const getDb = (): DatabaseWrapper => {
+  if (!dbWrapper) {
+    throw new Error('Database not initialized. Call initializeDatabase() first.');
+  }
+  return dbWrapper;
+};
+
+// For backward compatibility - will be a proxy that throws helpful error if used before init
+const dbProxy = new Proxy({} as DatabaseWrapper, {
+  get(target, prop) {
+    if (!dbWrapper) {
+      throw new Error('Database not initialized. Call initializeDatabase() first.');
+    }
+    return (dbWrapper as any)[prop];
+  }
+});
+
+export default dbProxy;
