@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../config/database';
 import { User, ApiResponse } from '../types';
+import { getJwtSecret, getJwtSignOptions } from '../config/jwt';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -23,8 +24,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       { userId: result.lastInsertRowid, role: 'user' },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      getJwtSecret(),
+      getJwtSignOptions()
     );
 
     res.status(201).json({
@@ -65,8 +66,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      getJwtSecret(),
+      getJwtSignOptions()
     );
 
     res.json({

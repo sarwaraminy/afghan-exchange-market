@@ -8,7 +8,7 @@ import {
   updateNews,
   deleteNews
 } from '../controllers/newsController';
-import { authenticate, isAdmin } from '../middleware/auth';
+import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -25,12 +25,24 @@ router.post(
   isAdmin,
   [
     body('title').trim().notEmpty().withMessage('Title required'),
-    body('content').trim().notEmpty().withMessage('Content required')
+    body('content').trim().notEmpty().withMessage('Content required'),
+    body('image_url').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('Invalid image URL')
   ],
+  validateRequest,
   createNews
 );
 
-router.put('/:id', authenticate, isAdmin, updateNews);
+router.put(
+  '/:id',
+  authenticate,
+  isAdmin,
+  [
+    body('image_url').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('Invalid image URL')
+  ],
+  validateRequest,
+  updateNews
+);
+
 router.delete('/:id', authenticate, isAdmin, deleteNews);
 
 export default router;

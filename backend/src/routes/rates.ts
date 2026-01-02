@@ -15,7 +15,7 @@ import {
   createCurrency,
   convert
 } from '../controllers/ratesController';
-import { authenticate, isAdmin } from '../middleware/auth';
+import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -37,6 +37,7 @@ router.post(
     body('buy_rate').isFloat({ gt: 0 }).withMessage('Buy rate must be positive'),
     body('sell_rate').isFloat({ gt: 0 }).withMessage('Sell rate must be positive')
   ],
+  validateRequest,
   createExchangeRate
 );
 
@@ -48,6 +49,7 @@ router.put(
     body('buy_rate').isFloat({ gt: 0 }).withMessage('Buy rate must be positive'),
     body('sell_rate').isFloat({ gt: 0 }).withMessage('Sell rate must be positive')
   ],
+  validateRequest,
   updateExchangeRate
 );
 
@@ -62,6 +64,7 @@ router.post(
     body('price_afn').isFloat({ gt: 0 }).withMessage('AFN price must be positive'),
     body('price_usd').isFloat({ gt: 0 }).withMessage('USD price must be positive')
   ],
+  validateRequest,
   createGoldRate
 );
 
@@ -73,6 +76,7 @@ router.put(
     body('price_afn').isFloat({ gt: 0 }).withMessage('AFN price must be positive'),
     body('price_usd').isFloat({ gt: 0 }).withMessage('USD price must be positive')
   ],
+  validateRequest,
   updateGoldRate
 );
 
@@ -83,6 +87,7 @@ router.post(
   authenticate,
   isAdmin,
   [body('name').trim().notEmpty().withMessage('Market name required')],
+  validateRequest,
   createMarket
 );
 
@@ -94,6 +99,7 @@ router.post(
     body('code').trim().isLength({ min: 3, max: 3 }).withMessage('Currency code must be 3 characters'),
     body('name').trim().notEmpty().withMessage('Currency name required')
   ],
+  validateRequest,
   createCurrency
 );
 

@@ -10,7 +10,7 @@ import {
   deleteAlert,
   getDashboard
 } from '../controllers/userController';
-import { authenticate } from '../middleware/auth';
+import { authenticate, validateRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -25,6 +25,7 @@ router.get('/favorites', getFavorites);
 router.post(
   '/favorites',
   [body('currency_id').isInt().withMessage('Currency ID required')],
+  validateRequest,
   addFavorite
 );
 router.delete('/favorites/:currency_id', removeFavorite);
@@ -38,6 +39,7 @@ router.post(
     body('target_rate').isFloat({ gt: 0 }).withMessage('Target rate must be positive'),
     body('alert_type').isIn(['above', 'below']).withMessage('Alert type must be above or below')
   ],
+  validateRequest,
   createAlert
 );
 router.put('/alerts/:id', updateAlert);
