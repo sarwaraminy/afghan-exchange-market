@@ -102,6 +102,54 @@ export interface PriceAlert {
   created_at: string;
 }
 
+export interface Hawaladar {
+  id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  phone?: string;
+  location: string;
+  location_fa?: string;
+  location_ps?: string;
+  commission_rate: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HawalaTransaction {
+  id: number;
+  reference_code: string;
+  sender_name: string;
+  sender_phone?: string;
+  sender_hawaladar_id?: number;
+  receiver_name: string;
+  receiver_phone?: string;
+  receiver_hawaladar_id?: number;
+  amount: number;
+  currency_id: number;
+  commission_rate: number;
+  commission_amount: number;
+  total_amount: number;
+  status: 'pending' | 'in_transit' | 'completed' | 'cancelled';
+  notes?: string;
+  created_by: number;
+  completed_by?: number;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface HawalaTransactionWithDetails extends HawalaTransaction {
+  sender_hawaladar_name?: string;
+  sender_hawaladar_location?: string;
+  receiver_hawaladar_name?: string;
+  receiver_hawaladar_location?: string;
+  currency_code: string;
+  currency_name: string;
+  created_by_name: string;
+  completed_by_name?: string;
+}
+
 export interface JwtPayload {
   userId: number;
   role: string;

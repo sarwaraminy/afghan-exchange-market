@@ -14,9 +14,10 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Currency Converter** - Convert between AFN and major world currencies
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **News Section** - Stay updated with market news and announcements
+- **Hawala System** - Complete money transfer management with agents, transactions, and reports
 - **User Accounts** - Save favorite currencies and set price alerts (admin-managed accounts)
 - **Profile Pictures** - Upload custom profile pictures with server-side image validation
-- **Admin Panel** - Full CRUD operations for exchange rates, gold prices, and news content
+- **Admin Panel** - Full CRUD operations for exchange rates, gold prices, news, and hawala
 - **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
 
@@ -170,6 +171,35 @@ afghan-exchange-market/
 | PUT | `/api/news/:id` | Update news |
 | DELETE | `/api/news/:id` | Delete news |
 
+### Hawala System (Requires Auth)
+
+#### Agents (Hawaladars)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/hawala/agents` | Get all hawala agents |
+| GET | `/api/hawala/agents/:id` | Get agent by ID |
+| POST | `/api/hawala/agents` | Create new agent |
+| PUT | `/api/hawala/agents/:id` | Update agent |
+| DELETE | `/api/hawala/agents/:id` | Delete agent |
+
+#### Transactions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/hawala/transactions` | Get all transactions (with filters) |
+| GET | `/api/hawala/transactions/:id` | Get transaction by ID |
+| GET | `/api/hawala/transactions/code/:code` | Lookup by reference code |
+| POST | `/api/hawala/transactions` | Create new transaction |
+| PUT | `/api/hawala/transactions/:id` | Update transaction |
+| PUT | `/api/hawala/transactions/:id/status` | Update transaction status |
+| DELETE | `/api/hawala/transactions/:id` | Delete transaction |
+
+#### Reports
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/hawala/reports/summary` | Get summary statistics |
+| GET | `/api/hawala/reports/by-agent` | Transactions grouped by agent |
+| GET | `/api/hawala/reports/by-currency` | Transactions grouped by currency |
+
 ## Environment Variables
 
 ### Backend (.env)
@@ -196,6 +226,31 @@ VITE_API_URL=http://localhost:5000/api
 | `npm run seed` | Seed database with initial data |
 | `npm run install:all` | Install all dependencies |
 
+## Hawala System
+
+The Hawala system provides a complete money transfer management solution, traditionally used in Afghanistan and South Asia.
+
+### Features
+- **Agent Management** - Register and manage hawaladar (agent) profiles with locations and commission rates
+- **Transaction Tracking** - Create, track, and manage money transfers with unique reference codes (HWL-XXXXXX)
+- **Status Workflow** - Track transactions through: Pending → In Transit → Completed (or Cancelled)
+- **Commission Calculation** - Automatic commission calculation based on agent rates
+- **Reports & Analytics** - Summary statistics, reports by agent, and reports by currency
+- **Reference Code Lookup** - Quick search transactions by reference code for sender/receiver
+
+### Database Tables
+- `hawaladars` - Agent profiles with multi-language support (EN/FA/PS)
+- `hawala_transactions` - Transaction records with sender/receiver details, amounts, and status
+
+### Transaction Flow
+```
+1. Create transaction (status: pending)
+2. Sender deposits money with sending agent
+3. Update status to "in_transit"
+4. Receiving agent pays recipient
+5. Update status to "completed"
+```
+
 ## Screenshots
 
 ### Home Page
@@ -209,6 +264,9 @@ Real-time currency conversion with swap functionality.
 
 ### Admin Panel
 Full CRUD operations for managing exchange rates, gold prices, and news content.
+
+### Hawala Page
+Three-section layout with Transactions, Hawaladars, and Reports management.
 
 ## Multi-language Support
 

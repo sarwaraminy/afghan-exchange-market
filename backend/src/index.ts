@@ -10,6 +10,7 @@ import ratesRoutes from './routes/rates';
 import newsRoutes from './routes/news';
 import userRoutes from './routes/user';
 import adminRoutes from './routes/admin';
+import hawalaRoutes from './routes/hawala';
 
 dotenv.config();
 
@@ -70,6 +71,7 @@ app.use('/api/rates', ratesRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/hawala', hawalaRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -31,7 +31,6 @@ import type { SelectChangeEvent } from '@mui/material';
 import { Language } from '@mui/icons-material';
 import {
   Menu as MenuIcon,
-  Person,
   Logout,
   Dashboard,
   AdminPanelSettings,
@@ -40,7 +39,8 @@ import {
   Newspaper,
   Calculate,
   AttachMoney,
-  Diamond
+  Diamond,
+  SwapHoriz
 } from '@mui/icons-material';
 
 export const Header = () => {
@@ -86,6 +86,7 @@ export const Header = () => {
     { label: t('nav.converter'), path: '/converter', icon: <Calculate /> },
     { label: t('nav.gold'), path: '/gold', icon: <TrendingUp /> },
     { label: t('nav.news'), path: '/news', icon: <Newspaper /> },
+    { label: t('nav.hawala'), path: '/hawala', icon: <SwapHoriz /> },
   ] : [];
 
   // Get current tab value based on path

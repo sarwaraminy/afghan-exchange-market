@@ -240,6 +240,48 @@ export const initializeDatabase = async (): Promise<void> => {
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (currency_id) REFERENCES currencies(id)
     );
+
+    CREATE TABLE IF NOT EXISTS hawaladars (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      name_fa TEXT,
+      name_ps TEXT,
+      phone TEXT,
+      location TEXT NOT NULL,
+      location_fa TEXT,
+      location_ps TEXT,
+      commission_rate REAL DEFAULT 2.0,
+      is_active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS hawala_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reference_code TEXT UNIQUE NOT NULL,
+      sender_name TEXT NOT NULL,
+      sender_phone TEXT,
+      sender_hawaladar_id INTEGER,
+      receiver_name TEXT NOT NULL,
+      receiver_phone TEXT,
+      receiver_hawaladar_id INTEGER,
+      amount REAL NOT NULL,
+      currency_id INTEGER NOT NULL,
+      commission_rate REAL DEFAULT 2.0,
+      commission_amount REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'in_transit', 'completed', 'cancelled')),
+      notes TEXT,
+      created_by INTEGER NOT NULL,
+      completed_by INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      FOREIGN KEY (sender_hawaladar_id) REFERENCES hawaladars(id),
+      FOREIGN KEY (receiver_hawaladar_id) REFERENCES hawaladars(id),
+      FOREIGN KEY (currency_id) REFERENCES currencies(id),
+      FOREIGN KEY (created_by) REFERENCES users(id),
+      FOREIGN KEY (completed_by) REFERENCES users(id)
+    );
   `);
 
   // Create indexes
@@ -249,6 +291,10 @@ export const initializeDatabase = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_exchange_rates_currency ON exchange_rates(currency_id);
       CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
       CREATE INDEX IF NOT EXISTS idx_price_alerts_user ON price_alerts(user_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_status ON hawala_transactions(status);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_sender ON hawala_transactions(sender_hawaladar_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_receiver ON hawala_transactions(receiver_hawaladar_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_code ON hawala_transactions(reference_code);
     `);
   } catch (e) {
     // Indexes might already exist

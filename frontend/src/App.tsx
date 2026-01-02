@@ -19,6 +19,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Admin } from './pages/Admin';
 import { Profile } from './pages/Profile';
+import { Hawala } from './pages/Hawala';
 
 import './i18n';
 
@@ -58,6 +59,7 @@ const AppRoutes = () => (
     <Route path="/converter" element={<PrivateRoute><Converter /></PrivateRoute>} />
     <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />
     <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
+    <Route path="/hawala" element={<PrivateRoute><Hawala /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
     <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
