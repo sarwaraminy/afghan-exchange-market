@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,8 +12,9 @@ import {
   CircularProgress,
   MenuItem
 } from '@mui/material';
-import { register as registerApi } from '../services/api';
+import { register as registerApi, getMarkets, getCurrencies } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import type { Market, Currency } from '../types';
 
 export const Register = () => {
   const { t } = useTranslation();
@@ -26,11 +27,31 @@ export const Register = () => {
     password: '',
     confirmPassword: '',
     full_name: '',
-    language: 'en'
+    language: 'en',
+    preferred_market_id: 1,
+    preferred_currency_id: 1
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [marketsData, currenciesData] = await Promise.all([
+          getMarkets(),
+          getCurrencies()
+        ]);
+        setMarkets(marketsData);
+        setCurrencies(currenciesData);
+      } catch (err) {
+        console.error('Failed to fetch markets or currencies:', err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -54,7 +75,9 @@ export const Register = () => {
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name,
-        language: formData.language
+        language: formData.language,
+        preferred_market_id: formData.preferred_market_id,
+        preferred_currency_id: formData.preferred_currency_id
       });
 
       if (isAuthenticated) {
@@ -66,7 +89,9 @@ export const Register = () => {
           password: '',
           confirmPassword: '',
           full_name: '',
-          language: 'en'
+          language: 'en',
+          preferred_market_id: 1,
+          preferred_currency_id: 1
         });
       } else {
         // If self-registration, login and redirect
@@ -159,6 +184,36 @@ export const Register = () => {
             <MenuItem value="en">English</MenuItem>
             <MenuItem value="fa">فارسی (Dari)</MenuItem>
             <MenuItem value="ps">پښتو (Pashto)</MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="Preferred Market"
+            name="preferred_market_id"
+            value={formData.preferred_market_id}
+            onChange={handleChange}
+            margin="normal"
+          >
+            {markets.map((market) => (
+              <MenuItem key={market.id} value={market.id}>
+                {market.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="Preferred Currency"
+            name="preferred_currency_id"
+            value={formData.preferred_currency_id}
+            onChange={handleChange}
+            margin="normal"
+          >
+            {currencies.map((currency) => (
+              <MenuItem key={currency.id} value={currency.id}>
+                {currency.name} ({currency.code})
+              </MenuItem>
+            ))}
           </TextField>
 
           <Button

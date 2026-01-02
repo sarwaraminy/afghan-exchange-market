@@ -142,8 +142,12 @@ export const initializeDatabase = async (): Promise<void> => {
       full_name TEXT,
       role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
       language TEXT DEFAULT 'en' CHECK(language IN ('en', 'fa', 'ps')),
+      preferred_market_id INTEGER DEFAULT 1,
+      preferred_currency_id INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (preferred_market_id) REFERENCES markets(id),
+      FOREIGN KEY (preferred_currency_id) REFERENCES currencies(id)
     );
 
     CREATE TABLE IF NOT EXISTS markets (

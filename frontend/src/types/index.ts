@@ -5,6 +5,8 @@ export interface User {
   full_name?: string;
   role: 'user' | 'admin';
   language: 'en' | 'fa' | 'ps';
+  preferred_market_id?: number;
+  preferred_currency_id?: number;
 }
 
 export interface AuthResponse {
