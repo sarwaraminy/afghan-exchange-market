@@ -6,6 +6,8 @@ export interface User {
   full_name?: string;
   role: 'user' | 'admin';
   language: 'en' | 'fa' | 'ps';
+  preferred_market_id?: number;
+  preferred_currency_id?: number;
   created_at: string;
   updated_at: string;
 }

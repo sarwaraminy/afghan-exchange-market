@@ -7,7 +7,7 @@ import { getJwtSecret, getJwtSignOptions } from '../config/jwt';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, email, password, full_name, language } = req.body;
+    const { username, email, password, full_name, language, preferred_market_id, preferred_currency_id } = req.body;
 
     const existingUser = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
     if (existingUser) {
@@ -18,9 +18,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const result = db.prepare(`
-      INSERT INTO users (username, email, password, full_name, language)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(username, email, hashedPassword, full_name || null, language || 'en');
+      INSERT INTO users (username, email, password, full_name, language, preferred_market_id, preferred_currency_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(username, email, hashedPassword, full_name || null, language || 'en', preferred_market_id || 1, preferred_currency_id || 1);
 
     const token = jwt.sign(
       { userId: result.lastInsertRowid, role: 'user' },
@@ -38,7 +38,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           email,
           full_name,
           role: 'user',
-          language: language || 'en'
+          language: language || 'en',
+          preferred_market_id: preferred_market_id || 1,
+          preferred_currency_id: preferred_currency_id || 1
         }
       }
     });
@@ -80,7 +82,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           email: user.email,
           full_name: user.full_name,
           role: user.role,
-          language: user.language
+          language: user.language,
+          preferred_market_id: user.preferred_market_id,
+          preferred_currency_id: user.preferred_currency_id
         }
       }
     });
@@ -93,7 +97,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const getProfile = (req: Request, res: Response): void => {
   try {
     const user = db.prepare(`
-      SELECT id, username, email, full_name, role, language, created_at
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, created_at
       FROM users WHERE id = ?
     `).get(req.user?.userId) as Omit<User, 'password'> | undefined;
 
@@ -131,7 +135,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
     `).run(full_name || null, language || null, userId);
 
     const updatedUser = db.prepare(`
-      SELECT id, username, email, full_name, role, language FROM users WHERE id = ?
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id FROM users WHERE id = ?
     `).get(userId);
 
     res.json({ success: true, data: updatedUser });
