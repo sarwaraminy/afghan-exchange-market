@@ -22,6 +22,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  MenuItem,
   useTheme,
   useMediaQuery
 } from '@mui/material';
@@ -50,6 +51,7 @@ import {
   updateNews,
   deleteNews,
   getAllUsers,
+  createUser,
   updateUser,
   deleteUser
 } from '../services/api';
@@ -98,6 +100,7 @@ export const Admin = () => {
   const [createGoldDialog, setCreateGoldDialog] = useState(false);
   const [newsDialog, setNewsDialog] = useState(false);
   const [userDialog, setUserDialog] = useState(false);
+  const [createUserDialog, setCreateUserDialog] = useState(false);
 
   const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
   const [selectedGold, setSelectedGold] = useState<GoldRate | null>(null);
@@ -159,20 +162,28 @@ export const Admin = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [ratesData, goldData, newsData, marketsData, currenciesData, usersData] = await Promise.all([
+      // Fetch public data first (these don't require admin role)
+      const [ratesData, goldData, newsData, marketsData, currenciesData] = await Promise.all([
         getExchangeRates(),
         getGoldRates(),
         getAllNews(),
         getMarkets(),
-        getCurrencies(),
-        getAllUsers()
+        getCurrencies()
       ]);
       setRates(ratesData);
       setGoldRates(goldData);
       setNews(newsData.news);
       setMarkets(marketsData);
       setCurrencies(currenciesData);
-      setUsers(usersData);
+
+      // Fetch admin-only data separately (requires admin role)
+      try {
+        const usersData = await getAllUsers();
+        setUsers(usersData);
+      } catch (userError: any) {
+        console.error('Error fetching users (admin access required):', userError);
+        // Users will remain empty if not admin
+      }
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -398,6 +409,41 @@ export const Admin = () => {
       } catch (err: any) {
         setError(err.response?.data?.error || t('admin.failedDeleteUser'));
       }
+    }
+  };
+
+  const handleNewUser = () => {
+    setSelectedUser(null);
+    setUserForm({
+      username: '',
+      email: '',
+      full_name: '',
+      role: 'user',
+      language: 'en',
+      preferred_market_id: 1,
+      preferred_currency_id: 1,
+      password: ''
+    });
+    setError('');
+    setCreateUserDialog(true);
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      await createUser({
+        username: userForm.username,
+        email: userForm.email,
+        password: userForm.password,
+        full_name: userForm.full_name || undefined,
+        role: userForm.role,
+        language: userForm.language,
+        preferred_market_id: userForm.preferred_market_id,
+        preferred_currency_id: userForm.preferred_currency_id
+      });
+      setCreateUserDialog(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedCreateUser'));
     }
   };
 
@@ -674,8 +720,11 @@ export const Admin = () => {
       case 3:
         return (
           <>
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="h6" fontWeight={600}>{t('admin.manageUsers')}</Typography>
+              <Button variant="contained" startIcon={<Add />} onClick={handleNewUser}>
+                {t('admin.addNew')}
+              </Button>
             </Box>
             <MaterialReactTable
               columns={userColumns}
@@ -1002,10 +1051,9 @@ export const Admin = () => {
             value={userForm.role}
             onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
             sx={{ mt: 2 }}
-            SelectProps={{ native: true }}
           >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <MenuItem value="user">User</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
           </TextField>
           <TextField
             fullWidth
@@ -1014,25 +1062,23 @@ export const Admin = () => {
             value={userForm.language}
             onChange={(e) => setUserForm({ ...userForm, language: e.target.value })}
             sx={{ mt: 2 }}
-            SelectProps={{ native: true }}
           >
-            <option value="en">English</option>
-            <option value="fa">فارسی (Dari)</option>
-            <option value="ps">پښتو (Pashto)</option>
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="fa">فارسی (Dari)</MenuItem>
+            <MenuItem value="ps">پښتو (Pashto)</MenuItem>
           </TextField>
           <TextField
             fullWidth
             select
             label={t('admin.preferredMarket')}
             value={userForm.preferred_market_id}
-            onChange={(e) => setUserForm({ ...userForm, preferred_market_id: parseInt(e.target.value) })}
+            onChange={(e) => setUserForm({ ...userForm, preferred_market_id: Number(e.target.value) })}
             sx={{ mt: 2 }}
-            SelectProps={{ native: true }}
           >
             {markets.map((market) => (
-              <option key={market.id} value={market.id}>
+              <MenuItem key={market.id} value={market.id}>
                 {getMarketName(market.name)}
-              </option>
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -1040,14 +1086,13 @@ export const Admin = () => {
             select
             label={t('admin.preferredCurrency')}
             value={userForm.preferred_currency_id}
-            onChange={(e) => setUserForm({ ...userForm, preferred_currency_id: parseInt(e.target.value) })}
+            onChange={(e) => setUserForm({ ...userForm, preferred_currency_id: Number(e.target.value) })}
             sx={{ mt: 2 }}
-            SelectProps={{ native: true }}
           >
             {currencies.map((currency) => (
-              <option key={currency.id} value={currency.id}>
-                {getCurrencyName(currency.code)}
-              </option>
+              <MenuItem key={currency.id} value={currency.id}>
+                {getCurrencyName(currency.code)} ({currency.code})
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -1064,6 +1109,103 @@ export const Admin = () => {
         <DialogActions>
           <Button onClick={() => setUserDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveUser}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={createUserDialog} onClose={() => setCreateUserDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('admin.createUser')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            label={t('auth.username')}
+            value={userForm.username}
+            onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+            sx={{ mt: 1 }}
+            required
+          />
+          <TextField
+            fullWidth
+            label={t('auth.email')}
+            type="email"
+            value={userForm.email}
+            onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+            sx={{ mt: 2 }}
+            required
+          />
+          <TextField
+            fullWidth
+            label={t('auth.password')}
+            type="password"
+            value={userForm.password}
+            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+            sx={{ mt: 2 }}
+            required
+            helperText={t('admin.passwordRequirements')}
+          />
+          <TextField
+            fullWidth
+            label={t('auth.fullName')}
+            value={userForm.full_name}
+            onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            select
+            label={t('admin.role')}
+            value={userForm.role}
+            onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+            sx={{ mt: 2 }}
+          >
+            <MenuItem value="user">User</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('common.language')}
+            value={userForm.language}
+            onChange={(e) => setUserForm({ ...userForm, language: e.target.value })}
+            sx={{ mt: 2 }}
+          >
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="fa">فارسی (Dari)</MenuItem>
+            <MenuItem value="ps">پښتو (Pashto)</MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('admin.preferredMarket')}
+            value={userForm.preferred_market_id}
+            onChange={(e) => setUserForm({ ...userForm, preferred_market_id: Number(e.target.value) })}
+            sx={{ mt: 2 }}
+          >
+            {markets.map((market) => (
+              <MenuItem key={market.id} value={market.id}>
+                {getMarketName(market.name)}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('admin.preferredCurrency')}
+            value={userForm.preferred_currency_id}
+            onChange={(e) => setUserForm({ ...userForm, preferred_currency_id: Number(e.target.value) })}
+            sx={{ mt: 2 }}
+          >
+            {currencies.map((currency) => (
+              <MenuItem key={currency.id} value={currency.id}>
+                {getCurrencyName(currency.code)} ({currency.code})
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateUserDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleCreateUser}>{t('common.save')}</Button>
         </DialogActions>
       </Dialog>
     </Container>

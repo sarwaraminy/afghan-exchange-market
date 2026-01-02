@@ -188,6 +188,20 @@ export const getAllUsers = async (): Promise<User[]> => {
   return data.data!;
 };
 
+export const createUser = async (userData: {
+  username: string;
+  email: string;
+  password: string;
+  full_name?: string;
+  role?: string;
+  language?: string;
+  preferred_market_id?: number;
+  preferred_currency_id?: number;
+}): Promise<User> => {
+  const { data } = await api.post<ApiResponse<User>>('/admin/users', userData);
+  return data.data!;
+};
+
 export const updateUser = async (id: number, userData: Partial<User> & { password?: string }): Promise<User> => {
   const { data } = await api.put<ApiResponse<User>>(`/admin/users/${id}`, userData);
   return data.data!;

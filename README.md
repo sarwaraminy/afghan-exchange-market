@@ -107,7 +107,9 @@ afghan-exchange-market/
 ### Default Admin Credentials
 
 - **Email:** admin@afghanexchange.com
-- **Password:** admin123
+- **Password:** Auto-generated on first seed (check console output)
+
+> **Security Note:** Set `ADMIN_PASSWORD` environment variable before seeding in production.
 
 ## API Endpoints
 

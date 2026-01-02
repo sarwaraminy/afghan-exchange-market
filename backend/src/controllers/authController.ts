@@ -18,8 +18,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const result = db.prepare(`
-      INSERT INTO users (username, email, password, full_name, language, preferred_market_id, preferred_currency_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (username, email, password, full_name, language, preferred_market_id, preferred_currency_id, role)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'user')
     `).run(username, email, hashedPassword, full_name || null, language || 'en', preferred_market_id || 1, preferred_currency_id || 1);
 
     const token = jwt.sign(

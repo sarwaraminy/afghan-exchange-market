@@ -1,9 +1,19 @@
 import { Box, Container, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export const Footer = () => {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const year = new Date().getFullYear();
+
+  // Hide footer on login page (it has its own full-screen design)
+  const isLoginPage = location.pathname === '/' || location.pathname === '/login';
+  if (isLoginPage && !isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box

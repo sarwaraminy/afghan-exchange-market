@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './config/database';
+import db, { initializeDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import ratesRoutes from './routes/rates';
 import newsRoutes from './routes/news';
@@ -37,10 +37,10 @@ const generalLimiter = rateLimit({
 });
 app.use(generalLimiter);
 
-// Strict rate limiting for auth endpoints - 5 requests per 15 minutes
+// Rate limiting for auth endpoints - 20 requests per 15 minutes (stricter in production)
 const authLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5'),
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '20'),
   message: { success: false, error: 'Too many authentication attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
@@ -69,10 +69,30 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
+// Check if admin user exists
+const checkAdminExists = (): boolean => {
+  try {
+    const admin = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
+    return !!admin;
+  } catch {
+    return false;
+  }
+};
+
 // Initialize database and start server
 const startServer = async () => {
   try {
     await initializeDatabase();
+
+    // Check for admin user and warn if missing
+    if (!checkAdminExists()) {
+      console.log('\n' + '!'.repeat(60));
+      console.log('WARNING: No admin user found in the database!');
+      console.log('Run the following command to create an admin:');
+      console.log('  npm run reset-admin');
+      console.log('!'.repeat(60) + '\n');
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`API available at http://localhost:${PORT}/api`);

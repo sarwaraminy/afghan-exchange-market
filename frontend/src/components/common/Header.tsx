@@ -37,8 +37,7 @@ import {
   CurrencyExchange,
   TrendingUp,
   Newspaper,
-  Calculate,
-  PersonAdd
+  Calculate
 } from '@mui/icons-material';
 
 export const Header = () => {
@@ -51,6 +50,12 @@ export const Header = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // Hide header on login page (it has its own full-screen design)
+  const isLoginPage = location.pathname === '/' || location.pathname === '/login';
+  if (isLoginPage && !isAuthenticated) {
+    return null;
+  }
 
   const changeLanguage = (event: SelectChangeEvent) => {
     const lang = event.target.value;
@@ -277,9 +282,6 @@ export const Header = () => {
                   <Person sx={{ mr: 1 }} /> {t('nav.profile')}
                 </MenuItem>
                 <Divider />
-                <MenuItem component={Link} to="/register" onClick={() => setAnchorEl(null)}>
-                  <PersonAdd sx={{ mr: 1 }} /> {t('nav.register')}
-                </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <Logout sx={{ mr: 1 }} /> {t('nav.logout')}
                 </MenuItem>

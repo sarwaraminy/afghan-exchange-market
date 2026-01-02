@@ -41,4 +41,7 @@ coverage/
 
 # Misc
 *.tsbuildinfo
-.eslintcache
+.
+
+# Password
+.pass

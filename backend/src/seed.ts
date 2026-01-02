@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import db, { initializeDatabase } from './config/database';
 
 async function seed() {
@@ -7,12 +8,20 @@ async function seed() {
 
   console.log('Seeding data...');
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 12);
+  // Create admin user with secure random password (or from env)
+  const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+  const hashedAdminPassword = await bcrypt.hash(adminPassword, 12);
   db.prepare(`
     INSERT OR IGNORE INTO users (username, email, password, full_name, role)
     VALUES ('admin', 'admin@afghanexchange.com', ?, 'System Administrator', 'admin')
-  `).run(adminPassword);
+  `).run(hashedAdminPassword);
+
+  if (!process.env.ADMIN_PASSWORD) {
+    console.log('\n*** GENERATED ADMIN PASSWORD ***');
+    console.log('Email: admin@afghanexchange.com');
+    console.log('Password:', adminPassword);
+    console.log('SAVE THIS PASSWORD - it will not be shown again!\n');
+  }
 
   // Create markets
   const markets = [
@@ -154,7 +163,6 @@ async function seed() {
   }
 
   console.log('Seed completed successfully!');
-  console.log('Admin credentials: admin@afghanexchange.com / admin123');
 }
 
 seed().catch(console.error);

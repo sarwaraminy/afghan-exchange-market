@@ -16,7 +16,6 @@ import { Converter } from './pages/Converter';
 import { Gold } from './pages/Gold';
 import { News } from './pages/News';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Admin } from './pages/Admin';
 
@@ -54,7 +53,6 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-    <Route path="/register" element={<Register />} />
     <Route path="/rates" element={<PrivateRoute><Rates /></PrivateRoute>} />
     <Route path="/converter" element={<PrivateRoute><Converter /></PrivateRoute>} />
     <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />

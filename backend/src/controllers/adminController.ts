@@ -3,6 +3,51 @@ import bcrypt from 'bcryptjs';
 import db from '../config/database';
 import { User } from '../types';
 
+export const createUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, email, password, full_name, role, language, preferred_market_id, preferred_currency_id } = req.body;
+
+    // Check if user already exists
+    const existingUser = db.prepare(
+      'SELECT id FROM users WHERE username = ? OR email = ?'
+    ).get(username, email);
+
+    if (existingUser) {
+      res.status(400).json({ success: false, error: 'Username or email already exists' });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Insert new user
+    const result = db.prepare(`
+      INSERT INTO users (username, email, password, full_name, role, language, preferred_market_id, preferred_currency_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      username,
+      email,
+      hashedPassword,
+      full_name || null,
+      role || 'user',
+      language || 'en',
+      preferred_market_id || 1,
+      preferred_currency_id || 1
+    );
+
+    // Get the created user (without password)
+    const newUser = db.prepare(`
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, created_at, updated_at
+      FROM users WHERE id = ?
+    `).get(result.lastInsertRowid);
+
+    res.status(201).json({ success: true, data: newUser });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create user' });
+  }
+};
+
 export const getAllUsers = (req: Request, res: Response): void => {
   try {
     const users = db.prepare(`

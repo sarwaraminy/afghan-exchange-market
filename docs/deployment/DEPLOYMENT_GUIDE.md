@@ -72,7 +72,7 @@ npm run dev
 
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000/api
-- Default admin: admin@afghanexchange.com / admin123
+- Default admin: admin@afghanexchange.com (password generated on seed - check console)
 
 ---
 
