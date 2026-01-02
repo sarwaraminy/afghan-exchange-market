@@ -182,4 +182,19 @@ export const getDashboard = async (): Promise<{ favorites_count: number; active_
   return data.data!;
 };
 
+// Admin - Users
+export const getAllUsers = async (): Promise<User[]> => {
+  const { data } = await api.get<ApiResponse<User[]>>('/admin/users');
+  return data.data!;
+};
+
+export const updateUser = async (id: number, userData: Partial<User> & { password?: string }): Promise<User> => {
+  const { data } = await api.put<ApiResponse<User>>(`/admin/users/${id}`, userData);
+  return data.data!;
+};
+
+export const deleteUser = async (id: number): Promise<void> => {
+  await api.delete(`/admin/users/${id}`);
+};
+
 export default api;
