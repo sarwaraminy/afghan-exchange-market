@@ -42,8 +42,13 @@ CREATE TABLE users (
   full_name TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   language TEXT DEFAULT 'en' CHECK (language IN ('en', 'fa', 'ps')),
+  preferred_market_id INTEGER DEFAULT 1,
+  preferred_currency_id INTEGER DEFAULT 1,
+  profile_picture TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (preferred_market_id) REFERENCES markets(id),
+  FOREIGN KEY (preferred_currency_id) REFERENCES currencies(id)
 );
 ```
 
@@ -56,6 +61,9 @@ CREATE TABLE users (
 | full_name | TEXT | - | Optional name |
 | role | TEXT | CHECK | user or admin |
 | language | TEXT | CHECK | en, fa, or ps |
+| preferred_market_id | INTEGER | FK, DEFAULT 1 | User's preferred market |
+| preferred_currency_id | INTEGER | FK, DEFAULT 1 | User's preferred currency |
+| profile_picture | TEXT | - | Profile picture filename |
 | created_at | DATETIME | DEFAULT | Creation time |
 | updated_at | DATETIME | DEFAULT | Last update |
 
@@ -360,6 +368,40 @@ const currencies = [
   // ... more currencies
 ];
 ```
+
+---
+
+## File Storage
+
+### Profile Pictures
+
+Profile pictures are stored on the filesystem, not in the database. The database only stores the filename.
+
+#### Storage Location
+```
+backend/uploads/profiles/
+```
+
+#### File Naming
+- Files are named with a random 32-character hex string
+- Extension is preserved from the original file
+- Example: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.jpg`
+
+#### URL Format
+```
+http://localhost:5000/uploads/profiles/{filename}
+```
+
+#### Supported Formats
+- JPEG (.jpg, .jpeg)
+- PNG (.png)
+- GIF (.gif)
+- WebP (.webp)
+
+#### Validation
+- Maximum file size: 5 MB
+- HEIC/HEIF format is rejected (iPhone photos)
+- Server validates actual file content using magic bytes, not just MIME type
 
 ---
 

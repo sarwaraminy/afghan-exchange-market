@@ -46,9 +46,42 @@ export const getProfile = async (): Promise<User> => {
   return data.data!;
 };
 
-export const updateProfile = async (profileData: { full_name?: string; language?: string; current_password?: string; new_password?: string }): Promise<User> => {
+export const updateProfile = async (profileData: {
+  full_name?: string;
+  language?: string;
+  preferred_market_id?: number;
+  preferred_currency_id?: number;
+  current_password?: string;
+  new_password?: string;
+}): Promise<User> => {
   const { data } = await api.put<ApiResponse<User>>('/auth/profile', profileData);
   return data.data!;
+};
+
+export const uploadProfilePicture = async (file: File): Promise<User> => {
+  const formData = new FormData();
+  formData.append('picture', file);
+  const { data } = await api.post<ApiResponse<User>>('/auth/profile/picture', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return data.data!;
+};
+
+export const deleteProfilePicture = async (): Promise<User> => {
+  const { data } = await api.delete<ApiResponse<User>>('/auth/profile/picture');
+  return data.data!;
+};
+
+// Helper to get profile picture URL
+export const getProfilePictureUrl = (filename?: string): string | null => {
+  if (!filename) return null;
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // Remove /api from the URL if present
+  const baseUrl = apiUrl.replace(/\/api$/, '');
+  // Use filename hash as cache key (changes when file changes)
+  return `${baseUrl}/uploads/profiles/${filename}`;
 };
 
 // Rates

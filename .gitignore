@@ -19,6 +19,9 @@ build/
 *.sqlite
 backend/data/*.db
 
+# Uploads
+backend/uploads/
+
 # Logs
 logs
 *.log

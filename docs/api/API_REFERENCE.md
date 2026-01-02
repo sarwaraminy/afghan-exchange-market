@@ -18,57 +18,8 @@ Authorization: Bearer <token>
 
 ## Authentication
 
-### Register
-
-Create a new user account.
-
-```http
-POST /auth/register
-```
-
-**Request Body:**
-```json
-{
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "SecurePass123!",
-  "full_name": "John Doe",
-  "language": "en"
-}
-```
-
-**Validation:**
-| Field | Rules |
-|-------|-------|
-| username | Required, 3-30 characters |
-| email | Required, valid email |
-| password | Required, min 8 chars, uppercase, lowercase, number, special char |
-| full_name | Optional |
-| language | Optional, one of: en, fa, ps |
-
-**Response:** `201 Created`
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
-    "user": {
-      "id": 1,
-      "username": "johndoe",
-      "email": "john@example.com",
-      "full_name": "John Doe",
-      "role": "user",
-      "language": "en"
-    }
-  }
-}
-```
-
-**Errors:**
-- `400` - User already exists
-- `400` - Validation failed
-
----
+> **Note:** User registration is managed by administrators through the Admin Panel.
+> There is no public self-registration. See [Admin - User Management](#admin---user-management) for creating users.
 
 ### Login
 
@@ -98,7 +49,10 @@ POST /auth/login
       "email": "john@example.com",
       "full_name": "John Doe",
       "role": "user",
-      "language": "en"
+      "language": "en",
+      "preferred_market_id": 1,
+      "preferred_currency_id": 1,
+      "profile_picture": "abc123def456.jpg"
     }
   }
 }
@@ -130,6 +84,9 @@ Authorization: Bearer <token>
     "full_name": "John Doe",
     "role": "user",
     "language": "en",
+    "preferred_market_id": 1,
+    "preferred_currency_id": 1,
+    "profile_picture": "abc123def456.jpg",
     "created_at": "2024-01-01T00:00:00.000Z"
   }
 }
@@ -166,7 +123,83 @@ Authorization: Bearer <token>
     "email": "john@example.com",
     "full_name": "John Smith",
     "role": "user",
-    "language": "fa"
+    "language": "fa",
+    "profile_picture": "abc123def456.jpg"
+  }
+}
+```
+
+---
+
+### Upload Profile Picture
+
+Upload a profile picture for the current user.
+
+```http
+POST /auth/profile/picture
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**Request Body:**
+- `picture` - Image file (JPEG, PNG, GIF, or WebP)
+
+**Validation:**
+| Constraint | Value |
+|------------|-------|
+| Max file size | 5 MB |
+| Allowed formats | JPEG, PNG, GIF, WebP |
+| Not allowed | HEIC/HEIF (iPhone format) |
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "full_name": "John Doe",
+    "role": "user",
+    "language": "en",
+    "profile_picture": "abc123def456.jpg"
+  }
+}
+```
+
+**Errors:**
+- `400` - No file uploaded
+- `400` - Invalid file type (HEIC/HEIF not supported)
+- `400` - File too large
+
+**Note:** The profile picture URL is constructed as:
+```
+http://localhost:5000/uploads/profiles/{profile_picture}
+```
+
+---
+
+### Delete Profile Picture
+
+Remove the current user's profile picture.
+
+```http
+DELETE /auth/profile/picture
+Authorization: Bearer <token>
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "full_name": "John Doe",
+    "role": "user",
+    "language": "en",
+    "profile_picture": null
   }
 }
 ```
@@ -537,6 +570,139 @@ Authorization: Bearer <admin-token>
 DELETE /news/:id
 Authorization: Bearer <admin-token>
 ```
+
+---
+
+## Admin - User Management
+
+All user management endpoints require admin role.
+
+### Get All Users
+
+```http
+GET /admin/users
+Authorization: Bearer <admin-token>
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@afghanexchange.com",
+      "full_name": "System Administrator",
+      "role": "admin",
+      "language": "en",
+      "profile_picture": null,
+      "created_at": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### Create User
+
+```http
+POST /admin/users
+Authorization: Bearer <admin-token>
+```
+
+**Request Body:**
+```json
+{
+  "username": "newuser",
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "full_name": "New User",
+  "role": "user",
+  "language": "en"
+}
+```
+
+**Validation:**
+| Field | Rules |
+|-------|-------|
+| username | Required, 3-30 characters |
+| email | Required, valid email |
+| password | Required, min 8 chars |
+| full_name | Optional |
+| role | Optional, one of: user, admin |
+| language | Optional, one of: en, fa, ps |
+
+**Response:** `201 Created`
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "username": "newuser",
+    "email": "user@example.com",
+    "full_name": "New User",
+    "role": "user",
+    "language": "en"
+  }
+}
+```
+
+---
+
+### Update User
+
+```http
+PUT /admin/users/:id
+Authorization: Bearer <admin-token>
+```
+
+**Request Body:**
+```json
+{
+  "full_name": "Updated Name",
+  "role": "admin",
+  "language": "fa",
+  "password": "NewPassword123!"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "username": "newuser",
+    "email": "user@example.com",
+    "full_name": "Updated Name",
+    "role": "admin",
+    "language": "fa"
+  }
+}
+```
+
+---
+
+### Delete User
+
+```http
+DELETE /admin/users/:id
+Authorization: Bearer <admin-token>
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "message": "User deleted successfully"
+}
+```
+
+**Errors:**
+- `400` - Cannot delete your own account
+- `404` - User not found
 
 ---
 

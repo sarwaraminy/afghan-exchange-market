@@ -550,7 +550,7 @@ export const Admin = () => {
       { accessorKey: 'full_name', header: t('auth.fullName') },
       {
         accessorKey: 'role',
-        header: t('admin.role'),
+        header: t('admin.roleLabel'),
         Cell: ({ cell }) => (
           <Chip
             label={cell.getValue<string>()}
@@ -619,7 +619,12 @@ export const Admin = () => {
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: selectedSection === index ? '#1e3a5f' : 'text.secondary',
+                }}
+              >
                 {item.icon}
               </ListItemIcon>
               <ListItemText
@@ -1047,7 +1052,7 @@ export const Admin = () => {
           <TextField
             fullWidth
             select
-            label={t('admin.role')}
+            label={t('admin.roleLabel')}
             value={userForm.role}
             onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
             sx={{ mt: 2 }}
@@ -1154,7 +1159,7 @@ export const Admin = () => {
           <TextField
             fullWidth
             select
-            label={t('admin.role')}
+            label={t('admin.roleLabel')}
             value={userForm.role}
             onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
             sx={{ mt: 2 }}

@@ -95,8 +95,9 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 
 ### 5. User Accounts
 
-#### Registration & Authentication
-- Email-based registration
+#### Account Management
+- Admin-managed user accounts (no self-registration)
+- Users created through Admin Panel
 - Secure password requirements:
   - Minimum 8 characters
   - Uppercase and lowercase letters
@@ -106,8 +107,22 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 
 #### User Profile
 - Profile management
+- Profile picture upload/management
 - Language preference
+- Preferred market selection
+- Preferred currency selection
 - Password change capability
+
+#### Profile Picture
+- Upload custom profile picture
+- Supported formats: JPEG, PNG, GIF, WebP
+- Maximum file size: 5 MB
+- Automatic HEIC/HEIF detection and rejection
+- Server-side image validation (magic bytes)
+- Profile picture displayed in:
+  - Navigation header avatar
+  - User menu dropdown
+  - Profile page
 
 ---
 
@@ -169,6 +184,13 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 ---
 
 ### 10. Admin Panel
+
+#### User Management
+- Create new user accounts
+- Update user information
+- Change user roles (user/admin)
+- Delete user accounts
+- View all registered users
 
 #### Rate Management
 - Update exchange rates

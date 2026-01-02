@@ -107,7 +107,12 @@ export const Converter = () => {
               {currencies.map((currency) => (
                 <MenuItem key={currency.code} value={currency.code}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <img src={getFlagUrl(currency.code)} alt={currency.code} style={{ width: 20, height: 15 }} />
+                    <Box
+                      component="img"
+                      src={getFlagUrl(currency.code)}
+                      alt={currency.code}
+                      sx={{ width: 20, height: 15 }}
+                    />
                     {currency.code}
                   </Box>
                 </MenuItem>
@@ -134,7 +139,12 @@ export const Converter = () => {
               {currencies.map((currency) => (
                 <MenuItem key={currency.code} value={currency.code}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <img src={getFlagUrl(currency.code)} alt={currency.code} style={{ width: 20, height: 15 }} />
+                    <Box
+                      component="img"
+                      src={getFlagUrl(currency.code)}
+                      alt={currency.code}
+                      sx={{ width: 20, height: 15 }}
+                    />
                     {currency.code}
                   </Box>
                 </MenuItem>

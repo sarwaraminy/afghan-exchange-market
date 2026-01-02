@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import dotenv from 'dotenv';
 import db, { initializeDatabase } from './config/database';
 import authRoutes from './routes/auth';
@@ -15,7 +16,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware - Helmet for security headers
+// Serve uploaded files BEFORE Helmet (to avoid restrictive CSP blocking cross-origin images)
+// This route has its own security headers appropriate for static file serving
+app.use('/uploads', (req, res, next) => {
+  // Allow cross-origin access for images
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Basic security headers for static files
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
+
+// Security middleware - Helmet for security headers (applied after static files)
 app.use(helmet());
 
 // CORS configuration - restrict to specific origins

@@ -54,10 +54,11 @@ export const RatesTable = ({ rates, isLoading = false }: RatesTableProps) => {
         Cell: ({ row }) => (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {row.original.flag_code && (
-              <img
+              <Box
+                component="img"
                 src={getFlagUrl(row.original.flag_code)}
                 alt={row.original.currency_code}
-                style={{ width: 24, height: 18, borderRadius: 2 }}
+                sx={{ width: 24, height: 18, borderRadius: 0.5 }}
               />
             )}
             <Box>

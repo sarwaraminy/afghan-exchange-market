@@ -254,6 +254,19 @@ export const initializeDatabase = async (): Promise<void> => {
     // Indexes might already exist
   }
 
+  // Migration: Add profile_picture column if it doesn't exist
+  try {
+    const columns = db.exec("PRAGMA table_info(users)");
+    const hasProfilePicture = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'profile_picture');
+    if (!hasProfilePicture) {
+      db.exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
+      console.log('Added profile_picture column to users table');
+    }
+  } catch (e) {
+    // Column might already exist or table not created yet
+  }
+
   // Save initial state
   const data = db.export();
   const buffer = Buffer.from(data);

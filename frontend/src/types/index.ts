@@ -7,6 +7,7 @@ export interface User {
   language: 'en' | 'fa' | 'ps';
   preferred_market_id?: number;
   preferred_currency_id?: number;
+  profile_picture?: string;
 }
 
 export interface AuthResponse {

@@ -18,6 +18,7 @@ import { News } from './pages/News';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Admin } from './pages/Admin';
+import { Profile } from './pages/Profile';
 
 import './i18n';
 
@@ -58,6 +59,7 @@ const AppRoutes = () => (
     <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />
     <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
     <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
   </Routes>
 );

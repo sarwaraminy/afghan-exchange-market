@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { getProfilePictureUrl } from '../../services/api';
 import {
   AppBar,
   Toolbar,
@@ -37,7 +38,9 @@ import {
   CurrencyExchange,
   TrendingUp,
   Newspaper,
-  Calculate
+  Calculate,
+  AttachMoney,
+  Diamond
 } from '@mui/icons-material';
 
 export const Header = () => {
@@ -67,9 +70,9 @@ export const Header = () => {
   };
 
   const languages = [
-    { code: 'en', label: 'English (en)', flag: '🇺🇸' },
-    { code: 'fa', label: 'دری (fa)', flag: '🇦🇫' },
-    { code: 'ps', label: 'پښتو (ps)', flag: '🇦🇫' }
+    { code: 'en', label: 'English (en)' },
+    { code: 'fa', label: 'دری (fa)' },
+    { code: 'ps', label: 'پښتو (ps)' }
   ];
 
   const handleLogout = () => {
@@ -98,10 +101,61 @@ export const Header = () => {
 
   const drawer = (
     <Box sx={{ width: 250 }}>
-      <Box sx={{ p: 2, bgcolor: '#1e3a5f', color: 'white' }}>
-        <Typography variant="h6" fontWeight="bold">
-          {t('common.appName')}
-        </Typography>
+      <Box sx={{ p: 2, bgcolor: '#1e3a5f', color: 'white', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* Logo Icon */}
+        <Box
+          sx={{
+            position: 'relative',
+            width: 40,
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #4fc3f7 0%, #81d4fa 100%)'
+            }}
+          />
+          <CurrencyExchange sx={{ position: 'relative', fontSize: 22, color: '#1e3a5f', zIndex: 1 }} />
+          <AttachMoney
+            sx={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              fontSize: 14,
+              color: '#ffd700',
+              bgcolor: '#1e3a5f',
+              borderRadius: '50%',
+              p: 0.15
+            }}
+          />
+          <Diamond
+            sx={{
+              position: 'absolute',
+              bottom: -2,
+              left: -2,
+              fontSize: 14,
+              color: '#ffd700',
+              bgcolor: '#1e3a5f',
+              borderRadius: '50%',
+              p: 0.15
+            }}
+          />
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" fontWeight="bold" sx={{ lineHeight: 1.1 }}>
+            AFGHAN
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#4fc3f7', letterSpacing: '0.5px', fontSize: '0.6rem' }}>
+            EXCHANGE
+          </Typography>
+        </Box>
       </Box>
       <Divider />
       <List>
@@ -131,7 +185,7 @@ export const Header = () => {
           >
             {languages.map((lang) => (
               <MenuItem key={lang.code} value={lang.code}>
-                {lang.flag} {lang.label}
+                {lang.label}
               </MenuItem>
             ))}
           </Select>
@@ -161,20 +215,105 @@ export const Header = () => {
             </IconButton>
           )}
 
-          <Typography
-            variant="h6"
+          {/* Logo */}
+          <Box
             component={Link}
             to={isAuthenticated ? "/dashboard" : "/"}
             sx={{
-              fontWeight: 700,
-              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
               textDecoration: 'none',
               flexGrow: isMobile ? 1 : 0,
               mr: 4
             }}
           >
-            {t('common.appName')}
-          </Typography>
+            {/* Icon Group */}
+            <Box
+              sx={{
+                position: 'relative',
+                width: 44,
+                height: 44,
+                mr: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {/* Background circle */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #4fc3f7 0%, #81d4fa 100%)',
+                  boxShadow: '0 2px 8px rgba(79, 195, 247, 0.4)'
+                }}
+              />
+              {/* Main currency exchange icon */}
+              <CurrencyExchange
+                sx={{
+                  position: 'relative',
+                  fontSize: 26,
+                  color: '#1e3a5f',
+                  zIndex: 1
+                }}
+              />
+              {/* Dollar icon - top right */}
+              <AttachMoney
+                sx={{
+                  position: 'absolute',
+                  top: -2,
+                  right: -4,
+                  fontSize: 16,
+                  color: '#ffd700',
+                  bgcolor: '#1e3a5f',
+                  borderRadius: '50%',
+                  p: 0.2
+                }}
+              />
+              {/* Diamond icon - bottom left */}
+              <Diamond
+                sx={{
+                  position: 'absolute',
+                  bottom: -2,
+                  left: -4,
+                  fontSize: 16,
+                  color: '#ffd700',
+                  bgcolor: '#1e3a5f',
+                  borderRadius: '50%',
+                  p: 0.2
+                }}
+              />
+            </Box>
+            {/* Text - only show on larger screens */}
+            {!isMobile && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 800,
+                    color: 'white',
+                    letterSpacing: '0.5px',
+                    lineHeight: 1.1
+                  }}
+                >
+                  AFGHAN
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#4fc3f7',
+                    letterSpacing: '1px',
+                    fontSize: '0.65rem'
+                  }}
+                >
+                  EXCHANGE
+                </Typography>
+              </Box>
+            )}
+          </Box>
 
           {!isMobile && isAuthenticated && navItems.length > 0 && (
             <Tabs
@@ -242,7 +381,7 @@ export const Header = () => {
               >
                 {languages.map((lang) => (
                   <MenuItem key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.label}
+                    {lang.label}
                   </MenuItem>
                 ))}
               </Select>
@@ -266,7 +405,10 @@ export const Header = () => {
                 {!isMobile && t('nav.admin')}
               </Button>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: '#4fc3f7', color: '#1e3a5f' }}>
+                <Avatar
+                  src={getProfilePictureUrl(user?.profile_picture) || undefined}
+                  sx={{ width: 32, height: 32, bgcolor: '#4fc3f7', color: '#1e3a5f' }}
+                >
                   {user?.username?.charAt(0).toUpperCase()}
                 </Avatar>
               </IconButton>
@@ -274,12 +416,35 @@ export const Header = () => {
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={() => setAnchorEl(null)}
+                PaperProps={{
+                  sx: { minWidth: 220 }
+                }}
               >
+                {/* User Profile Header */}
+                <MenuItem
+                  component={Link}
+                  to="/profile"
+                  onClick={() => setAnchorEl(null)}
+                  sx={{ py: 1.5 }}
+                >
+                  <Avatar
+                    src={getProfilePictureUrl(user?.profile_picture) || undefined}
+                    sx={{ width: 40, height: 40, mr: 1.5, bgcolor: '#1e3a5f' }}
+                  >
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body1" fontWeight={600} sx={{ lineHeight: 1.2 }}>
+                      {user?.full_name || user?.username}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                      {user?.role === 'admin' ? t('admin.role') || 'Admin' : t('user.role') || 'User'}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <Divider />
                 <MenuItem component={Link} to="/dashboard" onClick={() => setAnchorEl(null)}>
                   <Dashboard sx={{ mr: 1 }} /> {t('nav.dashboard')}
-                </MenuItem>
-                <MenuItem component={Link} to="/profile" onClick={() => setAnchorEl(null)}>
-                  <Person sx={{ mr: 1 }} /> {t('nav.profile')}
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>

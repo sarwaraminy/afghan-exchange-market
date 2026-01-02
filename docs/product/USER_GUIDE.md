@@ -2,28 +2,27 @@
 
 ## Getting Started
 
-### Creating an Account
+### Getting an Account
 
-1. Navigate to the application
-2. Click **Register** or **Sign Up**
-3. Fill in the registration form:
-   - **Username**: 3-30 characters
-   - **Email**: Valid email address
-   - **Password**: Must contain:
-     - At least 8 characters
-     - One uppercase letter (A-Z)
-     - One lowercase letter (a-z)
-     - One number (0-9)
-     - One special character (!@#$%^&*)
-4. Click **Register**
-5. You will be automatically logged in
+User accounts are created by system administrators. Contact your administrator to request an account. They will provide you with:
+- Your email address (used for login)
+- A temporary password
 
 ### Logging In
 
-1. Click **Login**
-2. Enter your email and password
+1. Navigate to the application
+2. Enter your **email** and **password**
 3. Click **Sign In**
-4. You will be redirected to the Dashboard
+4. You will be redirected to the Rates page
+
+### First Login
+
+After receiving your account credentials:
+1. Log in with the provided email and password
+2. Go to your **Profile** page
+3. Update your **Full Name**
+4. Change your **Password** to something secure
+5. Upload a **Profile Picture** (optional)
 
 ### Changing Language
 
@@ -212,12 +211,32 @@ The Dashboard is your personal hub showing:
 
 ### Updating Profile
 
-1. Click your username or profile icon
-2. Select **Profile** or **Settings**
+1. Click your avatar in the navigation bar
+2. Select **Profile** from the dropdown menu
 3. Update your information:
    - Full Name
    - Preferred Language
+   - Preferred Market
+   - Preferred Currency
 4. Click **Save**
+
+### Uploading Profile Picture
+
+1. Go to your **Profile** page
+2. Click the **camera icon** on your avatar
+3. Select an image file from your device
+4. Supported formats: **JPEG, PNG, GIF, WebP**
+5. Maximum file size: **5 MB**
+6. Your avatar will update immediately
+
+**Note**: iPhone photos in HEIC format are not supported. Please convert to JPEG or PNG before uploading.
+
+### Removing Profile Picture
+
+1. Go to your **Profile** page
+2. Click the **X (delete) icon** on your avatar
+3. Your profile picture will be removed
+4. Avatar will show your initial letter
 
 ### Changing Password
 
@@ -225,12 +244,12 @@ The Dashboard is your personal hub showing:
 2. Enter your **Current Password**
 3. Enter your **New Password**
 4. Confirm the new password
-5. Click **Update Password**
+5. Click **Save**
 
 ### Logging Out
 
-1. Click your username or profile icon
-2. Select **Logout**
+1. Click your avatar in the navigation bar
+2. Select **Logout** from the dropdown menu
 3. You will be redirected to the login page
 
 ---
@@ -257,6 +276,13 @@ The Dashboard is your personal hub showing:
 - Verify the alert is enabled
 - Check the target rate is realistic
 - Ensure you're logged in
+
+#### Profile Picture Not Showing
+- Ensure you uploaded a valid JPEG, PNG, GIF, or WebP image
+- iPhone HEIC photos are not supported - convert to JPEG first
+- File must be under 5 MB
+- Try logging out and logging back in
+- Clear browser cache and refresh
 
 ### Getting Help
 

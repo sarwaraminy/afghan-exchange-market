@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import db from '../config/database';
 import { User, ApiResponse } from '../types';
 import { getJwtSecret, getJwtSignOptions } from '../config/jwt';
+import { deleteProfilePicture, validateImageContent, saveProfilePicture } from '../middleware/upload';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -84,7 +85,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           role: user.role,
           language: user.language,
           preferred_market_id: user.preferred_market_id,
-          preferred_currency_id: user.preferred_currency_id
+          preferred_currency_id: user.preferred_currency_id,
+          profile_picture: user.profile_picture
         }
       }
     });
@@ -97,7 +99,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const getProfile = (req: Request, res: Response): void => {
   try {
     const user = db.prepare(`
-      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, created_at
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture, created_at
       FROM users WHERE id = ?
     `).get(req.user?.userId) as Omit<User, 'password'> | undefined;
 
@@ -115,7 +117,7 @@ export const getProfile = (req: Request, res: Response): void => {
 
 export const updateProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { full_name, language, current_password, new_password } = req.body;
+    const { full_name, language, preferred_market_id, preferred_currency_id, current_password, new_password } = req.body;
     const userId = req.user?.userId;
 
     if (new_password) {
@@ -130,17 +132,91 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
     }
 
     db.prepare(`
-      UPDATE users SET full_name = COALESCE(?, full_name), language = COALESCE(?, language), updated_at = CURRENT_TIMESTAMP
+      UPDATE users SET
+        full_name = COALESCE(?, full_name),
+        language = COALESCE(?, language),
+        preferred_market_id = COALESCE(?, preferred_market_id),
+        preferred_currency_id = COALESCE(?, preferred_currency_id),
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(full_name || null, language || null, userId);
+    `).run(
+      full_name || null,
+      language || null,
+      preferred_market_id || null,
+      preferred_currency_id || null,
+      userId
+    );
 
     const updatedUser = db.prepare(`
-      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id FROM users WHERE id = ?
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture FROM users WHERE id = ?
     `).get(userId);
 
     res.json({ success: true, data: updatedUser });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ success: false, error: 'Failed to update profile' });
+  }
+};
+
+export const uploadProfilePictureHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!req.file || !req.file.buffer) {
+      res.status(400).json({ success: false, error: 'No file uploaded' });
+      return;
+    }
+
+    // Validate actual file content (not just MIME type)
+    const validation = validateImageContent(req.file.buffer);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, error: validation.error });
+      return;
+    }
+
+    // Get current profile picture to delete it
+    const currentUser = db.prepare('SELECT profile_picture FROM users WHERE id = ?').get(userId) as { profile_picture: string | null } | undefined;
+    if (currentUser?.profile_picture) {
+      deleteProfilePicture(currentUser.profile_picture);
+    }
+
+    // Save validated image to disk with correct extension
+    const filename = saveProfilePicture(req.file.buffer, validation.format);
+
+    // Update user with new profile picture filename
+    db.prepare('UPDATE users SET profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(filename, userId);
+
+    const updatedUser = db.prepare(`
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture FROM users WHERE id = ?
+    `).get(userId);
+
+    res.json({ success: true, data: updatedUser });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload profile picture' });
+  }
+};
+
+export const deleteProfilePictureHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    // Get current profile picture to delete it
+    const currentUser = db.prepare('SELECT profile_picture FROM users WHERE id = ?').get(userId) as { profile_picture: string | null } | undefined;
+    if (currentUser?.profile_picture) {
+      deleteProfilePicture(currentUser.profile_picture);
+    }
+
+    // Remove profile picture from database
+    db.prepare('UPDATE users SET profile_picture = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(userId);
+
+    const updatedUser = db.prepare(`
+      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture FROM users WHERE id = ?
+    `).get(userId);
+
+    res.json({ success: true, data: updatedUser });
+  } catch (error) {
+    console.error('Delete profile picture error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete profile picture' });
   }
 };

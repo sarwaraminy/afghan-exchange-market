@@ -14,7 +14,8 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Currency Converter** - Convert between AFN and major world currencies
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **News Section** - Stay updated with market news and announcements
-- **User Accounts** - Register, save favorite currencies, and set price alerts
+- **User Accounts** - Save favorite currencies and set price alerts (admin-managed accounts)
+- **Profile Pictures** - Upload custom profile pictures with server-side image validation
 - **Admin Panel** - Full CRUD operations for exchange rates, gold prices, and news content
 - **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
@@ -44,14 +45,16 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 afghan-exchange-market/
 ├── backend/
 │   ├── src/
-│   │   ├── config/          # Database configuration
+│   │   ├── config/          # Database & JWT configuration
 │   │   ├── controllers/     # Route handlers
-│   │   ├── middleware/      # Auth middleware
+│   │   ├── middleware/      # Auth & upload middleware
 │   │   ├── routes/          # API routes
 │   │   ├── types/           # TypeScript types
 │   │   ├── index.ts         # Entry point
 │   │   └── seed.ts          # Database seeder
 │   ├── data/                # SQLite database
+│   ├── uploads/             # User uploaded files
+│   │   └── profiles/        # Profile pictures
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -63,6 +66,7 @@ afghan-exchange-market/
 │   │   ├── types/           # TypeScript types
 │   │   └── App.tsx          # Main app component
 │   └── package.json
+├── docs/                    # Documentation
 └── package.json             # Root package with scripts
 ```
 
@@ -130,10 +134,11 @@ afghan-exchange-market/
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
 | POST | `/api/auth/login` | Login user |
 | GET | `/api/auth/profile` | Get user profile |
 | PUT | `/api/auth/profile` | Update profile |
+| POST | `/api/auth/profile/picture` | Upload profile picture |
+| DELETE | `/api/auth/profile/picture` | Delete profile picture |
 
 ### User (Requires Auth)
 
@@ -151,6 +156,10 @@ afghan-exchange-market/
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/api/admin/users` | Get all users |
+| POST | `/api/admin/users` | Create user |
+| PUT | `/api/admin/users/:id` | Update user |
+| DELETE | `/api/admin/users/:id` | Delete user |
 | POST | `/api/rates/exchange` | Create exchange rate |
 | PUT | `/api/rates/exchange/:id` | Update exchange rate |
 | DELETE | `/api/rates/exchange/:id` | Delete exchange rate |

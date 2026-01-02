@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { login, getProfile, updateProfile } from '../controllers/authController';
+import { login, getProfile, updateProfile, uploadProfilePictureHandler, deleteProfilePictureHandler } from '../controllers/authController';
 import { authenticate, validateRequest } from '../middleware/auth';
+import { uploadProfilePicture } from '../middleware/upload';
 
 const router = Router();
 
@@ -19,5 +20,9 @@ router.post(
 
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
+
+// Profile picture endpoints
+router.post('/profile/picture', authenticate, uploadProfilePicture.single('picture'), uploadProfilePictureHandler);
+router.delete('/profile/picture', authenticate, deleteProfilePictureHandler);
 
 export default router;
