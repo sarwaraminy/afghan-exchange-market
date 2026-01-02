@@ -31,7 +31,8 @@ import {
   Add,
   CurrencyExchange,
   Diamond,
-  Newspaper
+  Newspaper,
+  People
 } from '@mui/icons-material';
 import {
   getExchangeRates,
@@ -47,9 +48,12 @@ import {
   deleteGoldRate,
   createNews,
   updateNews,
-  deleteNews
+  deleteNews,
+  getAllUsers,
+  updateUser,
+  deleteUser
 } from '../services/api';
-import type { ExchangeRate, GoldRate, News, Market, Currency } from '../types';
+import type { ExchangeRate, GoldRate, News, Market, Currency, User } from '../types';
 import { Loading } from '../components/common/Loading';
 
 export const Admin = () => {
@@ -86,16 +90,19 @@ export const Admin = () => {
   const [news, setNews] = useState<News[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [editRateDialog, setEditRateDialog] = useState(false);
   const [createRateDialog, setCreateRateDialog] = useState(false);
   const [editGoldDialog, setEditGoldDialog] = useState(false);
   const [createGoldDialog, setCreateGoldDialog] = useState(false);
   const [newsDialog, setNewsDialog] = useState(false);
+  const [userDialog, setUserDialog] = useState(false);
 
   const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
   const [selectedGold, setSelectedGold] = useState<GoldRate | null>(null);
   const [selectedNews, setSelectedNews] = useState<News | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [buyRate, setBuyRate] = useState('');
   const [sellRate, setSellRate] = useState('');
@@ -129,29 +136,43 @@ export const Admin = () => {
     is_published: false
   });
 
+  const [userForm, setUserForm] = useState({
+    username: '',
+    email: '',
+    full_name: '',
+    role: 'user',
+    language: 'en',
+    preferred_market_id: 1,
+    preferred_currency_id: 1,
+    password: ''
+  });
+
   const [error, setError] = useState('');
 
   const menuItems = [
     { label: t('admin.manageRates'), icon: <CurrencyExchange /> },
     { label: t('admin.manageGold'), icon: <Diamond /> },
-    { label: t('admin.manageNews'), icon: <Newspaper /> }
+    { label: t('admin.manageNews'), icon: <Newspaper /> },
+    { label: t('admin.manageUsers'), icon: <People /> }
   ];
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [ratesData, goldData, newsData, marketsData, currenciesData] = await Promise.all([
+      const [ratesData, goldData, newsData, marketsData, currenciesData, usersData] = await Promise.all([
         getExchangeRates(),
         getGoldRates(),
         getAllNews(),
         getMarkets(),
-        getCurrencies()
+        getCurrencies(),
+        getAllUsers()
       ]);
       setRates(ratesData);
       setGoldRates(goldData);
       setNews(newsData.news);
       setMarkets(marketsData);
       setCurrencies(currenciesData);
+      setUsers(usersData);
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -328,6 +349,58 @@ export const Admin = () => {
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setUserForm({
+      username: user.username,
+      email: user.email,
+      full_name: user.full_name || '',
+      role: user.role,
+      language: user.language,
+      preferred_market_id: user.preferred_market_id || 1,
+      preferred_currency_id: user.preferred_currency_id || 1,
+      password: ''
+    });
+    setError('');
+    setUserDialog(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!selectedUser) return;
+    try {
+      const userData: any = {
+        username: userForm.username,
+        email: userForm.email,
+        full_name: userForm.full_name,
+        role: userForm.role,
+        language: userForm.language,
+        preferred_market_id: userForm.preferred_market_id,
+        preferred_currency_id: userForm.preferred_currency_id
+      };
+
+      if (userForm.password) {
+        userData.password = userForm.password;
+      }
+
+      await updateUser(selectedUser.id, userData);
+      setUserDialog(false);
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedUpdateUser'));
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (confirm(t('admin.confirmDeleteUser'))) {
+      try {
+        await deleteUser(id);
+        fetchData();
+      } catch (err: any) {
+        setError(err.response?.data?.error || t('admin.failedDeleteUser'));
+      }
+    }
+  };
+
   const rateColumns = useMemo<MRT_ColumnDef<ExchangeRate>[]>(
     () => [
       {
@@ -415,6 +488,41 @@ export const Admin = () => {
               <Edit />
             </IconButton>
             <IconButton onClick={() => handleDeleteNews(row.original.id)} color="error">
+              <Delete />
+            </IconButton>
+          </Box>
+        )
+      }
+    ],
+    [t, i18n.language]
+  );
+
+  const userColumns = useMemo<MRT_ColumnDef<User>[]>(
+    () => [
+      { accessorKey: 'username', header: t('auth.username') },
+      { accessorKey: 'email', header: t('auth.email') },
+      { accessorKey: 'full_name', header: t('auth.fullName') },
+      {
+        accessorKey: 'role',
+        header: t('admin.role'),
+        Cell: ({ cell }) => (
+          <Chip
+            label={cell.getValue<string>()}
+            color={cell.getValue<string>() === 'admin' ? 'primary' : 'default'}
+            size="small"
+          />
+        )
+      },
+      { accessorKey: 'language', header: t('common.language') },
+      {
+        id: 'actions',
+        header: t('admin.actions'),
+        Cell: ({ row }) => (
+          <Box>
+            <IconButton onClick={() => handleEditUser(row.original)}>
+              <Edit />
+            </IconButton>
+            <IconButton onClick={() => handleDeleteUser(row.original.id)} color="error">
               <Delete />
             </IconButton>
           </Box>
@@ -548,6 +656,30 @@ export const Admin = () => {
             <MaterialReactTable
               columns={newsColumns}
               data={news}
+              enablePagination
+              enableSorting
+              enableGlobalFilter
+              muiTableProps={{
+                sx: { direction: isRtl ? 'rtl' : 'ltr' }
+              }}
+              muiTableHeadCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
+              muiTableBodyCellProps={{
+                sx: { textAlign: isRtl ? 'right' : 'left' }
+              }}
+            />
+          </>
+        );
+      case 3:
+        return (
+          <>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" fontWeight={600}>{t('admin.manageUsers')}</Typography>
+            </Box>
+            <MaterialReactTable
+              columns={userColumns}
+              data={users}
               enablePagination
               enableSorting
               enableGlobalFilter
@@ -833,6 +965,105 @@ export const Admin = () => {
         <DialogActions>
           <Button onClick={() => setNewsDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveNews}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={userDialog} onClose={() => setUserDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('admin.editUser')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            label={t('auth.username')}
+            value={userForm.username}
+            onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+            sx={{ mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label={t('auth.email')}
+            type="email"
+            value={userForm.email}
+            onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            label={t('auth.fullName')}
+            value={userForm.full_name}
+            onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            select
+            label={t('admin.role')}
+            value={userForm.role}
+            onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('common.language')}
+            value={userForm.language}
+            onChange={(e) => setUserForm({ ...userForm, language: e.target.value })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="en">English</option>
+            <option value="fa">فارسی (Dari)</option>
+            <option value="ps">پښتو (Pashto)</option>
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('admin.preferredMarket')}
+            value={userForm.preferred_market_id}
+            onChange={(e) => setUserForm({ ...userForm, preferred_market_id: parseInt(e.target.value) })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            {markets.map((market) => (
+              <option key={market.id} value={market.id}>
+                {getMarketName(market.name)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('admin.preferredCurrency')}
+            value={userForm.preferred_currency_id}
+            onChange={(e) => setUserForm({ ...userForm, preferred_currency_id: parseInt(e.target.value) })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            {currencies.map((currency) => (
+              <option key={currency.id} value={currency.id}>
+                {getCurrencyName(currency.code)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            label={t('admin.newPassword')}
+            type="password"
+            value={userForm.password}
+            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+            sx={{ mt: 2 }}
+            placeholder={t('admin.leaveBlankToKeep')}
+            helperText={t('admin.leaveBlankToKeep')}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUserDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleSaveUser}>{t('common.save')}</Button>
         </DialogActions>
       </Dialog>
     </Container>
