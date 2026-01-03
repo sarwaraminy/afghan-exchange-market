@@ -95,12 +95,40 @@ export interface ConversionResult {
   rate: number;
 }
 
+export interface Province {
+  id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+  created_at: string;
+}
+
+export interface District {
+  id: number;
+  province_id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+  province_name?: string;
+  created_at: string;
+}
+
 export interface Hawaladar {
   id: number;
   name: string;
   name_fa?: string;
   name_ps?: string;
   phone?: string;
+  province_id?: number;
+  district_id?: number;
+  province_name?: string;
+  province_name_fa?: string;
+  province_name_ps?: string;
+  district_name?: string;
+  district_name_fa?: string;
+  district_name_ps?: string;
   location: string;
   location_fa?: string;
   location_ps?: string;
@@ -108,6 +136,47 @@ export interface Hawaladar {
   is_active: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface HawaladarAccount {
+  id: number;
+  hawaladar_id: number;
+  balance: number;
+  currency_id: number;
+  currency_code?: string;
+  currency_name?: string;
+  hawaladar_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerAccount {
+  id: number;
+  user_id: number;
+  balance: number;
+  currency_id: number;
+  currency_code?: string;
+  currency_name?: string;
+  username?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccountTransaction {
+  id: number;
+  account_type: 'hawaladar' | 'customer';
+  account_id: number;
+  transaction_type: 'deposit' | 'withdraw' | 'transfer_in' | 'transfer_out' | 'hawala_send' | 'hawala_receive';
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  currency_id: number;
+  currency_code?: string;
+  reference_id?: number;
+  notes?: string;
+  created_by: number;
+  created_by_name?: string;
+  created_at: string;
 }
 
 export interface HawalaTransaction {

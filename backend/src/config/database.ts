@@ -25,6 +25,16 @@ const saveDatabase = () => {
   }, 100);
 };
 
+// Immediate save function for use in seed scripts
+export const saveDatabaseNow = (): void => {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(dbPath, buffer);
+  }
+};
+
 // Statement wrapper to mimic better-sqlite3 API
 class StatementWrapper {
   private db: SqlJsDatabase;
@@ -241,18 +251,92 @@ export const initializeDatabase = async (): Promise<void> => {
       FOREIGN KEY (currency_id) REFERENCES currencies(id)
     );
 
+    CREATE TABLE IF NOT EXISTS provinces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      name_fa TEXT,
+      name_ps TEXT,
+      code TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS districts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      province_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      name_fa TEXT,
+      name_ps TEXT,
+      code TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (province_id) REFERENCES provinces(id)
+    );
+
     CREATE TABLE IF NOT EXISTS hawaladars (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       name_fa TEXT,
       name_ps TEXT,
       phone TEXT,
+      province_id INTEGER,
+      district_id INTEGER,
       location TEXT NOT NULL,
       location_fa TEXT,
       location_ps TEXT,
       commission_rate REAL DEFAULT 2.0,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (province_id) REFERENCES provinces(id),
+      FOREIGN KEY (district_id) REFERENCES districts(id),
+      UNIQUE(name, location)
+    );
+
+    CREATE TABLE IF NOT EXISTS saraf_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      saraf_id INTEGER UNIQUE NOT NULL,
+      cash_balance REAL DEFAULT 0.0,
+      currency_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (saraf_id) REFERENCES hawaladars(id),
+      FOREIGN KEY (currency_id) REFERENCES currencies(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS customer_savings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      saraf_id INTEGER NOT NULL,
+      balance REAL DEFAULT 0.0,
+      currency_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (saraf_id) REFERENCES hawaladars(id),
+      FOREIGN KEY (currency_id) REFERENCES currencies(id),
+      UNIQUE(user_id, saraf_id, currency_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS account_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_type TEXT NOT NULL CHECK(account_type IN ('saraf_cash', 'customer_savings')),
+      account_id INTEGER NOT NULL,
+      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('deposit', 'withdraw', 'transfer_in', 'transfer_out', 'hawala_send', 'hawala_receive')),
+      amount REAL NOT NULL,
+      balance_before REAL NOT NULL,
+      balance_after REAL NOT NULL,
+      currency_id INTEGER NOT NULL,
+      reference_id INTEGER,
+      notes TEXT,
+      created_by INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (currency_id) REFERENCES currencies(id),
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS hawala_reference_counter (
+      id INTEGER PRIMARY KEY CHECK(id = 1),
+      counter INTEGER DEFAULT 0,
+      year INTEGER,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -272,6 +356,8 @@ export const initializeDatabase = async (): Promise<void> => {
       total_amount REAL NOT NULL,
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'in_transit', 'completed', 'cancelled')),
       notes TEXT,
+      sender_account_transaction_id INTEGER,
+      receiver_account_transaction_id INTEGER,
       created_by INTEGER NOT NULL,
       completed_by INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -280,7 +366,9 @@ export const initializeDatabase = async (): Promise<void> => {
       FOREIGN KEY (receiver_hawaladar_id) REFERENCES hawaladars(id),
       FOREIGN KEY (currency_id) REFERENCES currencies(id),
       FOREIGN KEY (created_by) REFERENCES users(id),
-      FOREIGN KEY (completed_by) REFERENCES users(id)
+      FOREIGN KEY (completed_by) REFERENCES users(id),
+      FOREIGN KEY (sender_account_transaction_id) REFERENCES account_transactions(id),
+      FOREIGN KEY (receiver_account_transaction_id) REFERENCES account_transactions(id)
     );
   `);
 
@@ -295,9 +383,40 @@ export const initializeDatabase = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_hawala_transactions_sender ON hawala_transactions(sender_hawaladar_id);
       CREATE INDEX IF NOT EXISTS idx_hawala_transactions_receiver ON hawala_transactions(receiver_hawaladar_id);
       CREATE INDEX IF NOT EXISTS idx_hawala_transactions_code ON hawala_transactions(reference_code);
+      CREATE INDEX IF NOT EXISTS idx_districts_province ON districts(province_id);
+      CREATE INDEX IF NOT EXISTS idx_hawaladars_province ON hawaladars(province_id);
+      CREATE INDEX IF NOT EXISTS idx_hawaladars_district ON hawaladars(district_id);
+      CREATE INDEX IF NOT EXISTS idx_account_transactions_account ON account_transactions(account_type, account_id);
+      CREATE INDEX IF NOT EXISTS idx_account_transactions_type ON account_transactions(transaction_type);
     `);
   } catch (e) {
     // Indexes might already exist
+  }
+
+  // Migration: Add province_id and district_id columns to hawaladars if they don't exist
+  try {
+    const columns = db.exec("PRAGMA table_info(hawaladars)");
+    const hasProvinceId = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'province_id');
+    if (!hasProvinceId) {
+      db.exec('ALTER TABLE hawaladars ADD COLUMN province_id INTEGER');
+      db.exec('ALTER TABLE hawaladars ADD COLUMN district_id INTEGER');
+      console.log('Added province_id and district_id columns to hawaladars table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Initialize reference counter for the current year
+  try {
+    const currentYear = new Date().getFullYear();
+    const counterExists = db.exec('SELECT id FROM hawala_reference_counter WHERE id = 1');
+    if (!counterExists || counterExists.length === 0 || counterExists[0].values.length === 0) {
+      db.exec(`INSERT OR IGNORE INTO hawala_reference_counter (id, counter, year) VALUES (1, 0, ${currentYear})`);
+      console.log('Initialized hawala reference counter');
+    }
+  } catch (e) {
+    // Counter might already exist
   }
 
   // Migration: Add profile_picture column if it doesn't exist
@@ -311,6 +430,133 @@ export const initializeDatabase = async (): Promise<void> => {
     }
   } catch (e) {
     // Column might already exist or table not created yet
+  }
+
+  // Migration: Add sender_account_transaction_id and receiver_account_transaction_id to hawala_transactions
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const hasSenderAccountTransaction = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'sender_account_transaction_id');
+    if (!hasSenderAccountTransaction) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN sender_account_transaction_id INTEGER');
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN receiver_account_transaction_id INTEGER');
+      console.log('Added account transaction tracking columns to hawala_transactions table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Migration: Add UNIQUE constraint to hawaladars table (name, location)
+  try {
+    const indexCheck = db.exec("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='hawaladars' AND name='idx_hawaladars_unique'");
+    if (indexCheck.length === 0 || indexCheck[0].values.length === 0) {
+      console.log('Adding UNIQUE constraint to hawaladars table...');
+
+      // Create new table with UNIQUE constraint
+      db.exec(`
+        CREATE TABLE hawaladars_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          name_fa TEXT,
+          name_ps TEXT,
+          phone TEXT,
+          province_id INTEGER,
+          district_id INTEGER,
+          location TEXT NOT NULL,
+          location_fa TEXT,
+          location_ps TEXT,
+          commission_rate REAL DEFAULT 2.0,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (province_id) REFERENCES provinces(id),
+          FOREIGN KEY (district_id) REFERENCES districts(id),
+          UNIQUE(name, location)
+        );
+      `);
+
+      // Copy data from old table (INSERT OR IGNORE will skip any remaining duplicates)
+      db.exec(`
+        INSERT OR IGNORE INTO hawaladars_new
+        SELECT * FROM hawaladars;
+      `);
+
+      // Drop old table and rename new one
+      db.exec('DROP TABLE hawaladars;');
+      db.exec('ALTER TABLE hawaladars_new RENAME TO hawaladars;');
+
+      // Create index for tracking this migration
+      db.exec("CREATE INDEX idx_hawaladars_unique ON hawaladars(name, location);");
+
+      console.log('Added UNIQUE constraint to hawaladars table');
+    }
+  } catch (e) {
+    console.error('Hawaladars UNIQUE constraint migration error:', e);
+  }
+
+  // Migration: Rename hawaladar_accounts to saraf_accounts and customer_accounts to customer_savings
+  try {
+    const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+    const tableNames = tables.length > 0 ? tables[0].values.map((row: any) => row[0]) : [];
+
+    // Check if old tables exist and new ones don't
+    if (tableNames.includes('hawaladar_accounts') && !tableNames.includes('saraf_accounts')) {
+      console.log('Migrating hawaladar_accounts to saraf_accounts...');
+      db.exec(`
+        ALTER TABLE hawaladar_accounts RENAME TO saraf_accounts;
+        ALTER TABLE saraf_accounts RENAME COLUMN hawaladar_id TO saraf_id;
+        ALTER TABLE saraf_accounts RENAME COLUMN balance TO cash_balance;
+      `);
+      console.log('Renamed hawaladar_accounts to saraf_accounts');
+    }
+
+    if (tableNames.includes('customer_accounts') && !tableNames.includes('customer_savings')) {
+      console.log('Migrating customer_accounts to customer_savings...');
+      // Create new table with saraf_id
+      db.exec(`
+        CREATE TABLE customer_savings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          saraf_id INTEGER NOT NULL DEFAULT 1,
+          balance REAL DEFAULT 0.0,
+          currency_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (saraf_id) REFERENCES hawaladars(id),
+          FOREIGN KEY (currency_id) REFERENCES currencies(id),
+          UNIQUE(user_id, saraf_id, currency_id)
+        );
+      `);
+      // Copy data from old table (assign all to first saraf)
+      db.exec(`
+        INSERT INTO customer_savings (id, user_id, saraf_id, balance, currency_id, created_at, updated_at)
+        SELECT id, user_id, 1, balance, currency_id, created_at, updated_at
+        FROM customer_accounts;
+      `);
+      db.exec('DROP TABLE customer_accounts;');
+      console.log('Migrated customer_accounts to customer_savings');
+    }
+
+    // Update account_transactions table to use new account types
+    const atColumns = db.exec("PRAGMA table_info(account_transactions)");
+    if (atColumns.length > 0) {
+      // Update account_type values
+      db.exec(`
+        UPDATE account_transactions
+        SET account_type = 'saraf_cash'
+        WHERE account_type = 'hawaladar';
+      `);
+      db.exec(`
+        UPDATE account_transactions
+        SET account_type = 'customer_savings'
+        WHERE account_type = 'customer';
+      `);
+      console.log('Updated account transaction types');
+    }
+  } catch (e) {
+    console.error('Migration error:', e);
+    // Continue even if migration fails
   }
 
   // Save initial state

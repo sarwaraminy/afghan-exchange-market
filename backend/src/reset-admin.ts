@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import db, { initializeDatabase } from './config/database';
+import db, { initializeDatabase, saveDatabaseNow } from './config/database';
 
 /**
  * Admin Recovery Script
@@ -56,6 +56,10 @@ async function resetAdmin() {
 
     console.log('Admin user created successfully!');
   }
+
+  // Save database to disk immediately
+  saveDatabaseNow();
+  console.log('Database saved successfully!');
 
   // Display credentials
   console.log('\n' + '='.repeat(60));

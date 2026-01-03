@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, News, ConversionResult, PriceAlert, User, Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
+import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, News, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -357,6 +357,143 @@ export const getHawalaReportsByAgent = async (): Promise<HawalaAgentReport[]> =>
 
 export const getHawalaReportsByCurrency = async (): Promise<HawalaCurrencyReport[]> => {
   const { data } = await api.get<ApiResponse<HawalaCurrencyReport[]>>('/hawala/reports/by-currency');
+  return data.data!;
+};
+
+// ==================== LOCATIONS ====================
+
+// Provinces
+export const getProvinces = async (): Promise<Province[]> => {
+  const { data } = await api.get<ApiResponse<Province[]>>('/locations/provinces');
+  return data.data!;
+};
+
+export const getProvinceById = async (id: number): Promise<Province> => {
+  const { data } = await api.get<ApiResponse<Province>>(`/locations/provinces/${id}`);
+  return data.data!;
+};
+
+export const createProvince = async (provinceData: {
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+}): Promise<Province> => {
+  const { data } = await api.post<ApiResponse<Province>>('/locations/provinces', provinceData);
+  return data.data!;
+};
+
+export const updateProvince = async (id: number, provinceData: Partial<Province>): Promise<Province> => {
+  const { data } = await api.put<ApiResponse<Province>>(`/locations/provinces/${id}`, provinceData);
+  return data.data!;
+};
+
+export const deleteProvince = async (id: number): Promise<void> => {
+  await api.delete(`/locations/provinces/${id}`);
+};
+
+// Districts
+export const getDistricts = async (provinceId?: number): Promise<District[]> => {
+  const params = provinceId ? { province_id: provinceId } : {};
+  const { data } = await api.get<ApiResponse<District[]>>('/locations/districts', { params });
+  return data.data!;
+};
+
+export const getDistrictById = async (id: number): Promise<District> => {
+  const { data } = await api.get<ApiResponse<District>>(`/locations/districts/${id}`);
+  return data.data!;
+};
+
+export const createDistrict = async (districtData: {
+  province_id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+}): Promise<District> => {
+  const { data} = await api.post<ApiResponse<District>>('/locations/districts', districtData);
+  return data.data!;
+};
+
+export const updateDistrict = async (id: number, districtData: Partial<District>): Promise<District> => {
+  const { data } = await api.put<ApiResponse<District>>(`/locations/districts/${id}`, districtData);
+  return data.data!;
+};
+
+export const deleteDistrict = async (id: number): Promise<void> => {
+  await api.delete(`/locations/districts/${id}`);
+};
+
+// ==================== ACCOUNTS ====================
+
+// Customer Account
+export const getCustomerAccount = async (): Promise<CustomerAccount> => {
+  const { data } = await api.get<ApiResponse<CustomerAccount>>('/accounts/customer');
+  return data.data!;
+};
+
+export const createCustomerAccount = async (currency_id: number): Promise<CustomerAccount> => {
+  const { data } = await api.post<ApiResponse<CustomerAccount>>('/accounts/customer', { currency_id });
+  return data.data!;
+};
+
+export const customerDeposit = async (amount: number, notes?: string): Promise<{ transaction: AccountTransaction; new_balance: number }> => {
+  const { data } = await api.post<ApiResponse<{ transaction: AccountTransaction; new_balance: number }>>('/accounts/customer/deposit', { amount, notes });
+  return data.data!;
+};
+
+export const customerWithdraw = async (amount: number, notes?: string): Promise<{ transaction: AccountTransaction; new_balance: number }> => {
+  const { data } = await api.post<ApiResponse<{ transaction: AccountTransaction; new_balance: number }>>('/accounts/customer/withdraw', { amount, notes });
+  return data.data!;
+};
+
+export const getCustomerTransactions = async (limit?: number, offset?: number): Promise<AccountTransaction[]> => {
+  const params = { ...(limit && { limit }), ...(offset && { offset }) };
+  const { data } = await api.get<ApiResponse<AccountTransaction[]>>('/accounts/customer/transactions', { params });
+  return data.data!;
+};
+
+// Hawaladar Account (Admin only)
+export const getHawaladarAccount = async (hawaladarId: number): Promise<HawaladarAccount> => {
+  const { data } = await api.get<ApiResponse<HawaladarAccount>>(`/accounts/hawaladar/${hawaladarId}`);
+  return data.data!;
+};
+
+export const createHawaladarAccount = async (hawaladarId: number, currencyId: number, initialBalance?: number): Promise<HawaladarAccount> => {
+  const { data } = await api.post<ApiResponse<HawaladarAccount>>('/accounts/hawaladar', {
+    hawaladar_id: hawaladarId,
+    currency_id: currencyId,
+    initial_balance: initialBalance
+  });
+  return data.data!;
+};
+
+export const hawaladarDeposit = async (hawaladarId: number, amount: number, notes?: string): Promise<{ transaction: AccountTransaction; new_balance: number }> => {
+  const { data } = await api.post<ApiResponse<{ transaction: AccountTransaction; new_balance: number }>>(`/accounts/hawaladar/${hawaladarId}/deposit`, { amount, notes });
+  return data.data!;
+};
+
+export const hawaladarWithdraw = async (hawaladarId: number, amount: number, notes?: string): Promise<{ transaction: AccountTransaction; new_balance: number }> => {
+  const { data } = await api.post<ApiResponse<{ transaction: AccountTransaction; new_balance: number }>>(`/accounts/hawaladar/${hawaladarId}/withdraw`, { amount, notes });
+  return data.data!;
+};
+
+export const getHawaladarTransactions = async (hawaladarId: number, limit?: number, offset?: number): Promise<AccountTransaction[]> => {
+  const params = { ...(limit && { limit }), ...(offset && { offset }) };
+  const { data } = await api.get<ApiResponse<AccountTransaction[]>>(`/accounts/hawaladar/${hawaladarId}/transactions`, { params });
+  return data.data!;
+};
+
+// Transfers
+export const transferBetweenAccounts = async (transferData: {
+  from_account_type: 'hawaladar' | 'customer';
+  from_account_id: number;
+  to_account_type: 'hawaladar' | 'customer';
+  to_account_id: number;
+  amount: number;
+  notes?: string;
+}): Promise<{ from_account: { id: number; new_balance: number }; to_account: { id: number; new_balance: number } }> => {
+  const { data } = await api.post<ApiResponse<{ from_account: { id: number; new_balance: number }; to_account: { id: number; new_balance: number } }>>('/accounts/transfer', transferData);
   return data.data!;
 };
 

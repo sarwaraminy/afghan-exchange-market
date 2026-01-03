@@ -2,28 +2,81 @@ import { Request, Response } from 'express';
 import db from '../config/database';
 import { Hawaladar, HawalaTransaction, HawalaTransactionWithDetails } from '../types';
 
-// Generate unique reference code
+// Generate unique reference code using incremental integer
+// Note: This is now atomic - uses a single UPDATE that returns the new value
 const generateReferenceCode = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = 'HWL-';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  const currentYear = new Date().getFullYear();
+
+  // Get the current counter
+  const counterRow = db.prepare('SELECT counter, year FROM hawala_reference_counter WHERE id = 1').get() as { counter: number; year: number } | undefined;
+
+  let newCounter = 1;
+
+  if (counterRow) {
+    // If year has changed, reset counter to 1
+    if (counterRow.year !== currentYear) {
+      db.prepare('UPDATE hawala_reference_counter SET counter = ?, year = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1').run(newCounter, currentYear);
+    } else {
+      // Increment counter atomically
+      newCounter = counterRow.counter + 1;
+      // Use a transaction to ensure atomicity
+      const updateResult = db.prepare('UPDATE hawala_reference_counter SET counter = counter + 1, updated_at = CURRENT_TIMESTAMP WHERE id = 1').run();
+
+      // Verify the update was successful
+      if (updateResult.changes === 0) {
+        throw new Error('Failed to update reference counter');
+      }
+
+      // Get the updated counter value
+      const updated = db.prepare('SELECT counter FROM hawala_reference_counter WHERE id = 1').get() as { counter: number };
+      newCounter = updated.counter;
+    }
+  } else {
+    // Initialize counter if doesn't exist
+    db.prepare('INSERT OR REPLACE INTO hawala_reference_counter (id, counter, year) VALUES (1, ?, ?)').run(newCounter, currentYear);
   }
-  return code;
+
+  // Format: HWL-YYYY-NNNNNN (e.g., HWL-2026-000001)
+  return `HWL-${currentYear}-${String(newCounter).padStart(6, '0')}`;
 };
 
 // ==================== HAWALADARS (AGENTS) ====================
 
 export const getHawaladars = (req: Request, res: Response): void => {
   try {
-    const { active_only } = req.query;
-    let query = 'SELECT * FROM hawaladars';
-    if (active_only === 'true') {
-      query += ' WHERE is_active = 1';
-    }
-    query += ' ORDER BY name';
+    const { active_only, province_id, district_id } = req.query;
+    let query = `
+      SELECT
+        h.*,
+        p.name as province_name,
+        p.name_fa as province_name_fa,
+        p.name_ps as province_name_ps,
+        d.name as district_name,
+        d.name_fa as district_name_fa,
+        d.name_ps as district_name_ps
+      FROM hawaladars h
+      LEFT JOIN provinces p ON h.province_id = p.id
+      LEFT JOIN districts d ON h.district_id = d.id
+      WHERE 1=1
+    `;
 
-    const hawaladars = db.prepare(query).all() as Hawaladar[];
+    const params: any[] = [];
+
+    if (active_only === 'true') {
+      query += ' AND h.is_active = 1';
+    }
+    if (province_id) {
+      query += ' AND h.province_id = ?';
+      params.push(province_id);
+    }
+    if (district_id) {
+      query += ' AND h.district_id = ?';
+      params.push(district_id);
+    }
+
+    query += ' ORDER BY h.name';
+
+    const hawaladars = db.prepare(query).all(...params);
     res.json({ success: true, data: hawaladars });
   } catch (error) {
     console.error('Get hawaladars error:', error);
@@ -50,23 +103,34 @@ export const getHawaladarById = (req: Request, res: Response): void => {
 
 export const createHawaladar = (req: Request, res: Response): void => {
   try {
-    const { name, name_fa, name_ps, phone, location, location_fa, location_ps, commission_rate } = req.body;
+    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate } = req.body;
 
     const result = db.prepare(`
-      INSERT INTO hawaladars (name, name_fa, name_ps, phone, location, location_fa, location_ps, commission_rate)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO hawaladars (name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       name,
       name_fa || null,
       name_ps || null,
       phone || null,
+      province_id || null,
+      district_id || null,
       location,
       location_fa || null,
       location_ps || null,
       commission_rate || 2.0
     );
 
-    const newHawaladar = db.prepare('SELECT * FROM hawaladars WHERE id = ?').get(result.lastInsertRowid);
+    const newHawaladar = db.prepare(`
+      SELECT
+        h.*,
+        p.name as province_name,
+        d.name as district_name
+      FROM hawaladars h
+      LEFT JOIN provinces p ON h.province_id = p.id
+      LEFT JOIN districts d ON h.district_id = d.id
+      WHERE h.id = ?
+    `).get(result.lastInsertRowid);
     res.status(201).json({ success: true, data: newHawaladar });
   } catch (error) {
     console.error('Create hawaladar error:', error);
@@ -77,7 +141,7 @@ export const createHawaladar = (req: Request, res: Response): void => {
 export const updateHawaladar = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { name, name_fa, name_ps, phone, location, location_fa, location_ps, commission_rate, is_active } = req.body;
+    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate, is_active } = req.body;
 
     const existing = db.prepare('SELECT id FROM hawaladars WHERE id = ?').get(id);
     if (!existing) {
@@ -87,8 +151,8 @@ export const updateHawaladar = (req: Request, res: Response): void => {
 
     db.prepare(`
       UPDATE hawaladars
-      SET name = ?, name_fa = ?, name_ps = ?, phone = ?, location = ?,
-          location_fa = ?, location_ps = ?, commission_rate = ?, is_active = ?,
+      SET name = ?, name_fa = ?, name_ps = ?, phone = ?, province_id = ?, district_id = ?,
+          location = ?, location_fa = ?, location_ps = ?, commission_rate = ?, is_active = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -96,6 +160,8 @@ export const updateHawaladar = (req: Request, res: Response): void => {
       name_fa || null,
       name_ps || null,
       phone || null,
+      province_id || null,
+      district_id || null,
       location,
       location_fa || null,
       location_ps || null,
@@ -104,7 +170,16 @@ export const updateHawaladar = (req: Request, res: Response): void => {
       id
     );
 
-    const updatedHawaladar = db.prepare('SELECT * FROM hawaladars WHERE id = ?').get(id);
+    const updatedHawaladar = db.prepare(`
+      SELECT
+        h.*,
+        p.name as province_name,
+        d.name as district_name
+      FROM hawaladars h
+      LEFT JOIN provinces p ON h.province_id = p.id
+      LEFT JOIN districts d ON h.district_id = d.id
+      WHERE h.id = ?
+    `).get(id);
     res.json({ success: true, data: updatedHawaladar });
   } catch (error) {
     console.error('Update hawaladar error:', error);
@@ -149,22 +224,42 @@ export const deleteHawaladar = (req: Request, res: Response): void => {
 
 export const getTransactions = (req: Request, res: Response): void => {
   try {
-    const { status, sender_hawaladar_id, receiver_hawaladar_id, limit, offset } = req.query;
+    const {
+      status,
+      sender_hawaladar_id,
+      receiver_hawaladar_id,
+      province_id,
+      district_id,
+      limit,
+      offset
+    } = req.query;
 
     let query = `
       SELECT
         ht.*,
         sh.name as sender_hawaladar_name,
         sh.location as sender_hawaladar_location,
+        sh.province_id as sender_province_id,
+        sh.district_id as sender_district_id,
+        sp.name as sender_province_name,
+        sd.name as sender_district_name,
         rh.name as receiver_hawaladar_name,
         rh.location as receiver_hawaladar_location,
+        rh.province_id as receiver_province_id,
+        rh.district_id as receiver_district_id,
+        rp.name as receiver_province_name,
+        rd.name as receiver_district_name,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
         cu.username as completed_by_name
       FROM hawala_transactions ht
       LEFT JOIN hawaladars sh ON ht.sender_hawaladar_id = sh.id
+      LEFT JOIN provinces sp ON sh.province_id = sp.id
+      LEFT JOIN districts sd ON sh.district_id = sd.id
       LEFT JOIN hawaladars rh ON ht.receiver_hawaladar_id = rh.id
+      LEFT JOIN provinces rp ON rh.province_id = rp.id
+      LEFT JOIN districts rd ON rh.district_id = rd.id
       JOIN currencies c ON ht.currency_id = c.id
       JOIN users u ON ht.created_by = u.id
       LEFT JOIN users cu ON ht.completed_by = cu.id
@@ -185,6 +280,14 @@ export const getTransactions = (req: Request, res: Response): void => {
       query += ' AND ht.receiver_hawaladar_id = ?';
       params.push(receiver_hawaladar_id);
     }
+    if (province_id) {
+      query += ' AND (sh.province_id = ? OR rh.province_id = ?)';
+      params.push(province_id, province_id);
+    }
+    if (district_id) {
+      query += ' AND (sh.district_id = ? OR rh.district_id = ?)';
+      params.push(district_id, district_id);
+    }
 
     query += ' ORDER BY ht.created_at DESC';
 
@@ -200,12 +303,36 @@ export const getTransactions = (req: Request, res: Response): void => {
     const transactions = db.prepare(query).all(...params) as HawalaTransactionWithDetails[];
 
     // Get total count for pagination
-    let countQuery = 'SELECT COUNT(*) as total FROM hawala_transactions WHERE 1=1';
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM hawala_transactions ht
+      LEFT JOIN hawaladars sh ON ht.sender_hawaladar_id = sh.id
+      LEFT JOIN hawaladars rh ON ht.receiver_hawaladar_id = rh.id
+      WHERE 1=1
+    `;
     const countParams: any[] = [];
+
     if (status) {
-      countQuery += ' AND status = ?';
+      countQuery += ' AND ht.status = ?';
       countParams.push(status);
     }
+    if (sender_hawaladar_id) {
+      countQuery += ' AND ht.sender_hawaladar_id = ?';
+      countParams.push(sender_hawaladar_id);
+    }
+    if (receiver_hawaladar_id) {
+      countQuery += ' AND ht.receiver_hawaladar_id = ?';
+      countParams.push(receiver_hawaladar_id);
+    }
+    if (province_id) {
+      countQuery += ' AND (sh.province_id = ? OR rh.province_id = ?)';
+      countParams.push(province_id, province_id);
+    }
+    if (district_id) {
+      countQuery += ' AND (sh.district_id = ? OR rh.district_id = ?)';
+      countParams.push(district_id, district_id);
+    }
+
     const countResult = db.prepare(countQuery).get(...countParams) as { total: number };
 
     res.json({
@@ -311,29 +438,83 @@ export const createTransaction = (req: Request, res: Response): void => {
     } = req.body;
     const userId = req.user?.userId;
 
-    // Generate unique reference code
-    let referenceCode = generateReferenceCode();
-    let attempts = 0;
-    while (attempts < 10) {
-      const existing = db.prepare('SELECT id FROM hawala_transactions WHERE reference_code = ?').get(referenceCode);
-      if (!existing) break;
-      referenceCode = generateReferenceCode();
-      attempts++;
-    }
+    // Generate unique reference code (incremental)
+    const referenceCode = generateReferenceCode();
 
     // Calculate commission
     const rate = commission_rate || 2.0;
     const commissionAmount = amount * (rate / 100);
     const totalAmount = amount + commissionAmount;
 
+    // Check if sender hawaladar has an account and deduct funds
+    let senderAccountTransactionId: number | null = null;
+
+    if (sender_hawaladar_id) {
+      const senderAccount = db.prepare(`
+        SELECT * FROM saraf_accounts WHERE saraf_id = ?
+      `).get(sender_hawaladar_id) as any;
+
+      if (senderAccount) {
+        // Check if account has same currency
+        if (senderAccount.currency_id !== currency_id) {
+          res.status(400).json({
+            success: false,
+            error: 'Sender hawaladar account currency does not match transaction currency'
+          });
+          return;
+        }
+
+        // Check if sender has sufficient balance
+        if (senderAccount.cash_balance < totalAmount) {
+          res.status(400).json({
+            success: false,
+            error: `Insufficient balance in sender hawaladar account. Required: ${totalAmount}, Available: ${senderAccount.cash_balance}`
+          });
+          return;
+        }
+
+        // Deduct from sender account
+        const balanceBefore = senderAccount.cash_balance;
+        const balanceAfter = balanceBefore - totalAmount;
+
+        db.prepare(`
+          UPDATE saraf_accounts
+          SET cash_balance = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(balanceAfter, senderAccount.id);
+
+        // Record account transaction
+        const accountTxResult = db.prepare(`
+          INSERT INTO account_transactions (
+            account_type, account_id, transaction_type, amount, balance_before, balance_after,
+            currency_id, notes, created_by
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          'saraf_cash',
+          senderAccount.id,
+          'hawala_send',
+          totalAmount,
+          balanceBefore,
+          balanceAfter,
+          currency_id,
+          `Hawala send: ${referenceCode} - ${sender_name} to ${receiver_name}`,
+          userId
+        );
+
+        senderAccountTransactionId = accountTxResult.lastInsertRowid as number;
+      }
+    }
+
+    // Create hawala transaction
     const result = db.prepare(`
       INSERT INTO hawala_transactions (
         reference_code, sender_name, sender_phone, sender_hawaladar_id,
         receiver_name, receiver_phone, receiver_hawaladar_id,
         amount, currency_id, commission_rate, commission_amount, total_amount,
-        notes, created_by
+        notes, sender_account_transaction_id, created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       referenceCode,
       sender_name,
@@ -348,6 +529,7 @@ export const createTransaction = (req: Request, res: Response): void => {
       commissionAmount,
       totalAmount,
       notes || null,
+      senderAccountTransactionId,
       userId
     );
 
@@ -400,6 +582,15 @@ export const updateTransaction = (req: Request, res: Response): void => {
 
     if (existing.status === 'completed' || existing.status === 'cancelled') {
       res.status(400).json({ success: false, error: 'Cannot update completed or cancelled transactions' });
+      return;
+    }
+
+    // Prevent updates if funds have been deducted from sender's account
+    if (existing.sender_account_transaction_id) {
+      res.status(400).json({
+        success: false,
+        error: 'Cannot update transaction after funds have been deducted. Please cancel and create a new transaction.'
+      });
       return;
     }
 
@@ -487,15 +678,149 @@ export const updateTransactionStatus = (req: Request, res: Response): void => {
       return;
     }
 
-    const completedAt = status === 'completed' ? 'CURRENT_TIMESTAMP' : null;
-    const completedBy = status === 'completed' ? userId : null;
+    // If completing the transaction, add funds to receiver's account
+    let receiverAccountTransactionId: number | null = null;
 
+    if (status === 'completed' && existing.receiver_hawaladar_id) {
+      const receiverAccount = db.prepare(`
+        SELECT * FROM saraf_accounts WHERE saraf_id = ?
+      `).get(existing.receiver_hawaladar_id) as any;
+
+      if (receiverAccount) {
+        // Check if account has same currency
+        if (receiverAccount.currency_id !== existing.currency_id) {
+          res.status(400).json({
+            success: false,
+            error: 'Receiver hawaladar account currency does not match transaction currency'
+          });
+          return;
+        }
+
+        // Add to receiver account (only the amount, not including commission)
+        const balanceBefore = receiverAccount.cash_balance;
+        const balanceAfter = balanceBefore + existing.amount;
+
+        db.prepare(`
+          UPDATE saraf_accounts
+          SET cash_balance = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(balanceAfter, receiverAccount.id);
+
+        // Record account transaction
+        const accountTxResult = db.prepare(`
+          INSERT INTO account_transactions (
+            account_type, account_id, transaction_type, amount, balance_before, balance_after,
+            currency_id, reference_id, notes, created_by
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          'saraf_cash',
+          receiverAccount.id,
+          'hawala_receive',
+          existing.amount,
+          balanceBefore,
+          balanceAfter,
+          existing.currency_id,
+          existing.sender_account_transaction_id,
+          `Hawala receive: ${existing.reference_code} - From ${existing.sender_name}`,
+          userId
+        );
+
+        receiverAccountTransactionId = accountTxResult.lastInsertRowid as number;
+      }
+    }
+
+    // Handle cancellation - refund sender's account and reverse receiver's credit
+    if (status === 'cancelled') {
+      // Refund sender if transaction was deducted
+      if (existing.sender_account_transaction_id) {
+        const senderAccount = db.prepare(`
+          SELECT ha.* FROM saraf_accounts ha
+          WHERE ha.saraf_id = ?
+        `).get(existing.sender_hawaladar_id) as any;
+
+        if (senderAccount) {
+          // Refund the total amount to sender
+          const balanceBefore = senderAccount.cash_balance;
+          const balanceAfter = balanceBefore + existing.total_amount;
+
+          db.prepare(`
+            UPDATE saraf_accounts
+            SET cash_balance = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(balanceAfter, senderAccount.id);
+
+          // Record refund transaction
+          db.prepare(`
+            INSERT INTO account_transactions (
+              account_type, account_id, transaction_type, amount, balance_before, balance_after,
+              currency_id, reference_id, notes, created_by
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            'saraf_cash',
+            senderAccount.id,
+            'deposit',
+            existing.total_amount,
+            balanceBefore,
+            balanceAfter,
+            existing.currency_id,
+            existing.sender_account_transaction_id,
+            `Hawala refund: ${existing.reference_code} - Transaction cancelled`,
+            userId
+          );
+        }
+      }
+
+      // Reverse receiver's credit if transaction was completed
+      if (existing.receiver_account_transaction_id) {
+        const receiverAccount = db.prepare(`
+          SELECT ha.* FROM saraf_accounts ha
+          WHERE ha.saraf_id = ?
+        `).get(existing.receiver_hawaladar_id) as any;
+
+        if (receiverAccount) {
+          // Deduct the amount from receiver
+          const balanceBefore = receiverAccount.cash_balance;
+          const balanceAfter = balanceBefore - existing.amount;
+
+          db.prepare(`
+            UPDATE saraf_accounts
+            SET cash_balance = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(balanceAfter, receiverAccount.id);
+
+          // Record reversal transaction
+          db.prepare(`
+            INSERT INTO account_transactions (
+              account_type, account_id, transaction_type, amount, balance_before, balance_after,
+              currency_id, reference_id, notes, created_by
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            'saraf_cash',
+            receiverAccount.id,
+            'withdraw',
+            existing.amount,
+            balanceBefore,
+            balanceAfter,
+            existing.currency_id,
+            existing.receiver_account_transaction_id,
+            `Hawala reversal: ${existing.reference_code} - Transaction cancelled`,
+            userId
+          );
+        }
+      }
+    }
+
+    // Update transaction status
     if (status === 'completed') {
       db.prepare(`
         UPDATE hawala_transactions
-        SET status = ?, completed_by = ?, completed_at = CURRENT_TIMESTAMP
+        SET status = ?, completed_by = ?, completed_at = CURRENT_TIMESTAMP,
+            receiver_account_transaction_id = ?
         WHERE id = ?
-      `).run(status, completedBy, id);
+      `).run(status, userId, receiverAccountTransactionId, id);
     } else {
       db.prepare(`
         UPDATE hawala_transactions
@@ -603,21 +928,44 @@ export const getReportsSummary = (req: Request, res: Response): void => {
 
 export const getReportsByAgent = (req: Request, res: Response): void => {
   try {
-    const byAgent = db.prepare(`
+    const { province_id, district_id } = req.query;
+
+    let query = `
       SELECT
         h.id,
         h.name,
         h.location,
+        h.province_id,
+        h.district_id,
+        p.name as province_name,
+        d.name as district_name,
         COUNT(DISTINCT CASE WHEN ht.sender_hawaladar_id = h.id THEN ht.id END) as sent_count,
         COUNT(DISTINCT CASE WHEN ht.receiver_hawaladar_id = h.id THEN ht.id END) as received_count,
         SUM(CASE WHEN ht.sender_hawaladar_id = h.id AND ht.status != 'cancelled' THEN ht.amount ELSE 0 END) as sent_amount,
         SUM(CASE WHEN ht.receiver_hawaladar_id = h.id AND ht.status != 'cancelled' THEN ht.amount ELSE 0 END) as received_amount,
         SUM(CASE WHEN ht.sender_hawaladar_id = h.id AND ht.status != 'cancelled' THEN ht.commission_amount ELSE 0 END) as commission_earned
       FROM hawaladars h
+      LEFT JOIN provinces p ON h.province_id = p.id
+      LEFT JOIN districts d ON h.district_id = d.id
       LEFT JOIN hawala_transactions ht ON ht.sender_hawaladar_id = h.id OR ht.receiver_hawaladar_id = h.id
-      GROUP BY h.id, h.name, h.location
-      ORDER BY h.name
-    `).all();
+      WHERE 1=1
+    `;
+
+    const params: any[] = [];
+
+    if (province_id) {
+      query += ' AND h.province_id = ?';
+      params.push(province_id);
+    }
+    if (district_id) {
+      query += ' AND h.district_id = ?';
+      params.push(district_id);
+    }
+
+    query += ' GROUP BY h.id, h.name, h.location, h.province_id, h.district_id, p.name, d.name';
+    query += ' ORDER BY h.name';
+
+    const byAgent = db.prepare(query).all(...params);
 
     res.json({ success: true, data: byAgent });
   } catch (error) {

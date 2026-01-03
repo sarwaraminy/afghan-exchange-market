@@ -54,9 +54,11 @@ import {
   getHawalaReportsSummary,
   getHawalaReportsByAgent,
   getHawalaReportsByCurrency,
-  getCurrencies
+  getCurrencies,
+  getProvinces,
+  getDistricts
 } from '../services/api';
-import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency } from '../types';
+import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District } from '../types';
 import { Loading } from '../components/common/Loading';
 import { useAuth } from '../context/AuthContext';
 
@@ -76,6 +78,8 @@ export const Hawala = () => {
   const [transactions, setTransactions] = useState<HawalaTransaction[]>([]);
   const [hawaladars, setHawaladars] = useState<Hawaladar[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [reportSummary, setReportSummary] = useState<HawalaReportSummary | null>(null);
   const [agentReports, setAgentReports] = useState<HawalaAgentReport[]>([]);
   const [currencyReports, setCurrencyReports] = useState<HawalaCurrencyReport[]>([]);
@@ -109,6 +113,8 @@ export const Hawala = () => {
     name_fa: '',
     name_ps: '',
     phone: '',
+    province_id: '',
+    district_id: '',
     location: '',
     location_fa: '',
     location_ps: '',
@@ -132,14 +138,18 @@ export const Hawala = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [transactionsData, hawaladarsData, currenciesData] = await Promise.all([
+      const [transactionsData, hawaladarsData, currenciesData, provincesData, districtsData] = await Promise.all([
         getHawalaTransactions(),
         getHawaladars(),
-        getCurrencies()
+        getCurrencies(),
+        getProvinces(),
+        getDistricts()
       ]);
       setTransactions(transactionsData.transactions);
       setHawaladars(hawaladarsData);
       setCurrencies(currenciesData);
+      setProvinces(provincesData);
+      setDistricts(districtsData);
 
       // Fetch reports
       const [summaryData, agentData, currencyData] = await Promise.all([
@@ -239,17 +249,26 @@ export const Hawala = () => {
   const handleChangeStatus = (transaction: HawalaTransaction) => {
     setSelectedTransaction(transaction);
     setNewStatus(transaction.status);
+    setError('');
     setStatusDialog(true);
   };
 
   const handleSaveStatus = async () => {
     if (!selectedTransaction) return;
+
+    // Clear any previous errors
+    setError('');
+
     try {
+      console.log('Updating transaction status:', selectedTransaction.id, 'to:', newStatus);
       await updateHawalaTransactionStatus(selectedTransaction.id, newStatus as 'pending' | 'in_transit' | 'completed' | 'cancelled');
+      console.log('Status updated successfully');
       setStatusDialog(false);
-      fetchData();
+      await fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.error || t('hawala.failedUpdateStatus'));
+      console.error('Error updating status:', err);
+      const errorMessage = err.response?.data?.error || t('hawala.failedUpdateStatus');
+      setError(errorMessage);
     }
   };
 
@@ -273,6 +292,8 @@ export const Hawala = () => {
       name_fa: '',
       name_ps: '',
       phone: '',
+      province_id: '',
+      district_id: '',
       location: '',
       location_fa: '',
       location_ps: '',
@@ -290,6 +311,8 @@ export const Hawala = () => {
       name_fa: hawaladar.name_fa || '',
       name_ps: hawaladar.name_ps || '',
       phone: hawaladar.phone || '',
+      province_id: hawaladar.province_id?.toString() || '',
+      district_id: hawaladar.district_id?.toString() || '',
       location: hawaladar.location,
       location_fa: hawaladar.location_fa || '',
       location_ps: hawaladar.location_ps || '',
@@ -307,6 +330,8 @@ export const Hawala = () => {
         name_fa: hawaladarForm.name_fa || undefined,
         name_ps: hawaladarForm.name_ps || undefined,
         phone: hawaladarForm.phone || undefined,
+        province_id: hawaladarForm.province_id ? parseInt(hawaladarForm.province_id) : undefined,
+        district_id: hawaladarForm.district_id ? parseInt(hawaladarForm.district_id) : undefined,
         location: hawaladarForm.location,
         location_fa: hawaladarForm.location_fa || undefined,
         location_ps: hawaladarForm.location_ps || undefined,
@@ -443,7 +468,7 @@ export const Hawala = () => {
         muiTableBodyCellProps: { sx: { textAlign: 'center' } },
         Cell: ({ cell }: { cell: any }) => (
           <Box sx={{ textAlign: 'center' }}>
-            {new Date(cell.getValue<string>()).toLocaleDateString()}
+            {new Date(cell.getValue()).toLocaleDateString()}
           </Box>
         )
       }] : []),
@@ -480,12 +505,51 @@ export const Hawala = () => {
       {
         accessorKey: 'name',
         header: t('hawala.name'),
-        size: 150
+        size: 150,
+        Cell: ({ row }) => (
+          <Typography variant="body2" noWrap>
+            {i18n.language === 'fa'
+              ? row.original.name_fa || row.original.name
+              : i18n.language === 'ps'
+              ? row.original.name_ps || row.original.name
+              : row.original.name}
+          </Typography>
+        )
       },
       {
         accessorKey: 'location',
         header: t('hawala.location'),
-        size: 150
+        size: 150,
+        Cell: ({ row }) => {
+          const locationText = i18n.language === 'fa'
+            ? row.original.location_fa || row.original.location
+            : i18n.language === 'ps'
+            ? row.original.location_ps || row.original.location
+            : row.original.location;
+
+          const districtName = i18n.language === 'fa'
+            ? row.original.district_name_fa || row.original.district_name
+            : i18n.language === 'ps'
+            ? row.original.district_name_ps || row.original.district_name
+            : row.original.district_name;
+
+          const provinceName = i18n.language === 'fa'
+            ? row.original.province_name_fa || row.original.province_name
+            : i18n.language === 'ps'
+            ? row.original.province_name_ps || row.original.province_name
+            : row.original.province_name;
+
+          return (
+            <Box>
+              <Typography variant="body2" noWrap>{locationText}</Typography>
+              {(provinceName || districtName) && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {districtName && `${districtName}, `}{provinceName}
+                </Typography>
+              )}
+            </Box>
+          );
+        }
       },
       ...(!isMobile ? [{
         accessorKey: 'phone' as const,
@@ -541,6 +605,99 @@ export const Hawala = () => {
       }
     ],
     [t, i18n.language, isAdmin, isMobile]
+  );
+
+  const agentReportColumns = useMemo<MRT_ColumnDef<HawalaAgentReport>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: t('hawala.agent'),
+        size: 150
+      },
+      {
+        accessorKey: 'location',
+        header: t('hawala.location'),
+        size: 150
+      },
+      {
+        accessorKey: 'sent_count',
+        header: t('hawala.sent'),
+        size: 100,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
+        )
+      },
+      {
+        accessorKey: 'received_count',
+        header: t('hawala.received'),
+        size: 100,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
+        )
+      },
+      {
+        accessorKey: 'commission_earned',
+        header: t('hawala.commissionEarned'),
+        size: 140,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
+        )
+      }
+    ],
+    [t, i18n.language]
+  );
+
+  const currencyReportColumns = useMemo<MRT_ColumnDef<HawalaCurrencyReport>[]>(
+    () => [
+      {
+        accessorKey: 'code',
+        header: t('hawala.currency'),
+        size: 100,
+        Cell: ({ row }) => (
+          <Box>
+            <Typography variant="body2">{row.original.code}</Typography>
+            <Typography variant="caption" color="text.secondary">{row.original.name}</Typography>
+          </Box>
+        )
+      },
+      {
+        accessorKey: 'transaction_count',
+        header: t('hawala.transactionCount'),
+        size: 130,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
+        )
+      },
+      {
+        accessorKey: 'total_amount',
+        header: t('hawala.totalAmount'),
+        size: 140,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
+        )
+      },
+      {
+        accessorKey: 'total_commission',
+        header: t('hawala.totalCommission'),
+        size: 140,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ cell }) => (
+          <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
+        )
+      }
+    ],
+    [t, i18n.language]
   );
 
   const sidebar = (
@@ -731,7 +888,7 @@ export const Hawala = () => {
 
   const renderReports = () => (
     <>
-      <Typography variant="h6" fontWeight={600} gutterBottom>{t('hawala.reports')}</Typography>
+      <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>{t('hawala.reports')}</Typography>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -772,70 +929,86 @@ export const Hawala = () => {
       <Divider sx={{ my: 3 }} />
 
       {/* Agent Reports */}
-      <Typography variant="subtitle1" fontWeight={600} gutterBottom>{t('hawala.byAgent')}</Typography>
-      <Paper sx={{ mb: 3, overflow: 'auto' }}>
-        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
-          <Box component="thead">
-            <Box component="tr" sx={{ bgcolor: '#f5f5f5' }}>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'left' }}>{t('hawala.agent')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'left' }}>{t('hawala.location')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.sent')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.received')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.commissionEarned')}</Box>
-            </Box>
-          </Box>
-          <Box component="tbody">
-            {agentReports.map((agent) => (
-              <Box component="tr" key={agent.id} sx={{ '&:hover': { bgcolor: '#fafafa' } }}>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee' }}>{agent.name}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee' }}>{agent.location}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{agent.sent_count}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{agent.received_count}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{formatCurrency(agent.commission_earned)}</Box>
-              </Box>
-            ))}
-            {agentReports.length === 0 && (
-              <Box component="tr">
-                <Box component="td" colSpan={5} sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                  {t('hawala.noData')}
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Paper>
+      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byAgent')}</Typography>
+      <Box sx={{ mb: 3, overflowX: 'auto', width: '100%' }}>
+        <MaterialReactTable
+          columns={agentReportColumns}
+          data={agentReports}
+          enablePagination
+          enableSorting
+          enableGlobalFilter
+          enableDensityToggle={!isMobile}
+          initialState={{
+            density: isMobile ? 'compact' : 'comfortable',
+            pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+          }}
+          muiTableContainerProps={{
+            sx: { maxWidth: '100%' }
+          }}
+          muiTableProps={{
+            sx: {
+              direction: isRtl ? 'rtl' : 'ltr',
+              minWidth: isMobile ? 500 : 650
+            }
+          }}
+          muiTableHeadCellProps={{
+            sx: {
+              py: isMobile ? 1 : 1.5,
+              px: isMobile ? 1 : 2,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              fontWeight: 600
+            }
+          }}
+          muiTableBodyCellProps={{
+            sx: {
+              py: isMobile ? 0.5 : 1,
+              px: isMobile ? 1 : 2
+            }
+          }}
+        />
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
 
       {/* Currency Reports */}
-      <Typography variant="subtitle1" fontWeight={600} gutterBottom>{t('hawala.byCurrency')}</Typography>
-      <Paper sx={{ overflow: 'auto' }}>
-        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
-          <Box component="thead">
-            <Box component="tr" sx={{ bgcolor: '#f5f5f5' }}>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'left' }}>{t('hawala.currency')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.transactionCount')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.totalAmount')}</Box>
-              <Box component="th" sx={{ p: 1.5, textAlign: 'right' }}>{t('hawala.totalCommission')}</Box>
-            </Box>
-          </Box>
-          <Box component="tbody">
-            {currencyReports.map((currency) => (
-              <Box component="tr" key={currency.id} sx={{ '&:hover': { bgcolor: '#fafafa' } }}>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee' }}>{currency.code} - {currency.name}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{currency.transaction_count}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{formatCurrency(currency.total_amount)}</Box>
-                <Box component="td" sx={{ p: 1.5, borderTop: '1px solid #eee', textAlign: 'right' }}>{formatCurrency(currency.total_commission)}</Box>
-              </Box>
-            ))}
-            {currencyReports.length === 0 && (
-              <Box component="tr">
-                <Box component="td" colSpan={4} sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                  {t('hawala.noData')}
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Paper>
+      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byCurrency')}</Typography>
+      <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <MaterialReactTable
+          columns={currencyReportColumns}
+          data={currencyReports}
+          enablePagination
+          enableSorting
+          enableGlobalFilter
+          enableDensityToggle={!isMobile}
+          initialState={{
+            density: isMobile ? 'compact' : 'comfortable',
+            pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+          }}
+          muiTableContainerProps={{
+            sx: { maxWidth: '100%' }
+          }}
+          muiTableProps={{
+            sx: {
+              direction: isRtl ? 'rtl' : 'ltr',
+              minWidth: isMobile ? 450 : 550
+            }
+          }}
+          muiTableHeadCellProps={{
+            sx: {
+              py: isMobile ? 1 : 1.5,
+              px: isMobile ? 1 : 2,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              fontWeight: 600
+            }
+          }}
+          muiTableBodyCellProps={{
+            sx: {
+              py: isMobile ? 0.5 : 1,
+              px: isMobile ? 1 : 2
+            }
+          }}
+        />
+      </Box>
     </>
   );
 
@@ -908,9 +1081,13 @@ export const Hawala = () => {
                 onChange={(e) => setTransactionForm({ ...transactionForm, sender_hawaladar_id: e.target.value })}
               >
                 <MenuItem value="">{t('hawala.selectAgent')}</MenuItem>
-                {hawaladars.filter(h => h.is_active).map((h) => (
-                  <MenuItem key={h.id} value={h.id}>{h.name} - {h.location}</MenuItem>
-                ))}
+                {hawaladars.filter(h => h.is_active).map((h) => {
+                  const name = i18n.language === 'fa' ? h.name_fa || h.name : i18n.language === 'ps' ? h.name_ps || h.name : h.name;
+                  const location = i18n.language === 'fa' ? h.location_fa || h.location : i18n.language === 'ps' ? h.location_ps || h.location : h.location;
+                  return (
+                    <MenuItem key={h.id} value={h.id}>{name} - {location}</MenuItem>
+                  );
+                })}
               </TextField>
             </Grid>
           </Grid>
@@ -943,9 +1120,13 @@ export const Hawala = () => {
                 onChange={(e) => setTransactionForm({ ...transactionForm, receiver_hawaladar_id: e.target.value })}
               >
                 <MenuItem value="">{t('hawala.selectAgent')}</MenuItem>
-                {hawaladars.filter(h => h.is_active).map((h) => (
-                  <MenuItem key={h.id} value={h.id}>{h.name} - {h.location}</MenuItem>
-                ))}
+                {hawaladars.filter(h => h.is_active).map((h) => {
+                  const name = i18n.language === 'fa' ? h.name_fa || h.name : i18n.language === 'ps' ? h.name_ps || h.name : h.name;
+                  const location = i18n.language === 'fa' ? h.location_fa || h.location : i18n.language === 'ps' ? h.location_ps || h.location : h.location;
+                  return (
+                    <MenuItem key={h.id} value={h.id}>{name} - {location}</MenuItem>
+                  );
+                })}
               </TextField>
             </Grid>
           </Grid>
@@ -1008,6 +1189,7 @@ export const Hawala = () => {
       <Dialog open={statusDialog} onClose={() => setStatusDialog(false)}>
         <DialogTitle>{t('hawala.changeStatus')}</DialogTitle>
         <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Typography variant="body2" sx={{ mb: 2 }}>
             {t('hawala.currentStatus')}: <Chip label={t(`hawala.statuses.${selectedTransaction?.status}`)} size="small" />
           </Typography>
@@ -1101,6 +1283,41 @@ export const Hawala = () => {
             onChange={(e) => setHawaladarForm({ ...hawaladarForm, phone: e.target.value })}
             sx={{ mt: 2 }}
           />
+          <TextField
+            fullWidth
+            select
+            label="Province"
+            value={hawaladarForm.province_id}
+            onChange={(e) => {
+              setHawaladarForm({ ...hawaladarForm, province_id: e.target.value, district_id: '' });
+            }}
+            sx={{ mt: 2 }}
+          >
+            <MenuItem value="">Select Province</MenuItem>
+            {provinces.map((p) => (
+              <MenuItem key={p.id} value={p.id}>
+                {i18n.language === 'fa' ? p.name_fa || p.name : i18n.language === 'ps' ? p.name_ps || p.name : p.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="District"
+            value={hawaladarForm.district_id}
+            onChange={(e) => setHawaladarForm({ ...hawaladarForm, district_id: e.target.value })}
+            sx={{ mt: 2 }}
+            disabled={!hawaladarForm.province_id}
+          >
+            <MenuItem value="">Select District</MenuItem>
+            {districts
+              .filter(d => d.province_id === parseInt(hawaladarForm.province_id))
+              .map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {i18n.language === 'fa' ? d.name_fa || d.name : i18n.language === 'ps' ? d.name_ps || d.name : d.name}
+                </MenuItem>
+              ))}
+          </TextField>
           <TextField
             fullWidth
             label={t('hawala.locationEn')}

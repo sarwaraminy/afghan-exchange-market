@@ -224,7 +224,19 @@ VITE_API_URL=http://localhost:5000/api
 | `npm run dev:frontend` | Start frontend only |
 | `npm run build` | Build both for production |
 | `npm run seed` | Seed database with initial data |
+| `npm run reset-admin` | Reset admin password |
 | `npm run install:all` | Install all dependencies |
+
+### Admin Management
+
+Reset admin password with a custom password:
+```bash
+cd backend
+node set-password.js  # Uses default password: aaAA11!!
+# Or use environment variable:
+# set ADMIN_PASSWORD=yourpassword
+# npm run reset-admin
+```
 
 ## Hawala System
 
@@ -276,6 +288,32 @@ The application supports three languages with full RTL (Right-to-Left) support:
 - **Pashto (پښتو)** - Afghan Pashto
 
 Users can switch languages using the dropdown in the header. The selected language is persisted in localStorage.
+
+## Recent Updates (January 2026)
+
+### Critical Bug Fixes
+- ✅ Fixed database schema inconsistencies (table/column name mismatches)
+- ✅ Fixed duplicate hawaladar records (removed 36 duplicates)
+- ✅ Fixed transaction update security (prevents account imbalances)
+- ✅ Fixed cancellation refund logic (properly reverses both sides)
+- ✅ Fixed reference code race condition (atomic generation)
+- ✅ Fixed SQL injection vulnerability in account transfers
+- ✅ Fixed admin password reset persistence
+
+### Security Improvements
+- Added UNIQUE constraints to prevent duplicate records
+- Implemented atomic database operations
+- Enhanced input validation and sanitization
+- Improved error handling and user feedback
+
+### Database Migrations
+All migrations run automatically on startup:
+- Renamed `hawaladar_accounts` → `saraf_accounts`
+- Renamed `customer_accounts` → `customer_savings`
+- Updated account_type enums for consistency
+- Added UNIQUE constraint on hawaladars
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed information.
 
 ## Contributing
 

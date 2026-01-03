@@ -102,12 +102,33 @@ export interface PriceAlert {
   created_at: string;
 }
 
+export interface Province {
+  id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+  created_at: string;
+}
+
+export interface District {
+  id: number;
+  province_id: number;
+  name: string;
+  name_fa?: string;
+  name_ps?: string;
+  code?: string;
+  created_at: string;
+}
+
 export interface Hawaladar {
   id: number;
   name: string;
   name_fa?: string;
   name_ps?: string;
   phone?: string;
+  province_id?: number;
+  district_id?: number;
   location: string;
   location_fa?: string;
   location_ps?: string;
@@ -115,6 +136,50 @@ export interface Hawaladar {
   is_active: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface HawaladarWithLocation extends Hawaladar {
+  province_name?: string;
+  district_name?: string;
+}
+
+export interface SarafAccount {
+  id: number;
+  saraf_id: number;
+  cash_balance: number;
+  currency_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerSavings {
+  id: number;
+  user_id: number;
+  saraf_id: number;
+  balance: number;
+  currency_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccountTransaction {
+  id: number;
+  account_type: 'saraf_cash' | 'customer_savings';
+  account_id: number;
+  transaction_type: 'deposit' | 'withdraw' | 'transfer_in' | 'transfer_out' | 'hawala_send' | 'hawala_receive';
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  currency_id: number;
+  reference_id?: number;
+  notes?: string;
+  created_by: number;
+  created_at: string;
+}
+
+export interface AccountTransactionWithDetails extends AccountTransaction {
+  currency_code: string;
+  created_by_name: string;
 }
 
 export interface HawalaTransaction {
@@ -133,6 +198,8 @@ export interface HawalaTransaction {
   total_amount: number;
   status: 'pending' | 'in_transit' | 'completed' | 'cancelled';
   notes?: string;
+  sender_account_transaction_id?: number;
+  receiver_account_transaction_id?: number;
   created_by: number;
   completed_by?: number;
   created_at: string;
