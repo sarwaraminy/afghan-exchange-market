@@ -152,14 +152,35 @@ export interface SarafAccount {
   updated_at: string;
 }
 
+export interface Customer {
+  id: number;
+  first_name: string;
+  last_name: string;
+  tazkira_number: string;
+  phone: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CustomerSavings {
   id: number;
-  user_id: number;
+  customer_id: number;
   saraf_id: number;
   balance: number;
   currency_id: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface CustomerSavingsWithDetails extends CustomerSavings {
+  first_name: string;
+  last_name: string;
+  tazkira_number: string;
+  phone: string;
+  currency_code: string;
+  currency_name: string;
+  saraf_name: string;
 }
 
 export interface AccountTransaction {

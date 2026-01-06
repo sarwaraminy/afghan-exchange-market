@@ -150,14 +150,30 @@ export interface HawaladarAccount {
   updated_at: string;
 }
 
+export interface Customer {
+  id: number;
+  first_name: string;
+  last_name: string;
+  tazkira_number: string;
+  phone: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CustomerAccount {
   id: number;
-  user_id: number;
+  customer_id: number;
   balance: number;
   currency_id: number;
   currency_code?: string;
   currency_name?: string;
-  username?: string;
+  first_name?: string;
+  last_name?: string;
+  tazkira_number?: string;
+  phone?: string;
+  saraf_id: number;
+  saraf_name?: string;
   created_at: string;
   updated_at: string;
 }

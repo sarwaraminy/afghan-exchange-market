@@ -15,6 +15,7 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **News Section** - Stay updated with market news and announcements
 - **Hawala System** - Complete money transfer management with agents, transactions, and reports
+- **Customer Savings Accounts** - Hawaladar-managed savings accounts for customers with deposit/withdraw tracking
 - **User Accounts** - Save favorite currencies and set price alerts (admin-managed accounts)
 - **Profile Pictures** - Upload custom profile pictures with server-side image validation
 - **Admin Panel** - Full CRUD operations for exchange rates, gold prices, news, and hawala
@@ -200,6 +201,28 @@ afghan-exchange-market/
 | GET | `/api/hawala/reports/by-agent` | Transactions grouped by agent |
 | GET | `/api/hawala/reports/by-currency` | Transactions grouped by currency |
 
+### Customer Savings Accounts (Requires Auth)
+
+#### Customers
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/customers` | Get all customers |
+| GET | `/api/customers/search?q=query` | Search customers |
+| GET | `/api/customers/:id` | Get customer by ID |
+| POST | `/api/customers` | Create new customer |
+| PUT | `/api/customers/:id` | Update customer |
+| DELETE | `/api/customers/:id` | Delete customer (admin only) |
+
+#### Savings Accounts
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/customers/savings/all` | Get all savings accounts |
+| GET | `/api/customers/:customerId/savings` | Get customer's accounts |
+| POST | `/api/customers/savings` | Create savings account |
+| POST | `/api/customers/savings/:accountId/deposit` | Deposit to account |
+| POST | `/api/customers/savings/:accountId/withdraw` | Withdraw from account |
+| GET | `/api/customers/savings/:accountId/transactions` | Get transaction history |
+
 ## Environment Variables
 
 ### Backend (.env)
@@ -262,6 +285,44 @@ The Hawala system provides a complete money transfer management solution, tradit
 4. Receiving agent pays recipient
 5. Update status to "completed"
 ```
+
+## Customer Savings Account System
+
+The Customer Savings Account system allows hawaladars to manage physical cash deposits for their customers. This is a traditional Afghan banking practice where customers physically visit the hawaladar to deposit or withdraw money.
+
+**Important:** This system is managed entirely by the hawaladar. Customers do NOT have login access. All operations are performed by the hawaladar when the customer visits in person.
+
+### Features
+- **Customer Management** - Register customers with Tazkira (National ID) and phone
+- **Account Creation** - Create savings accounts linked to specific hawaladars and currencies
+- **Deposit Tracking** - Record cash deposits with notes and automatic balance updates
+- **Withdrawal Management** - Process withdrawals with balance validation
+- **Transaction History** - Complete audit trail of all deposits and withdrawals
+- **Multi-Currency Support** - Customers can have accounts in different currencies
+- **Multi-Hawaladar Support** - Customers can have accounts with different hawaladars
+
+### Database Tables
+- `customers` - Customer profiles (NOT users, no login credentials)
+- `customer_savings` - Savings account balances per customer/hawaladar/currency
+- `account_transactions` - Complete transaction history
+
+### Customer Flow
+```
+1. Customer visits hawaladar with cash
+2. Hawaladar creates/looks up customer profile (by Tazkira number)
+3. Hawaladar finds customer's savings account
+4. Customer deposits/withdraws cash
+5. Hawaladar records transaction in system
+6. Balance automatically updated
+```
+
+### Key Constraints
+- One customer profile per Tazkira number (UNIQUE constraint)
+- One savings account per customer/hawaladar/currency combination
+- Cannot delete customers with existing savings accounts
+- Cannot withdraw more than current balance
+
+**📖 Detailed Documentation:** See [docs/SAVINGS_ACCOUNT.md](docs/SAVINGS_ACCOUNT.md) for complete API reference, implementation details, and testing guide.
 
 ## Screenshots
 

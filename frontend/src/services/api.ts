@@ -497,4 +497,82 @@ export const transferBetweenAccounts = async (transferData: {
   return data.data!;
 };
 
+// ==================== CUSTOMERS & SAVINGS ====================
+
+// Customer Management
+export const getCustomers = async (): Promise<Customer[]> => {
+  const { data } = await api.get<ApiResponse<Customer[]>>('/customers');
+  return data.data!;
+};
+
+export const getCustomerById = async (id: number): Promise<Customer> => {
+  const { data } = await api.get<ApiResponse<Customer>>(`/customers/${id}`);
+  return data.data!;
+};
+
+export const searchCustomers = async (query: string): Promise<Customer[]> => {
+  const { data } = await api.get<ApiResponse<Customer[]>>('/customers/search', { params: { q: query } });
+  return data.data!;
+};
+
+export const createCustomer = async (customerData: {
+  first_name: string;
+  last_name: string;
+  tazkira_number: string;
+  phone: string;
+}): Promise<Customer> => {
+  const { data } = await api.post<ApiResponse<Customer>>('/customers', customerData);
+  return data.data!;
+};
+
+export const updateCustomer = async (id: number, customerData: {
+  first_name: string;
+  last_name: string;
+  tazkira_number: string;
+  phone: string;
+}): Promise<Customer> => {
+  const { data } = await api.put<ApiResponse<Customer>>(`/customers/${id}`, customerData);
+  return data.data!;
+};
+
+export const deleteCustomer = async (id: number): Promise<void> => {
+  await api.delete(`/customers/${id}`);
+};
+
+// Savings Accounts
+export const getAllSavingsAccounts = async (): Promise<CustomerAccount[]> => {
+  const { data } = await api.get<ApiResponse<CustomerAccount[]>>('/customers/savings/all');
+  return data.data!;
+};
+
+export const getCustomerSavingsAccounts = async (customerId: number): Promise<CustomerAccount[]> => {
+  const { data } = await api.get<ApiResponse<CustomerAccount[]>>(`/customers/${customerId}/savings`);
+  return data.data!;
+};
+
+export const createSavingsAccount = async (accountData: {
+  customer_id: number;
+  saraf_id: number;
+  currency_id: number;
+}): Promise<CustomerAccount> => {
+  const { data } = await api.post<ApiResponse<CustomerAccount>>('/customers/savings', accountData);
+  return data.data!;
+};
+
+export const depositToSavingsAccount = async (accountId: number, amount: number, notes?: string): Promise<CustomerAccount> => {
+  const { data } = await api.post<ApiResponse<CustomerAccount>>(`/customers/savings/${accountId}/deposit`, { amount, notes });
+  return data.data!;
+};
+
+export const withdrawFromSavingsAccount = async (accountId: number, amount: number, notes?: string): Promise<CustomerAccount> => {
+  const { data } = await api.post<ApiResponse<CustomerAccount>>(`/customers/savings/${accountId}/withdraw`, { amount, notes });
+  return data.data!;
+};
+
+export const getSavingsAccountTransactions = async (accountId: number, limit?: number, offset?: number): Promise<AccountTransaction[]> => {
+  const params = { ...(limit && { limit }), ...(offset && { offset }) };
+  const { data } = await api.get<ApiResponse<AccountTransaction[]>>(`/customers/savings/${accountId}/transactions`, { params });
+  return data.data!;
+};
+
 export default api;

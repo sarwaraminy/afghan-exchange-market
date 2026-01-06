@@ -302,18 +302,30 @@ export const initializeDatabase = async (): Promise<void> => {
       FOREIGN KEY (currency_id) REFERENCES currencies(id)
     );
 
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      tazkira_number TEXT UNIQUE NOT NULL,
+      phone TEXT NOT NULL,
+      created_by INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS customer_savings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
+      customer_id INTEGER NOT NULL,
       saraf_id INTEGER NOT NULL,
       balance REAL DEFAULT 0.0,
       currency_id INTEGER NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (customer_id) REFERENCES customers(id),
       FOREIGN KEY (saraf_id) REFERENCES hawaladars(id),
       FOREIGN KEY (currency_id) REFERENCES currencies(id),
-      UNIQUE(user_id, saraf_id, currency_id)
+      UNIQUE(customer_id, saraf_id, currency_id)
     );
 
     CREATE TABLE IF NOT EXISTS account_transactions (
@@ -556,6 +568,104 @@ export const initializeDatabase = async (): Promise<void> => {
     }
   } catch (e) {
     console.error('Migration error:', e);
+    // Continue even if migration fails
+  }
+
+  // Migration: Convert customer_savings from user_id to customer_id
+  try {
+    const csColumns = db.exec("PRAGMA table_info(customer_savings)");
+    if (csColumns.length > 0) {
+      const columnNames = csColumns[0].values.map((row: any) => row[1]);
+
+      // If customer_savings still uses user_id, migrate to customer_id
+      if (columnNames.includes('user_id') && !columnNames.includes('customer_id')) {
+        console.log('Migrating customer_savings to use customers table...');
+
+        // Create customers table if it doesn't exist
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            tazkira_number TEXT UNIQUE NOT NULL,
+            phone TEXT NOT NULL,
+            created_by INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+          );
+        `);
+
+        // For each existing customer_savings record, create a customer entry
+        // Using user's full_name as first_name and generating tazkira from user_id
+        const existingSavings = db.exec(`
+          SELECT cs.id, cs.user_id, cs.saraf_id, cs.balance, cs.currency_id, cs.created_at, cs.updated_at,
+                 u.full_name, u.email, u.username
+          FROM customer_savings cs
+          JOIN users u ON cs.user_id = u.id
+        `);
+
+        if (existingSavings.length > 0 && existingSavings[0].values.length > 0) {
+          // Create customer records for each existing user with savings
+          for (const row of existingSavings[0].values) {
+            const userId = row[1];
+            const fullName = row[7] as string || 'Unknown';
+            const email = row[8] as string || '';
+            const username = row[9] as string || '';
+
+            // Split full name into first and last name
+            const nameParts = fullName.trim().split(' ');
+            const firstName = nameParts[0] || 'Customer';
+            const lastName = nameParts.slice(1).join(' ') || 'Unknown';
+
+            // Generate tazkira number from user_id (temporary)
+            const tazkiraNumber = `MIGRATED-${userId}`;
+
+            // Use email or username as phone (temporary)
+            const phone = email || username || 'N/A';
+
+            // Insert customer record
+            db.exec(`
+              INSERT OR IGNORE INTO customers (first_name, last_name, tazkira_number, phone, created_by, created_at, updated_at)
+              VALUES ('${firstName}', '${lastName}', '${tazkiraNumber}', '${phone}', ${userId}, datetime('now'), datetime('now'))
+            `);
+          }
+        }
+
+        // Create new customer_savings table with customer_id
+        db.exec(`
+          CREATE TABLE customer_savings_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL,
+            saraf_id INTEGER NOT NULL,
+            balance REAL DEFAULT 0.0,
+            currency_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (customer_id) REFERENCES customers(id),
+            FOREIGN KEY (saraf_id) REFERENCES hawaladars(id),
+            FOREIGN KEY (currency_id) REFERENCES currencies(id),
+            UNIQUE(customer_id, saraf_id, currency_id)
+          );
+        `);
+
+        // Copy data using customer_id (lookup from tazkira_number)
+        db.exec(`
+          INSERT INTO customer_savings_new (id, customer_id, saraf_id, balance, currency_id, created_at, updated_at)
+          SELECT cs.id, c.id, cs.saraf_id, cs.balance, cs.currency_id, cs.created_at, cs.updated_at
+          FROM customer_savings cs
+          JOIN customers c ON c.tazkira_number = 'MIGRATED-' || cs.user_id
+        `);
+
+        // Drop old table and rename new one
+        db.exec('DROP TABLE customer_savings;');
+        db.exec('ALTER TABLE customer_savings_new RENAME TO customer_savings;');
+
+        console.log('Migrated customer_savings to use customers table');
+      }
+    }
+  } catch (e) {
+    console.error('Customer savings migration error:', e);
     // Continue even if migration fails
   }
 

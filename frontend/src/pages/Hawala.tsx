@@ -38,7 +38,10 @@ import {
   CheckCircle,
   LocalShipping,
   Cancel,
-  Search
+  Search,
+  AccountBalance,
+  ArrowUpward,
+  ArrowDownward
 } from '@mui/icons-material';
 import {
   getHawaladars,
@@ -56,9 +59,21 @@ import {
   getHawalaReportsByCurrency,
   getCurrencies,
   getProvinces,
-  getDistricts
+  getDistricts,
+  getCustomers,
+  searchCustomers,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  getAllSavingsAccounts,
+  getCustomerSavingsAccounts,
+  createSavingsAccount,
+  depositToSavingsAccount,
+  withdrawFromSavingsAccount,
+  getSavingsAccountTransactions,
+  getCustomerAccount
 } from '../services/api';
-import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District } from '../types';
+import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District, Customer, CustomerAccount, AccountTransaction } from '../types';
 import { Loading } from '../components/common/Loading';
 import { useAuth } from '../context/AuthContext';
 
@@ -129,10 +144,41 @@ export const Hawala = () => {
 
   const [error, setError] = useState('');
 
+  // Savings account states
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [savingsAccounts, setSavingsAccounts] = useState<CustomerAccount[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<CustomerAccount | null>(null);
+  const [accountTransactions, setAccountTransactions] = useState<AccountTransaction[]>([]);
+
+  // Dialog states for savings
+  const [customerDialog, setCustomerDialog] = useState(false);
+  const [accountDialog, setAccountDialog] = useState(false);
+  const [depositDialog, setDepositDialog] = useState(false);
+  const [withdrawDialog, setWithdrawDialog] = useState(false);
+
+  // Form states
+  const [customerForm, setCustomerForm] = useState({
+    first_name: '',
+    last_name: '',
+    tazkira_number: '',
+    phone: ''
+  });
+  const [accountForm, setAccountForm] = useState({
+    customer_id: 0,
+    saraf_id: 1,
+    currency_id: 1
+  });
+  const [depositAmount, setDepositAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [transactionNotes, setTransactionNotes] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const menuItems = [
     { label: t('hawala.transactions'), icon: <Receipt /> },
     { label: t('hawala.agents'), icon: <People /> },
-    { label: t('hawala.reports'), icon: <Assessment /> }
+    { label: t('hawala.reports'), icon: <Assessment /> },
+    { label: t('hawala.savingsAccount'), icon: <AccountBalance /> }
   ];
 
   const fetchData = async () => {
@@ -170,6 +216,157 @@ export const Hawala = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch savings account data
+  const fetchSavingsData = async () => {
+    try {
+      const [customersData, accountsData] = await Promise.all([
+        getCustomers(),
+        getAllSavingsAccounts()
+      ]);
+      setCustomers(customersData);
+      setSavingsAccounts(accountsData);
+    } catch (error: any) {
+      console.error('Error fetching savings data:', error);
+      setCustomers([]);
+      setSavingsAccounts([]);
+    }
+  };
+
+  // Fetch savings data when switching to savings section
+  useEffect(() => {
+    if (selectedSection === 3) {
+      fetchSavingsData();
+    }
+  }, [selectedSection]);
+
+  // Customer handlers
+  const handleNewCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerForm({
+      first_name: '',
+      last_name: '',
+      tazkira_number: '',
+      phone: ''
+    });
+    setError('');
+    setCustomerDialog(true);
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setCustomerForm({
+      first_name: customer.first_name,
+      last_name: customer.last_name,
+      tazkira_number: customer.tazkira_number,
+      phone: customer.phone
+    });
+    setError('');
+    setCustomerDialog(true);
+  };
+
+  const handleSaveCustomer = async () => {
+    try {
+      setError('');
+      if (selectedCustomer) {
+        await updateCustomer(selectedCustomer.id, customerForm);
+      } else {
+        await createCustomer(customerForm);
+      }
+      setCustomerDialog(false);
+      await fetchSavingsData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to save customer');
+    }
+  };
+
+  const handleDeleteCustomer = async (id: number) => {
+    if (confirm('Are you sure you want to delete this customer?')) {
+      try {
+        await deleteCustomer(id);
+        await fetchSavingsData();
+      } catch (error: any) {
+        setError(error.response?.data?.error || 'Failed to delete customer');
+      }
+    }
+  };
+
+  // Account handlers
+  const handleNewAccount = () => {
+    setSelectedAccount(null);
+    setAccountForm({
+      customer_id: 0,
+      saraf_id: hawaladars.find(h => h.is_active)?.id || 1,
+      currency_id: currencies[0]?.id || 1
+    });
+    setError('');
+    setAccountDialog(true);
+  };
+
+  const handleSaveAccount = async () => {
+    try {
+      setError('');
+      await createSavingsAccount(accountForm);
+      setAccountDialog(false);
+      await fetchSavingsData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to create account');
+    }
+  };
+
+  // Transaction handlers
+  const handleDeposit = async () => {
+    if (!selectedAccount) return;
+    try {
+      setError('');
+      const amount = parseFloat(depositAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setError('Please enter a valid amount');
+        return;
+      }
+      await depositToSavingsAccount(selectedAccount.id, amount, transactionNotes || undefined);
+      setDepositDialog(false);
+      setDepositAmount('');
+      setTransactionNotes('');
+      await fetchSavingsData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to deposit');
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!selectedAccount) return;
+    try {
+      setError('');
+      const amount = parseFloat(withdrawAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setError('Please enter a valid amount');
+        return;
+      }
+      if (amount > selectedAccount.balance) {
+        setError('Insufficient balance');
+        return;
+      }
+      await withdrawFromSavingsAccount(selectedAccount.id, amount, transactionNotes || undefined);
+      setWithdrawDialog(false);
+      setWithdrawAmount('');
+      setTransactionNotes('');
+      await fetchSavingsData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to withdraw');
+    }
+  };
+
+  const handleViewTransactions = async (account: CustomerAccount) => {
+    try {
+      const transactions = await getSavingsAccountTransactions(account.id);
+      setAccountTransactions(transactions);
+      setSelectedAccount(account);
+    } catch (error: any) {
+      console.error('Error fetching transactions:', error);
+      setAccountTransactions([]);
+    }
+  };
 
   // Transaction handlers
   const handleNewTransaction = () => {
@@ -700,6 +897,73 @@ export const Hawala = () => {
     [t, i18n.language]
   );
 
+  const accountTransactionColumns = useMemo<MRT_ColumnDef<AccountTransaction>[]>(
+    () => [
+      {
+        accessorKey: 'created_at',
+        header: t('hawala.date'),
+        size: 160,
+        Cell: ({ cell }) => (
+          <Typography variant="body2" noWrap>
+            {new Date(cell.getValue<string>()).toLocaleString()}
+          </Typography>
+        )
+      },
+      {
+        accessorKey: 'transaction_type',
+        header: t('hawala.type'),
+        size: 120,
+        Cell: ({ row }) => {
+          const type = row.original.transaction_type;
+          const isDeposit = type === 'deposit';
+          return (
+            <Chip
+              icon={isDeposit ? <ArrowDownward fontSize="small" /> : <ArrowUpward fontSize="small" />}
+              label={type === 'deposit' ? t('hawala.deposit') : t('hawala.withdraw')}
+              color={isDeposit ? 'success' : 'warning'}
+              size="small"
+            />
+          );
+        }
+      },
+      {
+        accessorKey: 'amount',
+        header: t('hawala.amount'),
+        size: 120,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ row }) => (
+          <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>
+            {formatCurrency(row.original.amount)} {row.original.currency_code}
+          </Typography>
+        )
+      },
+      {
+        accessorKey: 'balance_after',
+        header: t('hawala.balanceAfter'),
+        size: 120,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ row }) => (
+          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+            {formatCurrency(row.original.balance_after)} {row.original.currency_code}
+          </Typography>
+        )
+      },
+      ...(!isMobile ? [{
+        accessorKey: 'notes' as const,
+        header: t('hawala.notes'),
+        size: 180,
+        Cell: ({ cell }: { cell: any }) => (
+          <Typography variant="body2" noWrap>
+            {cell.getValue() || '-'}
+          </Typography>
+        )
+      }] : [])
+    ],
+    [t, i18n.language, isMobile]
+  );
+
   const sidebar = (
     <Paper
       elevation={2}
@@ -1012,6 +1276,260 @@ export const Hawala = () => {
     </>
   );
 
+  const customerColumns = useMemo<MRT_ColumnDef<Customer>[]>(
+    () => [
+      {
+        accessorKey: 'first_name',
+        header: 'First Name',
+        size: 130,
+        Cell: ({ row }) => (
+          <Typography variant="body2" noWrap>
+            {row.original.first_name} {row.original.last_name}
+          </Typography>
+        )
+      },
+      {
+        accessorKey: 'tazkira_number',
+        header: 'Tazkira',
+        size: 120
+      },
+      {
+        accessorKey: 'phone',
+        header: 'Phone',
+        size: 120
+      },
+      {
+        id: 'actions',
+        header: t('admin.actions'),
+        size: 110,
+        muiTableHeadCellProps: { sx: { textAlign: 'center' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'center' } },
+        Cell: ({ row }) => (
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <IconButton size="small" onClick={() => handleEditCustomer(row.original)}>
+              <Edit fontSize="small" />
+            </IconButton>
+            {isAdmin && (
+              <IconButton size="small" onClick={() => handleDeleteCustomer(row.original.id)} color="error">
+                <Delete fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        )
+      }
+    ],
+    [t, isAdmin]
+  );
+
+  const savingsAccountColumns = useMemo<MRT_ColumnDef<CustomerAccount>[]>(
+    () => [
+      {
+        accessorKey: 'first_name',
+        header: 'Customer',
+        size: 150,
+        Cell: ({ row }) => (
+          <Typography variant="body2" noWrap>
+            {row.original.first_name} {row.original.last_name}
+          </Typography>
+        )
+      },
+      {
+        accessorKey: 'saraf_name',
+        header: 'Saraf',
+        size: 130,
+        Cell: ({ cell }) => (
+          <Typography variant="body2" noWrap>{cell.getValue<string>()}</Typography>
+        )
+      },
+      {
+        accessorKey: 'balance',
+        header: 'Balance',
+        size: 140,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ row }) => (
+          <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>
+            {formatCurrency(row.original.balance)} {row.original.currency_code}
+          </Typography>
+        )
+      },
+      {
+        accessorKey: 'created_at',
+        header: 'Created',
+        size: 110,
+        Cell: ({ cell }) => (
+          <Typography variant="body2" noWrap>
+            {new Date(cell.getValue<string>()).toLocaleDateString()}
+          </Typography>
+        )
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        size: 150,
+        muiTableHeadCellProps: { sx: { textAlign: 'center' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'center' } },
+        Cell: ({ row }) => (
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              color="success"
+              onClick={() => {
+                setSelectedAccount(row.original);
+                setDepositAmount('');
+                setTransactionNotes('');
+                setError('');
+                setDepositDialog(true);
+              }}
+              title="Deposit"
+            >
+              <ArrowDownward fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              color="warning"
+              onClick={() => {
+                setSelectedAccount(row.original);
+                setWithdrawAmount('');
+                setTransactionNotes('');
+                setError('');
+                setWithdrawDialog(true);
+              }}
+              disabled={row.original.balance <= 0}
+              title="Withdraw"
+            >
+              <ArrowUpward fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => handleViewTransactions(row.original)}
+              title="View Transactions"
+            >
+              <Receipt fontSize="small" />
+            </IconButton>
+          </Box>
+        )
+      }
+    ],
+    [t, isAdmin]
+  );
+
+  const renderSavingsAccount = () => {
+    return (
+      <>
+        <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>
+          {t('hawala.savingsAccount')}
+        </Typography>
+
+        {/* Customers Section */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" fontWeight={600}>Customers</Typography>
+            <Button
+              variant="contained"
+              startIcon={!isMobile ? <Add /> : undefined}
+              onClick={handleNewCustomer}
+              size={isMobile ? 'small' : 'medium'}
+            >
+              {isMobile ? <Add /> : 'Add Customer'}
+            </Button>
+          </Box>
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+            <MaterialReactTable
+              columns={customerColumns}
+              data={customers}
+              enablePagination
+              enableSorting
+              enableGlobalFilter
+              enableDensityToggle={!isMobile}
+              initialState={{
+                density: isMobile ? 'compact' : 'comfortable',
+                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+              }}
+              muiTableContainerProps={{
+                sx: { maxWidth: '100%' }
+              }}
+              muiTableProps={{
+                sx: {
+                  direction: isRtl ? 'rtl' : 'ltr',
+                  minWidth: isMobile ? 400 : 550
+                }
+              }}
+              muiTableHeadCellProps={{
+                sx: {
+                  py: isMobile ? 1 : 1.5,
+                  px: isMobile ? 1 : 2,
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  fontWeight: 600
+                }
+              }}
+              muiTableBodyCellProps={{
+                sx: {
+                  py: isMobile ? 0.5 : 1,
+                  px: isMobile ? 1 : 2
+                }
+              }}
+            />
+          </Box>
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Savings Accounts Section */}
+        <Box>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" fontWeight={600}>Savings Accounts</Typography>
+            <Button
+              variant="contained"
+              startIcon={!isMobile ? <Add /> : undefined}
+              onClick={handleNewAccount}
+              size={isMobile ? 'small' : 'medium'}
+            >
+              {isMobile ? <Add /> : 'Create Account'}
+            </Button>
+          </Box>
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+            <MaterialReactTable
+              columns={savingsAccountColumns}
+              data={savingsAccounts}
+              enablePagination
+              enableSorting
+              enableGlobalFilter
+              enableDensityToggle={!isMobile}
+              initialState={{
+                density: isMobile ? 'compact' : 'comfortable',
+                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+              }}
+              muiTableContainerProps={{
+                sx: { maxWidth: '100%' }
+              }}
+              muiTableProps={{
+                sx: {
+                  direction: isRtl ? 'rtl' : 'ltr',
+                  minWidth: isMobile ? 500 : 700
+                }
+              }}
+              muiTableHeadCellProps={{
+                sx: {
+                  py: isMobile ? 1 : 1.5,
+                  px: isMobile ? 1 : 2,
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  fontWeight: 600
+                }
+              }}
+              muiTableBodyCellProps={{
+                sx: {
+                  py: isMobile ? 0.5 : 1,
+                  px: isMobile ? 1 : 2
+                }
+              }}
+            />
+          </Box>
+        </Box>
+      </>
+    );
+  };
+
   const renderContent = () => {
     switch (selectedSection) {
       case 0:
@@ -1020,6 +1538,8 @@ export const Hawala = () => {
         return renderHawaladars();
       case 2:
         return renderReports();
+      case 3:
+        return renderSavingsAccount();
       default:
         return null;
     }
@@ -1364,6 +1884,201 @@ export const Hawala = () => {
         <DialogActions>
           <Button onClick={() => setHawaladarDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveHawaladar}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Customer Dialog */}
+      <Dialog open={customerDialog} onClose={() => setCustomerDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedCustomer ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="First Name"
+                value={customerForm.first_name}
+                onChange={(e) => setCustomerForm({ ...customerForm, first_name: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={customerForm.last_name}
+                onChange={(e) => setCustomerForm({ ...customerForm, last_name: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Tazkira Number"
+                value={customerForm.tazkira_number}
+                onChange={(e) => setCustomerForm({ ...customerForm, tazkira_number: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Phone"
+                value={customerForm.phone}
+                onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                required
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCustomerDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleSaveCustomer}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Savings Account Dialog */}
+      <Dialog open={accountDialog} onClose={() => setAccountDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Savings Account</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                select
+                label="Customer"
+                value={accountForm.customer_id}
+                onChange={(e) => setAccountForm({ ...accountForm, customer_id: Number(e.target.value) })}
+                required
+              >
+                <MenuItem value={0}>Select Customer</MenuItem>
+                {customers.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.first_name} {c.last_name} - {c.tazkira_number}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                select
+                label="Saraf"
+                value={accountForm.saraf_id}
+                onChange={(e) => setAccountForm({ ...accountForm, saraf_id: Number(e.target.value) })}
+                required
+              >
+                {hawaladars.filter(h => h.is_active).map((h) => {
+                  const name = i18n.language === 'fa' ? h.name_fa || h.name : i18n.language === 'ps' ? h.name_ps || h.name : h.name;
+                  return (
+                    <MenuItem key={h.id} value={h.id}>
+                      {name}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                select
+                label={t('hawala.currency')}
+                value={accountForm.currency_id}
+                onChange={(e) => setAccountForm({ ...accountForm, currency_id: Number(e.target.value) })}
+                required
+              >
+                {currencies.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.code} - {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAccountDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleSaveAccount}>{t('common.create')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Deposit Dialog */}
+      <Dialog open={depositDialog} onClose={() => setDepositDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t('hawala.deposit')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {selectedAccount && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+              Customer: {selectedAccount.first_name} {selectedAccount.last_name}
+            </Typography>
+          )}
+          <TextField
+            fullWidth
+            type="number"
+            label={t('hawala.amount')}
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(e.target.value)}
+            required
+            InputProps={{
+              endAdornment: selectedAccount?.currency_code
+            }}
+          />
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label={t('hawala.notes')}
+            value={transactionNotes}
+            onChange={(e) => setTransactionNotes(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDepositDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" color="success" onClick={handleDeposit}>{t('hawala.deposit')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Withdraw Dialog */}
+      <Dialog open={withdrawDialog} onClose={() => setWithdrawDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t('hawala.withdraw')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {selectedAccount && (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Customer: {selectedAccount.first_name} {selectedAccount.last_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {t('hawala.availableBalance')}: {formatCurrency(selectedAccount.balance)} {selectedAccount.currency_code}
+              </Typography>
+            </>
+          )}
+          <TextField
+            fullWidth
+            type="number"
+            label={t('hawala.amount')}
+            value={withdrawAmount}
+            onChange={(e) => setWithdrawAmount(e.target.value)}
+            required
+            InputProps={{
+              endAdornment: selectedAccount?.currency_code
+            }}
+          />
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label={t('hawala.notes')}
+            value={transactionNotes}
+            onChange={(e) => setTransactionNotes(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWithdrawDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" color="warning" onClick={handleWithdraw}>{t('hawala.withdraw')}</Button>
         </DialogActions>
       </Dialog>
     </Container>

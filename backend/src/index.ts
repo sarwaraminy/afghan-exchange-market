@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin';
 import hawalaRoutes from './routes/hawala';
 import accountRoutes from './routes/account';
 import locationRoutes from './routes/location';
+import customerRoutes from './routes/customer';
 
 dotenv.config();
 
@@ -76,6 +77,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/hawala', hawalaRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-01-06
+
+### Added
+
+#### Customer Savings Account System
+- **Customer Management** - Complete CRUD operations for customer profiles
+  - New `customers` table with Tazkira (National ID), name, and phone
+  - Search functionality across all customer fields
+  - Unique constraint on Tazkira numbers to prevent duplicates
+  - Protection against deleting customers with existing accounts
+
+- **Savings Account Management** - Hawaladar-managed savings accounts
+  - Redesigned `customer_savings` table to use customer profiles instead of user accounts
+  - Support for multiple accounts per customer (different hawaladars or currencies)
+  - Unique constraint on (customer_id, saraf_id, currency_id) combinations
+  - Complete transaction history tracking for all deposits and withdrawals
+
+- **API Endpoints** - New REST APIs for customer and savings management
+  - `/api/customers` - Full CRUD for customer profiles
+  - `/api/customers/search` - Search customers by name, Tazkira, or phone
+  - `/api/customers/savings` - Create and manage savings accounts
+  - `/api/customers/savings/:id/deposit` - Record cash deposits
+  - `/api/customers/savings/:id/withdraw` - Process withdrawals with balance validation
+  - `/api/customers/savings/:id/transactions` - View transaction history
+
+- **Frontend UI** - Complete savings account interface in Hawala page
+  - New "Savings Account" tab in Hawala sidebar (4th option)
+  - Customers table with add/edit/delete functionality
+  - Savings accounts table with real-time balance display
+  - Inline deposit/withdraw actions with icon buttons
+  - Transaction history viewer per account
+  - Material-UI dialogs for all forms
+  - Responsive design for mobile and desktop
+
+### Fixed
+- **Route Definition Error** - Fixed `requireAdmin` to `isAdmin` in customer routes
+- **Frontend Type Error** - Fixed undefined `customerAccount` reference in transaction columns
+- **Authentication** - Changed `req.user?.id` to `req.user?.userId` for consistency
+
+### Changed
+- **Database Schema** - Major restructure of customer savings system
+  - `customer_savings` now uses `customer_id` instead of `user_id`
+  - Customers are no longer linked to user accounts
+  - Added `saraf_id` to track which hawaladar holds the money
+  - Automatic migration of existing data on startup
+
+- **Business Logic** - Separated customer profiles from user authentication
+  - Customers are managed by hawaladars, not self-service users
+  - Reflects real-world Afghan banking practice
+  - Physical cash deposits only, no online transfers
+
+### Documentation
+- Added comprehensive `docs/SAVINGS_ACCOUNT.md` with:
+  - Complete API reference
+  - Database schema documentation
+  - Frontend implementation guide
+  - Testing checklist
+  - Common errors and solutions
+  - Future enhancement roadmap
+- Updated main README.md with savings account overview
+- Added API endpoint tables for customer management
+
 ## [Unreleased] - 2026-01-03
 
 ### Fixed
