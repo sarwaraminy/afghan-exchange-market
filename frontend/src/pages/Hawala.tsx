@@ -156,6 +156,7 @@ export const Hawala = () => {
   const [accountDialog, setAccountDialog] = useState(false);
   const [depositDialog, setDepositDialog] = useState(false);
   const [withdrawDialog, setWithdrawDialog] = useState(false);
+  const [transactionsHistoryDialog, setTransactionsHistoryDialog] = useState(false);
 
   // Form states
   const [customerForm, setCustomerForm] = useState({
@@ -224,12 +225,14 @@ export const Hawala = () => {
         getCustomers(),
         getAllSavingsAccounts()
       ]);
+      console.log('Fetched customers:', customersData);
+      console.log('Fetched accounts:', accountsData);
       setCustomers(customersData);
       setSavingsAccounts(accountsData);
     } catch (error: any) {
       console.error('Error fetching savings data:', error);
-      setCustomers([]);
-      setSavingsAccounts([]);
+      // Don't clear existing data on error
+      setError(error.response?.data?.error || 'Failed to load data');
     }
   };
 
@@ -274,8 +277,17 @@ export const Hawala = () => {
         await createCustomer(customerForm);
       }
       setCustomerDialog(false);
+      // Refresh the customer list
       await fetchSavingsData();
+      // Reset form
+      setCustomerForm({
+        first_name: '',
+        last_name: '',
+        tazkira_number: '',
+        phone: ''
+      });
     } catch (err: any) {
+      console.error('Error saving customer:', err);
       setError(err.response?.data?.error || 'Failed to save customer');
     }
   };
@@ -359,11 +371,13 @@ export const Hawala = () => {
 
   const handleViewTransactions = async (account: CustomerAccount) => {
     try {
+      setSelectedAccount(account);
       const transactions = await getSavingsAccountTransactions(account.id);
       setAccountTransactions(transactions);
-      setSelectedAccount(account);
+      setTransactionsHistoryDialog(true);
     } catch (error: any) {
       console.error('Error fetching transactions:', error);
+      setError(error.response?.data?.error || 'Failed to load transactions');
       setAccountTransactions([]);
     }
   };
@@ -820,8 +834,8 @@ export const Hawala = () => {
         accessorKey: 'sent_count',
         header: t('hawala.sent'),
         size: 100,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
         )
@@ -830,8 +844,8 @@ export const Hawala = () => {
         accessorKey: 'received_count',
         header: t('hawala.received'),
         size: 100,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
         )
@@ -840,8 +854,8 @@ export const Hawala = () => {
         accessorKey: 'commission_earned',
         header: t('hawala.commissionEarned'),
         size: 140,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
         )
@@ -867,8 +881,8 @@ export const Hawala = () => {
         accessorKey: 'transaction_count',
         header: t('hawala.transactionCount'),
         size: 130,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{cell.getValue<number>()}</Box>
         )
@@ -877,8 +891,8 @@ export const Hawala = () => {
         accessorKey: 'total_amount',
         header: t('hawala.totalAmount'),
         size: 140,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
         )
@@ -887,8 +901,8 @@ export const Hawala = () => {
         accessorKey: 'total_commission',
         header: t('hawala.totalCommission'),
         size: 140,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        muiTableHeadCellProps: { sx: { textAlign: 'right !important' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right !important' } },
         Cell: ({ cell }) => (
           <Box sx={{ textAlign: 'right' }}>{formatCurrency(cell.getValue<number>())}</Box>
         )
@@ -1280,7 +1294,7 @@ export const Hawala = () => {
     () => [
       {
         accessorKey: 'first_name',
-        header: 'First Name',
+        header: t('hawala.firstName'),
         size: 130,
         Cell: ({ row }) => (
           <Typography variant="body2" noWrap>
@@ -1290,12 +1304,12 @@ export const Hawala = () => {
       },
       {
         accessorKey: 'tazkira_number',
-        header: 'Tazkira',
+        header: t('hawala.tazkira'),
         size: 120
       },
       {
         accessorKey: 'phone',
-        header: 'Phone',
+        header: t('hawala.phone'),
         size: 120
       },
       {
@@ -1325,7 +1339,7 @@ export const Hawala = () => {
     () => [
       {
         accessorKey: 'first_name',
-        header: 'Customer',
+        header: t('hawala.customer'),
         size: 150,
         Cell: ({ row }) => (
           <Typography variant="body2" noWrap>
@@ -1335,7 +1349,7 @@ export const Hawala = () => {
       },
       {
         accessorKey: 'saraf_name',
-        header: 'Saraf',
+        header: t('hawala.saraf'),
         size: 130,
         Cell: ({ cell }) => (
           <Typography variant="body2" noWrap>{cell.getValue<string>()}</Typography>
@@ -1343,7 +1357,7 @@ export const Hawala = () => {
       },
       {
         accessorKey: 'balance',
-        header: 'Balance',
+        header: t('hawala.balance'),
         size: 140,
         muiTableHeadCellProps: { sx: { textAlign: 'right' } },
         muiTableBodyCellProps: { sx: { textAlign: 'right' } },
@@ -1355,7 +1369,7 @@ export const Hawala = () => {
       },
       {
         accessorKey: 'created_at',
-        header: 'Created',
+        header: t('hawala.created'),
         size: 110,
         Cell: ({ cell }) => (
           <Typography variant="body2" noWrap>
@@ -1365,7 +1379,7 @@ export const Hawala = () => {
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: t('admin.actions'),
         size: 150,
         muiTableHeadCellProps: { sx: { textAlign: 'center' } },
         muiTableBodyCellProps: { sx: { textAlign: 'center' } },
@@ -1381,7 +1395,7 @@ export const Hawala = () => {
                 setError('');
                 setDepositDialog(true);
               }}
-              title="Deposit"
+              title={t('hawala.deposit')}
             >
               <ArrowDownward fontSize="small" />
             </IconButton>
@@ -1396,14 +1410,14 @@ export const Hawala = () => {
                 setWithdrawDialog(true);
               }}
               disabled={row.original.balance <= 0}
-              title="Withdraw"
+              title={t('hawala.withdraw')}
             >
               <ArrowUpward fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => handleViewTransactions(row.original)}
-              title="View Transactions"
+              title={t('hawala.viewTransactions')}
             >
               <Receipt fontSize="small" />
             </IconButton>
@@ -1421,23 +1435,30 @@ export const Hawala = () => {
           {t('hawala.savingsAccount')}
         </Typography>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
+
         {/* Customers Section */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={600}>Customers</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>{t('hawala.customers')}</Typography>
             <Button
               variant="contained"
               startIcon={!isMobile ? <Add /> : undefined}
               onClick={handleNewCustomer}
               size={isMobile ? 'small' : 'medium'}
             >
-              {isMobile ? <Add /> : 'Add Customer'}
+              {isMobile ? <Add /> : t('hawala.addCustomer')}
             </Button>
           </Box>
           <Box sx={{ overflowX: 'auto', width: '100%' }}>
             <MaterialReactTable
               columns={customerColumns}
-              data={customers}
+              data={customers || []}
               enablePagination
               enableSorting
               enableGlobalFilter
@@ -1478,20 +1499,20 @@ export const Hawala = () => {
         {/* Savings Accounts Section */}
         <Box>
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={600}>Savings Accounts</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>{t('hawala.savingsAccounts')}</Typography>
             <Button
               variant="contained"
               startIcon={!isMobile ? <Add /> : undefined}
               onClick={handleNewAccount}
               size={isMobile ? 'small' : 'medium'}
             >
-              {isMobile ? <Add /> : 'Create Account'}
+              {isMobile ? <Add /> : t('hawala.createAccount')}
             </Button>
           </Box>
           <Box sx={{ overflowX: 'auto', width: '100%' }}>
             <MaterialReactTable
               columns={savingsAccountColumns}
-              data={savingsAccounts}
+              data={savingsAccounts || []}
               enablePagination
               enableSorting
               enableGlobalFilter
@@ -1889,14 +1910,14 @@ export const Hawala = () => {
 
       {/* Customer Dialog */}
       <Dialog open={customerDialog} onClose={() => setCustomerDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedCustomer ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
+        <DialogTitle>{selectedCustomer ? t('hawala.editCustomer') : t('hawala.addCustomer')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="First Name"
+                label={t('hawala.firstName')}
                 value={customerForm.first_name}
                 onChange={(e) => setCustomerForm({ ...customerForm, first_name: e.target.value })}
                 required
@@ -1905,7 +1926,7 @@ export const Hawala = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Last Name"
+                label={t('hawala.lastName')}
                 value={customerForm.last_name}
                 onChange={(e) => setCustomerForm({ ...customerForm, last_name: e.target.value })}
                 required
@@ -1914,7 +1935,7 @@ export const Hawala = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Tazkira Number"
+                label={t('hawala.tazkiraNumber')}
                 value={customerForm.tazkira_number}
                 onChange={(e) => setCustomerForm({ ...customerForm, tazkira_number: e.target.value })}
                 required
@@ -1923,7 +1944,7 @@ export const Hawala = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Phone"
+                label={t('hawala.phone')}
                 value={customerForm.phone}
                 onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
                 required
@@ -1939,7 +1960,7 @@ export const Hawala = () => {
 
       {/* Create Savings Account Dialog */}
       <Dialog open={accountDialog} onClose={() => setAccountDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Savings Account</DialogTitle>
+        <DialogTitle>{t('hawala.createAccount')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -1947,13 +1968,13 @@ export const Hawala = () => {
               <TextField
                 fullWidth
                 select
-                label="Customer"
+                label={t('hawala.customer')}
                 value={accountForm.customer_id}
                 onChange={(e) => setAccountForm({ ...accountForm, customer_id: Number(e.target.value) })}
                 required
               >
-                <MenuItem value={0}>Select Customer</MenuItem>
-                {customers.map((c) => (
+                <MenuItem value={0}>{t('hawala.selectAgent')}</MenuItem>
+                {customers?.map((c) => (
                   <MenuItem key={c.id} value={c.id}>
                     {c.first_name} {c.last_name} - {c.tazkira_number}
                   </MenuItem>
@@ -1964,12 +1985,12 @@ export const Hawala = () => {
               <TextField
                 fullWidth
                 select
-                label="Saraf"
+                label={t('hawala.saraf')}
                 value={accountForm.saraf_id}
                 onChange={(e) => setAccountForm({ ...accountForm, saraf_id: Number(e.target.value) })}
                 required
               >
-                {hawaladars.filter(h => h.is_active).map((h) => {
+                {hawaladars?.filter(h => h.is_active).map((h) => {
                   const name = i18n.language === 'fa' ? h.name_fa || h.name : i18n.language === 'ps' ? h.name_ps || h.name : h.name;
                   return (
                     <MenuItem key={h.id} value={h.id}>
@@ -1988,7 +2009,7 @@ export const Hawala = () => {
                 onChange={(e) => setAccountForm({ ...accountForm, currency_id: Number(e.target.value) })}
                 required
               >
-                {currencies.map((c) => (
+                {currencies?.map((c) => (
                   <MenuItem key={c.id} value={c.id}>
                     {c.code} - {c.name}
                   </MenuItem>
@@ -2010,7 +2031,7 @@ export const Hawala = () => {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {selectedAccount && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-              Customer: {selectedAccount.first_name} {selectedAccount.last_name}
+              {t('hawala.customerLabel')}: {selectedAccount.first_name} {selectedAccount.last_name}
             </Typography>
           )}
           <TextField
@@ -2048,7 +2069,7 @@ export const Hawala = () => {
           {selectedAccount && (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Customer: {selectedAccount.first_name} {selectedAccount.last_name}
+                {t('hawala.customerLabel')}: {selectedAccount.first_name} {selectedAccount.last_name}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {t('hawala.availableBalance')}: {formatCurrency(selectedAccount.balance)} {selectedAccount.currency_code}
@@ -2079,6 +2100,73 @@ export const Hawala = () => {
         <DialogActions>
           <Button onClick={() => setWithdrawDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" color="warning" onClick={handleWithdraw}>{t('hawala.withdraw')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Transaction History Dialog */}
+      <Dialog open={transactionsHistoryDialog} onClose={() => setTransactionsHistoryDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{t('hawala.transactionHistory')}</DialogTitle>
+        <DialogContent>
+          {selectedAccount && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('hawala.customerLabel')}: {selectedAccount.first_name} {selectedAccount.last_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('hawala.sarafLabel')}: {selectedAccount.saraf_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('hawala.currentBalanceLabel')}: {formatCurrency(selectedAccount.balance)} {selectedAccount.currency_code}
+              </Typography>
+            </Box>
+          )}
+          {accountTransactions.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+              {t('hawala.noTransactionsYet')}
+            </Typography>
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '8px', textAlign: 'left' }}>{t('hawala.date')}</th>
+                    <th style={{ padding: '8px', textAlign: 'left' }}>{t('hawala.type')}</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>{t('hawala.amount')}</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>{t('hawala.balanceAfter')}</th>
+                    <th style={{ padding: '8px', textAlign: 'left' }}>{t('hawala.notes')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accountTransactions.map((txn) => (
+                    <tr key={txn.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '8px' }}>
+                        {new Date(txn.created_at).toLocaleDateString()} {new Date(txn.created_at).toLocaleTimeString()}
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <Chip
+                          label={txn.transaction_type}
+                          color={txn.transaction_type === 'deposit' ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>
+                        {txn.transaction_type === 'deposit' ? '+' : '-'}{formatCurrency(txn.amount)} {txn.currency_code}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>
+                        {formatCurrency(txn.balance_after)} {txn.currency_code}
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        {txn.notes || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTransactionsHistoryDialog(false)}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
     </Container>

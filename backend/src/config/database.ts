@@ -565,6 +565,50 @@ export const initializeDatabase = async (): Promise<void> => {
         WHERE account_type = 'customer';
       `);
       console.log('Updated account transaction types');
+
+      // Now recreate the table with updated CHECK constraint
+      // Check if old constraint exists by trying to insert test data
+      try {
+        db.exec(`
+          CREATE TABLE account_transactions_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_type TEXT NOT NULL CHECK(account_type IN ('saraf_cash', 'customer_savings')),
+            account_id INTEGER NOT NULL,
+            transaction_type TEXT NOT NULL CHECK(transaction_type IN ('deposit', 'withdraw', 'transfer_in', 'transfer_out', 'hawala_send', 'hawala_receive')),
+            amount REAL NOT NULL,
+            balance_before REAL NOT NULL,
+            balance_after REAL NOT NULL,
+            currency_id INTEGER NOT NULL,
+            reference_id INTEGER,
+            notes TEXT,
+            created_by INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (currency_id) REFERENCES currencies(id),
+            FOREIGN KEY (created_by) REFERENCES users(id)
+          );
+        `);
+
+        // Copy data from old table
+        db.exec(`
+          INSERT INTO account_transactions_new
+          SELECT * FROM account_transactions;
+        `);
+
+        // Drop old table and rename new one
+        db.exec('DROP TABLE account_transactions;');
+        db.exec('ALTER TABLE account_transactions_new RENAME TO account_transactions;');
+
+        // Recreate indexes
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_account_transactions_account ON account_transactions(account_type, account_id);
+          CREATE INDEX IF NOT EXISTS idx_account_transactions_type ON account_transactions(transaction_type);
+        `);
+
+        console.log('Recreated account_transactions table with new CHECK constraint');
+      } catch (recreateError) {
+        // Table might already have new constraint, ignore error
+        console.log('Account transactions table already has new constraint or recreation failed:', (recreateError as Error).message);
+      }
     }
   } catch (e) {
     console.error('Migration error:', e);

@@ -11,7 +11,7 @@ export const getCustomers = async (req: Request, res: Response) => {
       ORDER BY created_at DESC
     `).all() as Customer[];
 
-    res.json(customers);
+    res.json({ success: true, data: customers });
   } catch (error) {
     console.error('Error fetching customers:', error);
     res.status(500).json({ error: 'Failed to fetch customers' });
@@ -32,7 +32,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
-    res.json(customer);
+    res.json({ success: true, data: customer });
   } catch (error) {
     console.error('Error fetching customer:', error);
     res.status(500).json({ error: 'Failed to fetch customer' });
@@ -59,7 +59,7 @@ export const searchCustomers = async (req: Request, res: Response) => {
       ORDER BY created_at DESC
     `).all(searchTerm, searchTerm, searchTerm, searchTerm) as Customer[];
 
-    res.json(customers);
+    res.json({ success: true, data: customers });
   } catch (error) {
     console.error('Error searching customers:', error);
     res.status(500).json({ error: 'Failed to search customers' });
@@ -100,7 +100,7 @@ export const createCustomer = async (req: Request, res: Response) => {
       SELECT * FROM customers WHERE id = ?
     `).get(result.lastInsertRowid) as Customer;
 
-    res.status(201).json(customer);
+    res.status(201).json({ success: true, data: customer });
   } catch (error) {
     console.error('Error creating customer:', error);
     res.status(500).json({ error: 'Failed to create customer' });
@@ -142,7 +142,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
       SELECT * FROM customers WHERE id = ?
     `).get(parseInt(id)) as Customer;
 
-    res.json(customer);
+    res.json({ success: true, data: customer });
   } catch (error) {
     console.error('Error updating customer:', error);
     res.status(500).json({ error: 'Failed to update customer' });
@@ -172,7 +172,7 @@ export const deleteCustomer = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
-    res.json({ message: 'Customer deleted successfully' });
+    res.json({ success: true, message: 'Customer deleted successfully' });
   } catch (error) {
     console.error('Error deleting customer:', error);
     res.status(500).json({ error: 'Failed to delete customer' });
@@ -200,7 +200,7 @@ export const getAllSavingsAccounts = async (req: Request, res: Response) => {
       ORDER BY cs.created_at DESC
     `).all() as CustomerSavingsWithDetails[];
 
-    res.json(accounts);
+    res.json({ success: true, data: accounts });
   } catch (error) {
     console.error('Error fetching savings accounts:', error);
     res.status(500).json({ error: 'Failed to fetch savings accounts' });
@@ -231,7 +231,7 @@ export const getCustomerSavingsAccounts = async (req: Request, res: Response) =>
       ORDER BY cs.created_at DESC
     `).all(parseInt(customerId)) as CustomerSavingsWithDetails[];
 
-    res.json(accounts);
+    res.json({ success: true, data: accounts });
   } catch (error) {
     console.error('Error fetching customer savings accounts:', error);
     res.status(500).json({ error: 'Failed to fetch savings accounts' });
@@ -292,7 +292,7 @@ export const createSavingsAccount = async (req: Request, res: Response) => {
       WHERE cs.id = ?
     `).get(result.lastInsertRowid) as CustomerSavingsWithDetails;
 
-    res.status(201).json(account);
+    res.status(201).json({ success: true, data: account });
   } catch (error) {
     console.error('Error creating savings account:', error);
     res.status(500).json({ error: 'Failed to create savings account' });
@@ -360,10 +360,12 @@ export const depositToSavings = async (req: Request, res: Response) => {
       WHERE cs.id = ?
     `).get(account.id) as CustomerSavingsWithDetails;
 
-    res.json(updatedAccount);
-  } catch (error) {
+    res.json({ success: true, data: updatedAccount });
+  } catch (error: any) {
     console.error('Error depositing to savings:', error);
-    res.status(500).json({ error: 'Failed to deposit to savings' });
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to deposit to savings' });
   }
 };
 
@@ -432,10 +434,12 @@ export const withdrawFromSavings = async (req: Request, res: Response) => {
       WHERE cs.id = ?
     `).get(account.id) as CustomerSavingsWithDetails;
 
-    res.json(updatedAccount);
-  } catch (error) {
+    res.json({ success: true, data: updatedAccount });
+  } catch (error: any) {
     console.error('Error withdrawing from savings:', error);
-    res.status(500).json({ error: 'Failed to withdraw from savings' });
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to withdraw from savings' });
   }
 };
 
@@ -459,7 +463,7 @@ export const getSavingsTransactions = async (req: Request, res: Response) => {
       LIMIT ? OFFSET ?
     `).all(parseInt(accountId), parseInt(limit as string), parseInt(offset as string));
 
-    res.json(transactions);
+    res.json({ success: true, data: transactions });
   } catch (error) {
     console.error('Error fetching savings transactions:', error);
     res.status(500).json({ error: 'Failed to fetch transactions' });
