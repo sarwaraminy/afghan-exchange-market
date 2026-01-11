@@ -345,10 +345,15 @@ export const translations = {
         savingsAccounts: 'Savings Accounts',
         viewTransactions: 'View Transactions',
         noTransactionsYet: 'No transactions yet',
-        balanceAfter: 'Balance After',
         customerLabel: 'Customer',
         sarafLabel: 'Saraf',
-        currentBalanceLabel: 'Current Balance'
+        currentBalanceLabel: 'Current Balance',
+        printReceipt: 'Print Receipt',
+        hawalaTransferReceipt: 'Hawala Transfer Receipt',
+        amountDetails: 'Amount Details',
+        senderSignature: 'Sender Signature',
+        agentSignature: 'Agent Signature',
+        completedAt: 'Completed At'
       }
     }
   },

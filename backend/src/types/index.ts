@@ -134,6 +134,7 @@ export interface Hawaladar {
   location_ps?: string;
   commission_rate: number;
   is_active: number;
+  logo?: string;
   created_at: string;
   updated_at: string;
 }
@@ -221,6 +222,7 @@ export interface HawalaTransaction {
   notes?: string;
   sender_account_transaction_id?: number;
   receiver_account_transaction_id?: number;
+  customer_savings_account_id?: number;
   created_by: number;
   completed_by?: number;
   created_at: string;

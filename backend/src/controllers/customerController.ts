@@ -469,3 +469,50 @@ export const getSavingsTransactions = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 };
+
+// Get eligible savings accounts for hawala payment
+export const getEligibleSavingsAccounts = async (req: Request, res: Response) => {
+  try {
+    const { customer_id, sender_hawaladar_id, currency_id, total_amount } = req.query;
+
+    if (!customer_id || !sender_hawaladar_id || !currency_id || !total_amount) {
+      res.status(400).json({
+        success: false,
+        error: 'customer_id, sender_hawaladar_id, currency_id, and total_amount are required'
+      });
+      return;
+    }
+
+    const db = getDb();
+    const accounts = db.prepare(`
+      SELECT
+        cs.*,
+        c.first_name,
+        c.last_name,
+        c.tazkira_number,
+        c.phone,
+        cur.code as currency_code,
+        cur.name as currency_name,
+        h.name as saraf_name
+      FROM customer_savings cs
+      JOIN customers c ON cs.customer_id = c.id
+      JOIN currencies cur ON cs.currency_id = cur.id
+      JOIN hawaladars h ON cs.saraf_id = h.id
+      WHERE cs.customer_id = ?
+        AND cs.saraf_id = ?
+        AND cs.currency_id = ?
+        AND cs.balance >= ?
+      ORDER BY cs.balance DESC
+    `).all(
+      parseInt(customer_id as string),
+      parseInt(sender_hawaladar_id as string),
+      parseInt(currency_id as string),
+      parseFloat(total_amount as string)
+    ) as CustomerSavingsWithDetails[];
+
+    res.json({ success: true, data: accounts });
+  } catch (error) {
+    console.error('Error fetching eligible savings accounts:', error);
+    res.status(500).json({ error: 'Failed to fetch eligible savings accounts' });
+  }
+};

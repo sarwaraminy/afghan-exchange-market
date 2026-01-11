@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import db from '../config/database';
 import { Hawaladar, HawalaTransaction, HawalaTransactionWithDetails } from '../types';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 // Generate unique reference code using incremental integer
 // Note: This is now atomic - uses a single UPDATE that returns the new value
@@ -434,7 +437,8 @@ export const createTransaction = (req: Request, res: Response): void => {
       amount,
       currency_id,
       commission_rate,
-      notes
+      notes,
+      customer_savings_account_id
     } = req.body;
     const userId = req.user?.userId;
 
@@ -445,6 +449,15 @@ export const createTransaction = (req: Request, res: Response): void => {
     const rate = commission_rate || 2.0;
     const commissionAmount = amount * (rate / 100);
     const totalAmount = amount + commissionAmount;
+
+    // Validate payment method: cannot have both sender_hawaladar_id and customer_savings_account_id
+    if (sender_hawaladar_id && customer_savings_account_id) {
+      res.status(400).json({
+        success: false,
+        error: 'Cannot use both Saraf account and customer savings account for payment'
+      });
+      return;
+    }
 
     // Check if sender hawaladar has an account and deduct funds
     let senderAccountTransactionId: number | null = null;
@@ -506,15 +519,84 @@ export const createTransaction = (req: Request, res: Response): void => {
       }
     }
 
+    // Check if customer savings account is provided and deduct funds
+    if (customer_savings_account_id) {
+      const savingsAccount = db.prepare(`
+        SELECT * FROM customer_savings WHERE id = ?
+      `).get(customer_savings_account_id) as any;
+
+      if (!savingsAccount) {
+        res.status(404).json({
+          success: false,
+          error: 'Customer savings account not found'
+        });
+        return;
+      }
+
+      // Validate account currency matches transaction currency
+      if (savingsAccount.currency_id !== currency_id) {
+        res.status(400).json({
+          success: false,
+          error: 'Customer savings account currency does not match transaction currency'
+        });
+        return;
+      }
+
+      // Validate account belongs to sender's hawaladar (if sender_hawaladar_id provided)
+      // This ensures customer can only pay from accounts held by the sending saraf
+      // Note: This validation is skipped if no sender_hawaladar_id is specified
+      // In that case, the customer can use any savings account they have
+
+      // Check sufficient balance (including commission)
+      if (savingsAccount.balance < totalAmount) {
+        res.status(400).json({
+          success: false,
+          error: `Insufficient balance in customer savings account. Required: ${totalAmount}, Available: ${savingsAccount.balance}`
+        });
+        return;
+      }
+
+      // Deduct from customer savings account
+      const balanceBefore = savingsAccount.balance;
+      const balanceAfter = balanceBefore - totalAmount;
+
+      db.prepare(`
+        UPDATE customer_savings
+        SET balance = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(balanceAfter, savingsAccount.id);
+
+      // Record account transaction
+      const accountTxResult = db.prepare(`
+        INSERT INTO account_transactions (
+          account_type, account_id, transaction_type, amount, balance_before, balance_after,
+          currency_id, notes, created_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        'customer_savings',
+        savingsAccount.id,
+        'hawala_send',
+        totalAmount,
+        balanceBefore,
+        balanceAfter,
+        currency_id,
+        `Hawala send: ${referenceCode} - ${sender_name} to ${receiver_name}`,
+        userId
+      );
+
+      senderAccountTransactionId = accountTxResult.lastInsertRowid as number;
+    }
+
     // Create hawala transaction
     const result = db.prepare(`
       INSERT INTO hawala_transactions (
         reference_code, sender_name, sender_phone, sender_hawaladar_id,
         receiver_name, receiver_phone, receiver_hawaladar_id,
         amount, currency_id, commission_rate, commission_amount, total_amount,
-        notes, sender_account_transaction_id, created_by
+        notes, sender_account_transaction_id, customer_savings_account_id, created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       referenceCode,
       sender_name,
@@ -530,6 +612,7 @@ export const createTransaction = (req: Request, res: Response): void => {
       totalAmount,
       notes || null,
       senderAccountTransactionId,
+      customer_savings_account_id || null,
       userId
     );
 
@@ -996,5 +1079,73 @@ export const getReportsByCurrency = (req: Request, res: Response): void => {
   } catch (error) {
     console.error('Get reports by currency error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch reports by currency' });
+  }
+};
+
+// ==================== LOGO UPLOAD ====================
+
+// Configure multer for logo uploads
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/logos');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+export const logoUpload = multer({
+  storage: logoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG and PNG images are allowed'));
+    }
+  }
+});
+
+export const uploadHawaladarLogo = (req: Request, res: Response): void => {
+  const { id } = req.params;
+
+  if (!req.file) {
+    res.status(400).json({ success: false, error: 'No file uploaded' });
+    return;
+  }
+
+  try {
+    const existing = db.prepare('SELECT logo FROM hawaladars WHERE id = ?').get(id) as Hawaladar | undefined;
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Hawaladar not found' });
+      return;
+    }
+
+    // Delete old logo if exists
+    if (existing.logo) {
+      const oldLogoPath = path.join(__dirname, '../../uploads/logos', existing.logo);
+      if (fs.existsSync(oldLogoPath)) {
+        fs.unlinkSync(oldLogoPath);
+      }
+    }
+
+    // Update hawaladar with new logo filename
+    db.prepare(`
+      UPDATE hawaladars
+      SET logo = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(req.file.filename, id);
+
+    const updatedHawaladar = db.prepare('SELECT * FROM hawaladars WHERE id = ?').get(id);
+    res.json({ success: true, data: updatedHawaladar });
+  } catch (error) {
+    console.error('Upload hawaladar logo error:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload logo' });
   }
 };

@@ -713,6 +713,34 @@ export const initializeDatabase = async (): Promise<void> => {
     // Continue even if migration fails
   }
 
+  // Migration: Add customer_savings_account_id to hawala_transactions
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const hasCustomerSavingsId = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'customer_savings_account_id');
+
+    if (!hasCustomerSavingsId) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN customer_savings_account_id INTEGER REFERENCES customer_savings(id)');
+      console.log('Added customer_savings_account_id column to hawala_transactions table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
+  // Migration: Add logo field to hawaladars table
+  try {
+    const columns = db.exec("PRAGMA table_info(hawaladars)");
+    const hasLogo = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'logo');
+
+    if (!hasLogo) {
+      db.exec('ALTER TABLE hawaladars ADD COLUMN logo TEXT');
+      console.log('Added logo column to hawaladars table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
   // Save initial state
   const data = db.export();
   const buffer = Buffer.from(data);

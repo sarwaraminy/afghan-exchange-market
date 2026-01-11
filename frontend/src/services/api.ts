@@ -314,6 +314,7 @@ export const createHawalaTransaction = async (transactionData: {
   currency_id: number;
   commission_rate?: number;
   notes?: string;
+  customer_savings_account_id?: number;
 }): Promise<HawalaTransaction> => {
   const { data } = await api.post<ApiResponse<HawalaTransaction>>('/hawala/transactions', transactionData);
   return data.data!;
@@ -542,6 +543,23 @@ export const deleteCustomer = async (id: number): Promise<void> => {
 // Savings Accounts
 export const getAllSavingsAccounts = async (): Promise<CustomerAccount[]> => {
   const { data } = await api.get<ApiResponse<CustomerAccount[]>>('/customers/savings/all');
+  return data.data!;
+};
+
+export const getEligibleSavingsAccounts = async (
+  customerId: number,
+  senderHawaladarId: number,
+  currencyId: number,
+  totalAmount: number
+): Promise<CustomerAccount[]> => {
+  const { data } = await api.get<ApiResponse<CustomerAccount[]>>('/customers/savings/eligible', {
+    params: {
+      customer_id: customerId,
+      sender_hawaladar_id: senderHawaladarId,
+      currency_id: currencyId,
+      total_amount: totalAmount
+    }
+  });
   return data.data!;
 };
 

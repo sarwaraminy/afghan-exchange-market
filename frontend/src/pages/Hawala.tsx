@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
   Container,
@@ -66,6 +67,7 @@ import {
   updateCustomer,
   deleteCustomer,
   getAllSavingsAccounts,
+  getEligibleSavingsAccounts,
   getCustomerSavingsAccounts,
   createSavingsAccount,
   depositToSavingsAccount,
@@ -79,6 +81,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const Hawala = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
@@ -120,8 +123,13 @@ export const Hawala = () => {
     amount: '',
     currency_id: '',
     commission_rate: '2.0',
-    notes: ''
+    notes: '',
+    customer_id: '',
+    customer_savings_account_id: ''
   });
+
+  // Eligible savings accounts state
+  const [eligibleSavingsAccounts, setEligibleSavingsAccounts] = useState<CustomerAccount[]>([]);
 
   const [hawaladarForm, setHawaladarForm] = useState({
     name: '',
@@ -242,6 +250,44 @@ export const Hawala = () => {
       fetchSavingsData();
     }
   }, [selectedSection]);
+
+  // Fetch eligible savings accounts when transaction form changes
+  useEffect(() => {
+    const fetchEligibleAccounts = async () => {
+      if (!transactionForm.customer_id ||
+          !transactionForm.sender_hawaladar_id ||
+          !transactionForm.currency_id ||
+          !transactionForm.amount) {
+        setEligibleSavingsAccounts([]);
+        return;
+      }
+
+      try {
+        const amount = parseFloat(transactionForm.amount);
+        const rate = parseFloat(transactionForm.commission_rate);
+        const totalAmount = amount + (amount * rate / 100);
+
+        const accounts = await getEligibleSavingsAccounts(
+          parseInt(transactionForm.customer_id),
+          parseInt(transactionForm.sender_hawaladar_id),
+          parseInt(transactionForm.currency_id),
+          totalAmount
+        );
+        setEligibleSavingsAccounts(accounts);
+      } catch (error) {
+        console.error('Error fetching eligible savings accounts:', error);
+        setEligibleSavingsAccounts([]);
+      }
+    };
+
+    fetchEligibleAccounts();
+  }, [
+    transactionForm.customer_id,
+    transactionForm.sender_hawaladar_id,
+    transactionForm.currency_id,
+    transactionForm.amount,
+    transactionForm.commission_rate
+  ]);
 
   // Customer handlers
   const handleNewCustomer = () => {
@@ -431,7 +477,8 @@ export const Hawala = () => {
         amount: parseFloat(transactionForm.amount),
         currency_id: parseInt(transactionForm.currency_id),
         commission_rate: parseFloat(transactionForm.commission_rate),
-        notes: transactionForm.notes || undefined
+        notes: transactionForm.notes || undefined,
+        customer_savings_account_id: transactionForm.customer_savings_account_id ? parseInt(transactionForm.customer_savings_account_id) : undefined
       };
 
       if (selectedTransaction) {
@@ -691,6 +738,13 @@ export const Hawala = () => {
         muiTableBodyCellProps: { sx: { textAlign: 'center' } },
         Cell: ({ row }) => (
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <IconButton
+              size="small"
+              onClick={() => navigate(`/hawala/receipt/${row.original.id}`)}
+              title="Print Receipt"
+            >
+              <Receipt fontSize="small" />
+            </IconButton>
             {isAdmin && (
               <>
                 <IconButton size="small" onClick={() => handleChangeStatus(row.original)} title={t('hawala.changeStatus')}>
@@ -1718,6 +1772,65 @@ export const Hawala = () => {
                 onChange={(e) => setTransactionForm({ ...transactionForm, notes: e.target.value })}
               />
             </Grid>
+          </Grid>
+
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>
+            Payment Method
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                select
+                label="Select Customer (Optional)"
+                value={transactionForm.customer_id}
+                onChange={(e) => {
+                  setTransactionForm({
+                    ...transactionForm,
+                    customer_id: e.target.value,
+                    customer_savings_account_id: '' // Reset account when customer changes
+                  });
+                }}
+              >
+                <MenuItem value="">Cash Payment</MenuItem>
+                {customers.map((customer) => (
+                  <MenuItem key={customer.id} value={customer.id}>
+                    {customer.first_name} {customer.last_name} - {customer.phone}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            {transactionForm.customer_id && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Select Savings Account"
+                  value={transactionForm.customer_savings_account_id}
+                  onChange={(e) => setTransactionForm({
+                    ...transactionForm,
+                    customer_savings_account_id: e.target.value
+                  })}
+                  disabled={eligibleSavingsAccounts.length === 0}
+                  helperText={
+                    eligibleSavingsAccounts.length === 0
+                      ? "No eligible accounts with sufficient balance"
+                      : undefined
+                  }
+                >
+                  <MenuItem value="">Select Account</MenuItem>
+                  {eligibleSavingsAccounts.map((account) => (
+                    <MenuItem key={account.id} value={account.id}>
+                      {account.currency_code}: {new Intl.NumberFormat('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }).format(account.balance)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>

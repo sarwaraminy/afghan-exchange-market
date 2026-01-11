@@ -18,7 +18,10 @@ import {
   // Reports
   getReportsSummary,
   getReportsByAgent,
-  getReportsByCurrency
+  getReportsByCurrency,
+  // Logo Upload
+  logoUpload,
+  uploadHawaladarLogo
 } from '../controllers/hawalaController';
 import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
@@ -62,6 +65,9 @@ router.put(
 
 // Delete hawaladar (admin only)
 router.delete('/agents/:id', authenticate, isAdmin, deleteHawaladar);
+
+// Upload hawaladar logo (admin only)
+router.post('/agents/:id/logo', authenticate, isAdmin, logoUpload.single('logo'), uploadHawaladarLogo);
 
 // ==================== TRANSACTIONS ====================
 

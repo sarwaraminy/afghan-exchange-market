@@ -12,13 +12,15 @@ import {
   createSavingsAccount,
   depositToSavings,
   withdrawFromSavings,
-  getSavingsTransactions
+  getSavingsTransactions,
+  getEligibleSavingsAccounts
 } from '../controllers/customerController';
 
 const router = express.Router();
 
 // Savings account routes (must come before /:id routes)
 router.get('/savings/all', authenticate, getAllSavingsAccounts);
+router.get('/savings/eligible', authenticate, getEligibleSavingsAccounts);
 router.post('/savings', authenticate, createSavingsAccount);
 router.get('/savings/:accountId/transactions', authenticate, getSavingsTransactions);
 router.post('/savings/:accountId/deposit', authenticate, depositToSavings);
