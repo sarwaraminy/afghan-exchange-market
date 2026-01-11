@@ -182,6 +182,7 @@ afghan-exchange-market/
 | POST | `/api/hawala/agents` | Create new agent |
 | PUT | `/api/hawala/agents/:id` | Update agent |
 | DELETE | `/api/hawala/agents/:id` | Delete agent |
+| POST | `/api/hawala/agents/:id/logo` | Upload agent logo (admin only) |
 
 #### Transactions
 | Method | Endpoint | Description |
@@ -217,6 +218,7 @@ afghan-exchange-market/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/customers/savings/all` | Get all savings accounts |
+| GET | `/api/customers/savings/eligible` | Get eligible accounts for hawala payment |
 | GET | `/api/customers/:customerId/savings` | Get customer's accounts |
 | POST | `/api/customers/savings` | Create savings account |
 | POST | `/api/customers/savings/:accountId/deposit` | Deposit to account |
@@ -267,9 +269,12 @@ The Hawala system provides a complete money transfer management solution, tradit
 
 ### Features
 - **Agent Management** - Register and manage hawaladar (agent) profiles with locations and commission rates
+- **Logo Upload** - Custom branding for hawaladars with image upload (JPEG/PNG, 5MB max)
 - **Transaction Tracking** - Create, track, and manage money transfers with unique reference codes (HWL-XXXXXX)
+- **Payment Methods** - Pay with cash or directly from customer savings accounts
 - **Status Workflow** - Track transactions through: Pending → In Transit → Completed (or Cancelled)
 - **Commission Calculation** - Automatic commission calculation based on agent rates
+- **Receipt Printing** - Generate professional receipts for completed transactions
 - **Reports & Analytics** - Summary statistics, reports by agent, and reports by currency
 - **Reference Code Lookup** - Quick search transactions by reference code for sender/receiver
 
@@ -297,7 +302,8 @@ The Customer Savings Account system allows hawaladars to manage physical cash de
 - **Account Creation** - Create savings accounts linked to specific hawaladars and currencies
 - **Deposit Tracking** - Record cash deposits with notes and automatic balance updates
 - **Withdrawal Management** - Process withdrawals with balance validation
-- **Transaction History** - Complete audit trail of all deposits and withdrawals
+- **Hawala Payment Integration** - Pay for hawala transfers directly from savings accounts
+- **Transaction History** - Complete audit trail of all deposits, withdrawals, and hawala payments
 - **Multi-Currency Support** - Customers can have accounts in different currencies
 - **Multi-Hawaladar Support** - Customers can have accounts with different hawaladars
 
@@ -351,6 +357,12 @@ The application supports three languages with full RTL (Right-to-Left) support:
 Users can switch languages using the dropdown in the header. The selected language is persisted in localStorage.
 
 ## Recent Updates (January 2026)
+
+### Latest Features (2026-01-11)
+- ✅ **Customer Savings Payment** - Pay for hawala transfers using customer savings accounts
+- ✅ **Hawaladar Logos** - Upload custom logos for each hawaladar (admin only)
+- ✅ **Receipt Printing** - Generate and print professional transaction receipts
+- ✅ **Dynamic Account Selection** - Real-time eligible savings accounts lookup during hawala creation
 
 ### Critical Bug Fixes
 - ✅ Fixed database schema inconsistencies (table/column name mismatches)

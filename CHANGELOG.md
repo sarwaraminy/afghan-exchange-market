@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-01-11
+
+### Added
+
+#### Customer Savings Payment for Hawala Transfers
+- **Payment from Savings** - Customers can now pay for hawala transfers using their savings accounts
+  - Added `customer_savings_account_id` column to `hawala_transactions` table
+  - New endpoint `/api/customers/savings/eligible` to fetch accounts with sufficient balance
+  - Automatic balance validation (checks if account has enough for amount + commission)
+  - Currency matching validation between account and transaction
+  - Automatic deduction from savings account when creating hawala transfer
+  - Transaction history tracking for savings-based hawala payments
+  - Prevents using both saraf account and customer savings simultaneously
+
+- **Frontend UI Integration** - Seamless payment method selection
+  - Customer dropdown in hawala transaction form
+  - Real-time eligible savings accounts lookup based on customer, hawaladar, currency, and amount
+  - Dropdown shows only accounts with sufficient balance
+  - Displays account details (balance, currency, saraf name)
+  - Automatic form validation and user feedback
+
+#### Hawaladar Logo Upload
+- **Logo Management** - Custom branding for each hawaladar
+  - Added `logo` column to `hawaladars` table with database migration
+  - New endpoint `POST /api/hawala/agents/:id/logo` for uploading logos
+  - File validation (JPEG/PNG only, 5MB max size)
+  - Multer-based file upload with automatic filename generation
+  - Automatic cleanup of old logos when uploading new ones
+  - Logos stored in `backend/uploads/logos/` directory
+  - Admin-only access for logo uploads
+
+#### Hawala Receipt Printing
+- **Digital Receipts** - Professional transaction receipts for record keeping
+  - New `HawalaReceipt` component with professional layout
+  - Receipt route: `/hawala/receipt/:id`
+  - Display transaction details: reference code, sender/receiver info, amounts
+  - Shows amount breakdown (base amount, commission, total)
+  - Includes both sender and receiver hawaladar information
+  - Print button in hawala transaction list (receipt icon)
+  - Signature sections for sender and agent
+  - Timestamp display for transaction creation and completion
+
+- **Translations** - Added receipt-specific translation keys
+  - `printReceipt` - Print button label
+  - `hawalaTransferReceipt` - Receipt title
+  - `amountDetails` - Amount breakdown section
+  - `senderSignature` - Sender signature field
+  - `agentSignature` - Agent signature field
+  - `completedAt` - Completion timestamp label
+
+### Changed
+- **Hawala Transaction Flow** - Enhanced payment flexibility
+  - Customers can now choose between cash payment or savings account deduction
+  - Added customer selection dropdown to transaction form
+  - Eligible savings accounts loaded dynamically based on transaction parameters
+
+### Security
+- Logo upload restricted to admin users only
+- File type validation prevents non-image uploads
+- File size limit prevents oversized uploads
+
+### Developer Notes
+- Updated TypeScript interfaces for new database columns
+- Enhanced API service with savings account functions
+- Added Material-UI icons: Receipt (for print button)
+
 ## [1.1.0] - 2026-01-06
 
 ### Added
