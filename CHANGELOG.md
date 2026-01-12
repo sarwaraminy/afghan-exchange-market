@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-01-12
+
+### Added
+
+#### Hawaladar Logo Upload UI
+- **Frontend Logo Management** - Complete UI for uploading and managing hawaladar logos
+  - Logo upload button in hawaladar dialog with CloudUpload icon
+  - Real-time image preview using `URL.createObjectURL()` API
+  - Current logo display when editing existing hawaladars
+  - New file preview with blue border to distinguish from current logo
+  - Remove logo button to cancel file selection
+  - Memory management with proper cleanup of object URLs
+  - File size and type information display (5MB max, JPEG/PNG)
+
+- **Logo Display in Receipts** - Professional branding on hawala receipts
+  - Hawaladar logo displayed at the top of transaction receipts
+  - Automatic logo loading from server via API_BASE_URL
+  - Fallback to hawaladar name when logo not available
+  - Print-friendly layout with logo included
+
+- **Translation Updates** - Multi-language support for logo features
+  - Added `logo`, `uploadLogo`, `changeLogo`, `removeLogo` keys
+  - Added `logoMaxSize`, `currentLogo` translation keys
+  - Translations for English, Dari (دری), and Pashto (پښتو)
+
+### Changed
+
+- **Backend Queries Enhanced** - Logo fields now included in all transaction queries
+  - Updated `getTransactions()` to include `sender_hawaladar_logo`, `sender_hawaladar_phone`, `receiver_hawaladar_logo`
+  - Updated `getTransactionById()` to include all logo and phone fields
+  - Updated `getTransactionByCode()` to include logo information
+  - Ensures logo data is available for receipt generation
+
+- **Type Definitions Updated** - Full type safety for logo features
+  - Added `logo?: string` to `Hawaladar` interface (frontend and backend)
+  - Extended `HawalaTransaction` with `sender_hawaladar_logo?`, `receiver_hawaladar_logo?`, `sender_hawaladar_phone?`
+  - Updated `HawalaTransactionWithDetails` with all translated fields and logo properties
+
+### Fixed
+
+- **Logo Preview Display** - Fixed missing preview when selecting new files
+  - Implemented object URL generation for instant image preview
+  - Added proper cleanup to prevent memory leaks
+  - Fixed state management for logo selection and removal
+
+- **Receipt Logo Display** - Fixed logo not showing in transaction receipts
+  - Backend queries now properly return logo filenames
+  - Frontend correctly constructs logo URLs from API base
+  - Verified logo display in all receipt contexts
+
+### Developer Notes
+
+- Added `logoFile` and `logoPreview` state management in Hawala.tsx
+- Implemented memory-safe object URL handling with `URL.revokeObjectURL()`
+- Logo upload integrated into hawaladar save flow with atomic operations
+- Enhanced TypeScript interfaces for complete type coverage
+
 ## [1.2.0] - 2026-01-11
 
 ### Added

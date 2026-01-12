@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, News, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
+import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, News, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, Customer, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -279,6 +279,22 @@ export const updateHawaladar = async (id: number, hawaladarData: Partial<Hawalad
 
 export const deleteHawaladar = async (id: number): Promise<void> => {
   await api.delete(`/hawala/agents/${id}`);
+};
+
+export const uploadHawaladarLogo = async (id: number, file: File): Promise<Hawaladar> => {
+  const formData = new FormData();
+  formData.append('logo', file);
+
+  const { data } = await api.post<ApiResponse<Hawaladar>>(
+    `/hawala/agents/${id}/logo`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return data.data!;
 };
 
 // Hawala Transactions

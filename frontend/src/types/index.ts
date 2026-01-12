@@ -134,6 +134,7 @@ export interface Hawaladar {
   location_ps?: string;
   commission_rate: number;
   is_active: number;
+  logo?: string;
   created_at: string;
   updated_at: string;
 }
@@ -174,6 +175,8 @@ export interface CustomerAccount {
   phone?: string;
   saraf_id: number;
   saraf_name?: string;
+  saraf_name_fa?: string;
+  saraf_name_ps?: string;
   created_at: string;
   updated_at: string;
 }
@@ -202,12 +205,23 @@ export interface HawalaTransaction {
   sender_phone?: string;
   sender_hawaladar_id?: number;
   sender_hawaladar_name?: string;
+  sender_hawaladar_name_fa?: string;
+  sender_hawaladar_name_ps?: string;
   sender_hawaladar_location?: string;
+  sender_hawaladar_location_fa?: string;
+  sender_hawaladar_location_ps?: string;
+  sender_hawaladar_logo?: string;
+  sender_hawaladar_phone?: string;
   receiver_name: string;
   receiver_phone?: string;
   receiver_hawaladar_id?: number;
   receiver_hawaladar_name?: string;
+  receiver_hawaladar_name_fa?: string;
+  receiver_hawaladar_name_ps?: string;
   receiver_hawaladar_location?: string;
+  receiver_hawaladar_location_fa?: string;
+  receiver_hawaladar_location_ps?: string;
+  receiver_hawaladar_logo?: string;
   amount: number;
   currency_id: number;
   currency_code: string;
@@ -240,7 +254,11 @@ export interface HawalaReportSummary {
 export interface HawalaAgentReport {
   id: number;
   name: string;
+  name_fa?: string;
+  name_ps?: string;
   location: string;
+  location_fa?: string;
+  location_ps?: string;
   sent_count: number;
   received_count: number;
   sent_amount: number;

@@ -26,8 +26,8 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  Grid,
-  Divider
+  Divider,
+  Grid
 } from '@mui/material';
 import {
   Edit,
@@ -42,13 +42,15 @@ import {
   Search,
   AccountBalance,
   ArrowUpward,
-  ArrowDownward
+  ArrowDownward,
+  CloudUpload
 } from '@mui/icons-material';
 import {
   getHawaladars,
   createHawaladar,
   updateHawaladar,
   deleteHawaladar,
+  uploadHawaladarLogo,
   getHawalaTransactions,
   getHawalaTransactionByCode,
   createHawalaTransaction,
@@ -62,22 +64,21 @@ import {
   getProvinces,
   getDistricts,
   getCustomers,
-  searchCustomers,
   createCustomer,
   updateCustomer,
   deleteCustomer,
   getAllSavingsAccounts,
   getEligibleSavingsAccounts,
-  getCustomerSavingsAccounts,
   createSavingsAccount,
   depositToSavingsAccount,
   withdrawFromSavingsAccount,
-  getSavingsAccountTransactions,
-  getCustomerAccount
+  getSavingsAccountTransactions
 } from '../services/api';
 import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District, Customer, CustomerAccount, AccountTransaction } from '../types';
 import { Loading } from '../components/common/Loading';
 import { useAuth } from '../context/AuthContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const Hawala = () => {
   const { t, i18n } = useTranslation();
@@ -145,6 +146,8 @@ export const Hawala = () => {
     is_active: 1
   });
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<HawalaTransaction | null>(null);
@@ -181,7 +184,6 @@ export const Hawala = () => {
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [transactionNotes, setTransactionNotes] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const menuItems = [
     { label: t('hawala.transactions'), icon: <Receipt /> },
@@ -339,12 +341,12 @@ export const Hawala = () => {
   };
 
   const handleDeleteCustomer = async (id: number) => {
-    if (confirm('Are you sure you want to delete this customer?')) {
+    if (confirm(t('common.confirmDelete'))) {
       try {
         await deleteCustomer(id);
         await fetchSavingsData();
       } catch (error: any) {
-        setError(error.response?.data?.error || 'Failed to delete customer');
+        setError(error.response?.data?.error || t('common.error'));
       }
     }
   };
@@ -379,7 +381,7 @@ export const Hawala = () => {
       setError('');
       const amount = parseFloat(depositAmount);
       if (isNaN(amount) || amount <= 0) {
-        setError('Please enter a valid amount');
+        setError(t('common.pleaseEnterValidAmount'));
         return;
       }
       await depositToSavingsAccount(selectedAccount.id, amount, transactionNotes || undefined);
@@ -388,7 +390,7 @@ export const Hawala = () => {
       setTransactionNotes('');
       await fetchSavingsData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to deposit');
+      setError(err.response?.data?.error || t('common.error'));
     }
   };
 
@@ -398,11 +400,11 @@ export const Hawala = () => {
       setError('');
       const amount = parseFloat(withdrawAmount);
       if (isNaN(amount) || amount <= 0) {
-        setError('Please enter a valid amount');
+        setError(t('common.pleaseEnterValidAmount'));
         return;
       }
       if (amount > selectedAccount.balance) {
-        setError('Insufficient balance');
+        setError(t('common.insufficientBalance'));
         return;
       }
       await withdrawFromSavingsAccount(selectedAccount.id, amount, transactionNotes || undefined);
@@ -411,7 +413,7 @@ export const Hawala = () => {
       setTransactionNotes('');
       await fetchSavingsData();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to withdraw');
+      setError(err.response?.data?.error || t('common.error'));
     }
   };
 
@@ -441,7 +443,9 @@ export const Hawala = () => {
       amount: '',
       currency_id: currencies[0]?.id.toString() || '',
       commission_rate: '2.0',
-      notes: ''
+      notes: '',
+      customer_id: '',
+      customer_savings_account_id: ''
     });
     setError('');
     setTransactionDialog(true);
@@ -459,7 +463,9 @@ export const Hawala = () => {
       amount: transaction.amount.toString(),
       currency_id: transaction.currency_id.toString(),
       commission_rate: transaction.commission_rate.toString(),
-      notes: transaction.notes || ''
+      notes: transaction.notes || '',
+      customer_id: '',
+      customer_savings_account_id: ''
     });
     setError('');
     setTransactionDialog(true);
@@ -558,6 +564,8 @@ export const Hawala = () => {
       commission_rate: '2.0',
       is_active: 1
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setError('');
     setHawaladarDialog(true);
   };
@@ -577,6 +585,8 @@ export const Hawala = () => {
       commission_rate: hawaladar.commission_rate.toString(),
       is_active: hawaladar.is_active
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setError('');
     setHawaladarDialog(true);
   };
@@ -597,11 +607,25 @@ export const Hawala = () => {
         is_active: hawaladarForm.is_active
       };
 
+      let hawaladarId: number;
       if (selectedHawaladar) {
-        await updateHawaladar(selectedHawaladar.id, data);
+        const updatedHawaladar = await updateHawaladar(selectedHawaladar.id, data);
+        hawaladarId = updatedHawaladar.id;
       } else {
-        await createHawaladar(data);
+        const newHawaladar = await createHawaladar(data);
+        hawaladarId = newHawaladar.id;
       }
+
+      // Upload logo if selected
+      if (logoFile) {
+        await uploadHawaladarLogo(hawaladarId, logoFile);
+        setLogoFile(null);
+        if (logoPreview) {
+          URL.revokeObjectURL(logoPreview);
+          setLogoPreview(null);
+        }
+      }
+
       setHawaladarDialog(false);
       fetchData();
     } catch (err: any) {
@@ -658,31 +682,47 @@ export const Hawala = () => {
         accessorKey: 'sender_name',
         header: t('hawala.sender'),
         size: 150,
-        Cell: ({ row }) => (
-          <Box>
-            <Typography variant="body2" noWrap>{row.original.sender_name}</Typography>
-            {row.original.sender_hawaladar_name && (
-              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                {row.original.sender_hawaladar_name}
-              </Typography>
-            )}
-          </Box>
-        )
+        Cell: ({ row }) => {
+          const senderHawaladarName = i18n.language === 'fa'
+            ? row.original.sender_hawaladar_name_fa || row.original.sender_hawaladar_name
+            : i18n.language === 'ps'
+            ? row.original.sender_hawaladar_name_ps || row.original.sender_hawaladar_name
+            : row.original.sender_hawaladar_name;
+
+          return (
+            <Box>
+              <Typography variant="body2" noWrap>{row.original.sender_name}</Typography>
+              {row.original.sender_hawaladar_name && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {senderHawaladarName}
+                </Typography>
+              )}
+            </Box>
+          );
+        }
       },
       {
         accessorKey: 'receiver_name',
         header: t('hawala.receiver'),
         size: 150,
-        Cell: ({ row }) => (
-          <Box>
-            <Typography variant="body2" noWrap>{row.original.receiver_name}</Typography>
-            {row.original.receiver_hawaladar_name && (
-              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                {row.original.receiver_hawaladar_name}
-              </Typography>
-            )}
-          </Box>
-        )
+        Cell: ({ row }) => {
+          const receiverHawaladarName = i18n.language === 'fa'
+            ? row.original.receiver_hawaladar_name_fa || row.original.receiver_hawaladar_name
+            : i18n.language === 'ps'
+            ? row.original.receiver_hawaladar_name_ps || row.original.receiver_hawaladar_name
+            : row.original.receiver_hawaladar_name;
+
+          return (
+            <Box>
+              <Typography variant="body2" noWrap>{row.original.receiver_name}</Typography>
+              {row.original.receiver_hawaladar_name && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {receiverHawaladarName}
+                </Typography>
+              )}
+            </Box>
+          );
+        }
       },
       {
         accessorKey: 'amount',
@@ -741,7 +781,7 @@ export const Hawala = () => {
             <IconButton
               size="small"
               onClick={() => navigate(`/hawala/receipt/${row.original.id}`)}
-              title="Print Receipt"
+              title={t('hawala.printReceipt')}
             >
               <Receipt fontSize="small" />
             </IconButton>
@@ -877,12 +917,30 @@ export const Hawala = () => {
       {
         accessorKey: 'name',
         header: t('hawala.agent'),
-        size: 150
+        size: 150,
+        Cell: ({ row }) => {
+          const name = i18n.language === 'fa'
+            ? row.original.name_fa || row.original.name
+            : i18n.language === 'ps'
+            ? row.original.name_ps || row.original.name
+            : row.original.name;
+
+          return <Typography variant="body2" noWrap>{name}</Typography>;
+        }
       },
       {
         accessorKey: 'location',
         header: t('hawala.location'),
-        size: 150
+        size: 150,
+        Cell: ({ row }) => {
+          const location = i18n.language === 'fa'
+            ? row.original.location_fa || row.original.location
+            : i18n.language === 'ps'
+            ? row.original.location_ps || row.original.location
+            : row.original.location;
+
+          return <Typography variant="body2" noWrap>{location}</Typography>;
+        }
       },
       {
         accessorKey: 'sent_count',
@@ -963,73 +1021,6 @@ export const Hawala = () => {
       }
     ],
     [t, i18n.language]
-  );
-
-  const accountTransactionColumns = useMemo<MRT_ColumnDef<AccountTransaction>[]>(
-    () => [
-      {
-        accessorKey: 'created_at',
-        header: t('hawala.date'),
-        size: 160,
-        Cell: ({ cell }) => (
-          <Typography variant="body2" noWrap>
-            {new Date(cell.getValue<string>()).toLocaleString()}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'transaction_type',
-        header: t('hawala.type'),
-        size: 120,
-        Cell: ({ row }) => {
-          const type = row.original.transaction_type;
-          const isDeposit = type === 'deposit';
-          return (
-            <Chip
-              icon={isDeposit ? <ArrowDownward fontSize="small" /> : <ArrowUpward fontSize="small" />}
-              label={type === 'deposit' ? t('hawala.deposit') : t('hawala.withdraw')}
-              color={isDeposit ? 'success' : 'warning'}
-              size="small"
-            />
-          );
-        }
-      },
-      {
-        accessorKey: 'amount',
-        header: t('hawala.amount'),
-        size: 120,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
-        Cell: ({ row }) => (
-          <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>
-            {formatCurrency(row.original.amount)} {row.original.currency_code}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'balance_after',
-        header: t('hawala.balanceAfter'),
-        size: 120,
-        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
-        Cell: ({ row }) => (
-          <Typography variant="body2" sx={{ textAlign: 'right' }}>
-            {formatCurrency(row.original.balance_after)} {row.original.currency_code}
-          </Typography>
-        )
-      },
-      ...(!isMobile ? [{
-        accessorKey: 'notes' as const,
-        header: t('hawala.notes'),
-        size: 180,
-        Cell: ({ cell }: { cell: any }) => (
-          <Typography variant="body2" noWrap>
-            {cell.getValue() || '-'}
-          </Typography>
-        )
-      }] : [])
-    ],
-    [t, i18n.language, isMobile]
   );
 
   const sidebar = (
@@ -1405,9 +1396,15 @@ export const Hawala = () => {
         accessorKey: 'saraf_name',
         header: t('hawala.saraf'),
         size: 130,
-        Cell: ({ cell }) => (
-          <Typography variant="body2" noWrap>{cell.getValue<string>()}</Typography>
-        )
+        Cell: ({ row }) => {
+          const sarafName = i18n.language === 'fa'
+            ? row.original.saraf_name_fa || row.original.saraf_name
+            : i18n.language === 'ps'
+            ? row.original.saraf_name_ps || row.original.saraf_name
+            : row.original.saraf_name;
+
+          return <Typography variant="body2" noWrap>{sarafName}</Typography>;
+        }
       },
       {
         accessorKey: 'balance',
@@ -1775,14 +1772,14 @@ export const Hawala = () => {
           </Grid>
 
           <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>
-            Payment Method
+            {t('hawala.paymentMethod')}
           </Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 select
-                label="Select Customer (Optional)"
+                label={t('hawala.selectCustomerOptional')}
                 value={transactionForm.customer_id}
                 onChange={(e) => {
                   setTransactionForm({
@@ -1792,7 +1789,7 @@ export const Hawala = () => {
                   });
                 }}
               >
-                <MenuItem value="">Cash Payment</MenuItem>
+                <MenuItem value="">{t('hawala.cashPayment')}</MenuItem>
                 {customers.map((customer) => (
                   <MenuItem key={customer.id} value={customer.id}>
                     {customer.first_name} {customer.last_name} - {customer.phone}
@@ -1806,7 +1803,7 @@ export const Hawala = () => {
                 <TextField
                   fullWidth
                   select
-                  label="Select Savings Account"
+                  label={t('hawala.selectSavingsAccount')}
                   value={transactionForm.customer_savings_account_id}
                   onChange={(e) => setTransactionForm({
                     ...transactionForm,
@@ -1815,11 +1812,11 @@ export const Hawala = () => {
                   disabled={eligibleSavingsAccounts.length === 0}
                   helperText={
                     eligibleSavingsAccounts.length === 0
-                      ? "No eligible accounts with sufficient balance"
+                      ? t('hawala.noEligibleAccounts')
                       : undefined
                   }
                 >
-                  <MenuItem value="">Select Account</MenuItem>
+                  <MenuItem value="">{t('hawala.selectAccount')}</MenuItem>
                   {eligibleSavingsAccounts.map((account) => (
                     <MenuItem key={account.id} value={account.id}>
                       {account.currency_code}: {new Intl.NumberFormat('en-US', {
@@ -1877,7 +1874,7 @@ export const Hawala = () => {
               label={t('hawala.referenceCode')}
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
-              placeholder="HWL-XXXXXX"
+              placeholder={t('common.referencePlaceholder')}
             />
             <Button variant="contained" onClick={handleSearchByCode}>
               <Search />
@@ -1940,14 +1937,14 @@ export const Hawala = () => {
           <TextField
             fullWidth
             select
-            label="Province"
+            label={t('hawala.province')}
             value={hawaladarForm.province_id}
             onChange={(e) => {
               setHawaladarForm({ ...hawaladarForm, province_id: e.target.value, district_id: '' });
             }}
             sx={{ mt: 2 }}
           >
-            <MenuItem value="">Select Province</MenuItem>
+            <MenuItem value="">{t('hawala.selectProvince')}</MenuItem>
             {provinces.map((p) => (
               <MenuItem key={p.id} value={p.id}>
                 {i18n.language === 'fa' ? p.name_fa || p.name : i18n.language === 'ps' ? p.name_ps || p.name : p.name}
@@ -1957,13 +1954,13 @@ export const Hawala = () => {
           <TextField
             fullWidth
             select
-            label="District"
+            label={t('hawala.district')}
             value={hawaladarForm.district_id}
             onChange={(e) => setHawaladarForm({ ...hawaladarForm, district_id: e.target.value })}
             sx={{ mt: 2 }}
             disabled={!hawaladarForm.province_id}
           >
-            <MenuItem value="">Select District</MenuItem>
+            <MenuItem value="">{t('hawala.selectDistrict')}</MenuItem>
             {districts
               .filter(d => d.province_id === parseInt(hawaladarForm.province_id))
               .map((d) => (
@@ -2003,6 +2000,106 @@ export const Hawala = () => {
             sx={{ mt: 2 }}
             InputProps={{ endAdornment: '%' }}
           />
+
+          {/* Logo Upload */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              {t('hawala.logo')}
+            </Typography>
+
+            {/* Show current logo if no new file selected */}
+            {selectedHawaladar?.logo && !logoFile && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                  {t('hawala.currentLogo')}:
+                </Typography>
+                <Box
+                  component="img"
+                  src={`${API_BASE_URL}/uploads/logos/${selectedHawaladar.logo}`}
+                  alt="Current Logo"
+                  sx={{
+                    maxWidth: '200px',
+                    maxHeight: '100px',
+                    display: 'block',
+                    border: '1px solid #ddd',
+                    borderRadius: 1,
+                    padding: 1
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Show preview of newly selected file */}
+            {logoPreview && logoFile && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="primary" display="block" gutterBottom>
+                  {t('hawala.currentLogo')}: {logoFile.name}
+                </Typography>
+                <Box
+                  component="img"
+                  src={logoPreview}
+                  alt="Logo Preview"
+                  sx={{
+                    maxWidth: '200px',
+                    maxHeight: '100px',
+                    display: 'block',
+                    border: '2px solid',
+                    borderColor: 'primary.main',
+                    borderRadius: 1,
+                    padding: 1
+                  }}
+                />
+              </Box>
+            )}
+
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<CloudUpload />}
+                size="small"
+              >
+                {selectedHawaladar?.logo || logoFile ? t('hawala.changeLogo') : t('hawala.uploadLogo')}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Clean up old preview URL
+                      if (logoPreview) {
+                        URL.revokeObjectURL(logoPreview);
+                      }
+                      // Create new preview URL
+                      const previewUrl = URL.createObjectURL(file);
+                      setLogoFile(file);
+                      setLogoPreview(previewUrl);
+                    }
+                  }}
+                />
+              </Button>
+              {logoFile && (
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    if (logoPreview) {
+                      URL.revokeObjectURL(logoPreview);
+                    }
+                    setLogoFile(null);
+                    setLogoPreview(null);
+                  }}
+                >
+                  {t('hawala.removeLogo')}
+                </Button>
+              )}
+            </Box>
+            <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+              {t('hawala.logoMaxSize')}
+            </Typography>
+          </Box>
+
           <TextField
             fullWidth
             select
@@ -2086,7 +2183,7 @@ export const Hawala = () => {
                 onChange={(e) => setAccountForm({ ...accountForm, customer_id: Number(e.target.value) })}
                 required
               >
-                <MenuItem value={0}>{t('hawala.selectAgent')}</MenuItem>
+                <MenuItem value={0}>{t('hawala.selectCustomer')}</MenuItem>
                 {customers?.map((c) => (
                   <MenuItem key={c.id} value={c.id}>
                     {c.first_name} {c.last_name} - {c.tazkira_number}
@@ -2226,7 +2323,13 @@ export const Hawala = () => {
                 {t('hawala.customerLabel')}: {selectedAccount.first_name} {selectedAccount.last_name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('hawala.sarafLabel')}: {selectedAccount.saraf_name}
+                {t('hawala.sarafLabel')}: {
+                  i18n.language === 'fa'
+                    ? selectedAccount.saraf_name_fa || selectedAccount.saraf_name
+                    : i18n.language === 'ps'
+                    ? selectedAccount.saraf_name_ps || selectedAccount.saraf_name
+                    : selectedAccount.saraf_name
+                }
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {t('hawala.currentBalanceLabel')}: {formatCurrency(selectedAccount.balance)} {selectedAccount.currency_code}

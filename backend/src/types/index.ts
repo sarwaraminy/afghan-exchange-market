@@ -182,6 +182,8 @@ export interface CustomerSavingsWithDetails extends CustomerSavings {
   currency_code: string;
   currency_name: string;
   saraf_name: string;
+  saraf_name_fa?: string;
+  saraf_name_ps?: string;
 }
 
 export interface AccountTransaction {
@@ -231,9 +233,20 @@ export interface HawalaTransaction {
 
 export interface HawalaTransactionWithDetails extends HawalaTransaction {
   sender_hawaladar_name?: string;
+  sender_hawaladar_name_fa?: string;
+  sender_hawaladar_name_ps?: string;
   sender_hawaladar_location?: string;
+  sender_hawaladar_location_fa?: string;
+  sender_hawaladar_location_ps?: string;
+  sender_hawaladar_logo?: string;
+  sender_hawaladar_phone?: string;
   receiver_hawaladar_name?: string;
+  receiver_hawaladar_name_fa?: string;
+  receiver_hawaladar_name_ps?: string;
   receiver_hawaladar_location?: string;
+  receiver_hawaladar_location_fa?: string;
+  receiver_hawaladar_location_ps?: string;
+  receiver_hawaladar_logo?: string;
   currency_code: string;
   currency_name: string;
   created_by_name: string;

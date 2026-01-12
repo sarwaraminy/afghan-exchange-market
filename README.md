@@ -15,9 +15,12 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **News Section** - Stay updated with market news and announcements
 - **Hawala System** - Complete money transfer management with agents, transactions, and reports
+  - **Logo Upload** - Custom branding for each hawaladar with image preview
+  - **Receipt Printing** - Professional transaction receipts with hawaladar logos
+  - **Customer Payments** - Pay from cash or savings accounts
 - **Customer Savings Accounts** - Hawaladar-managed savings accounts for customers with deposit/withdraw tracking
 - **User Accounts** - Save favorite currencies and set price alerts (admin-managed accounts)
-- **Profile Pictures** - Upload custom profile pictures with server-side image validation
+- **Profile Pictures** - Upload custom profile pictures and hawaladar logos with server-side validation
 - **Admin Panel** - Full CRUD operations for exchange rates, gold prices, news, and hawala
 - **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
@@ -56,7 +59,8 @@ afghan-exchange-market/
 │   │   └── seed.ts          # Database seeder
 │   ├── data/                # SQLite database
 │   ├── uploads/             # User uploaded files
-│   │   └── profiles/        # Profile pictures
+│   │   ├── profiles/        # Profile pictures
+│   │   └── logos/           # Hawaladar logos
 │   └── package.json
 ├── frontend/
 │   ├── src/

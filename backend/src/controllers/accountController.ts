@@ -12,6 +12,8 @@ export const getHawaladarAccount = (req: Request, res: Response): void => {
       SELECT
         ha.*,
         h.name as hawaladar_name,
+        h.name_fa as hawaladar_name_fa,
+        h.name_ps as hawaladar_name_ps,
         c.code as currency_code,
         c.name as currency_name
       FROM saraf_accounts ha
@@ -83,6 +85,8 @@ export const createHawaladarAccount = (req: Request, res: Response): void => {
       SELECT
         ha.*,
         h.name as hawaladar_name,
+        h.name_fa as hawaladar_name_fa,
+        h.name_ps as hawaladar_name_ps,
         c.code as currency_code,
         c.name as currency_name
       FROM saraf_accounts ha

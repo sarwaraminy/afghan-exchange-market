@@ -192,7 +192,9 @@ export const getAllSavingsAccounts = async (req: Request, res: Response) => {
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id
@@ -222,7 +224,9 @@ export const getCustomerSavingsAccounts = async (req: Request, res: Response) =>
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id
@@ -284,7 +288,9 @@ export const createSavingsAccount = async (req: Request, res: Response) => {
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id
@@ -352,7 +358,9 @@ export const depositToSavings = async (req: Request, res: Response) => {
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id
@@ -426,7 +434,9 @@ export const withdrawFromSavings = async (req: Request, res: Response) => {
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id
@@ -493,7 +503,9 @@ export const getEligibleSavingsAccounts = async (req: Request, res: Response) =>
         c.phone,
         cur.code as currency_code,
         cur.name as currency_name,
-        h.name as saraf_name
+        h.name as saraf_name,
+        h.name_fa as saraf_name_fa,
+        h.name_ps as saraf_name_ps
       FROM customer_savings cs
       JOIN customers c ON cs.customer_id = c.id
       JOIN currencies cur ON cs.currency_id = cur.id

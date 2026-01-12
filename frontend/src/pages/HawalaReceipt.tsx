@@ -31,7 +31,7 @@ export const HawalaReceipt = () => {
   useEffect(() => {
     const fetchTransaction = async () => {
       if (!id) {
-        setError('Transaction ID not provided');
+        setError(t('common.transactionIdNotProvided'));
         setLoading(false);
         return;
       }
@@ -41,14 +41,14 @@ export const HawalaReceipt = () => {
         setTransaction(data);
       } catch (err: any) {
         console.error('Error fetching transaction:', err);
-        setError(err.response?.data?.error || 'Failed to load transaction');
+        setError(err.response?.data?.error || t('common.failedToLoadTransaction'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchTransaction();
-  }, [id]);
+  }, [id, t]);
 
   const handlePrint = () => {
     window.print();
@@ -61,8 +61,8 @@ export const HawalaReceipt = () => {
     }).format(amount);
   };
 
-  const getLogoUrl = (logoFilename?: string) => {
-    if (!logoFilename) return null;
+  const getLogoUrl = (logoFilename?: string): string | undefined => {
+    if (!logoFilename) return undefined;
     return `${API_BASE_URL}/uploads/logos/${logoFilename}`;
   };
 
@@ -77,9 +77,9 @@ export const HawalaReceipt = () => {
   if (error || !transaction) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography color="error">{error || 'Transaction not found'}</Typography>
+        <Typography color="error">{error || t('common.transactionNotFound')}</Typography>
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/hawala')} sx={{ mt: 2 }}>
-          {t('common.back')}
+          Back
         </Button>
       </Container>
     );
@@ -127,10 +127,24 @@ export const HawalaReceipt = () => {
               />
             )}
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              {transaction.sender_hawaladar_name || t('hawala.receipt')}
+              {
+                transaction.sender_hawaladar_name
+                  ? (i18n.language === 'fa'
+                      ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
+                      : i18n.language === 'ps'
+                      ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
+                      : transaction.sender_hawaladar_name)
+                  : t('hawala.receipt')
+              }
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {transaction.sender_hawaladar_location}
+              {
+                i18n.language === 'fa'
+                  ? transaction.sender_hawaladar_location_fa || transaction.sender_hawaladar_location
+                  : i18n.language === 'ps'
+                  ? transaction.sender_hawaladar_location_ps || transaction.sender_hawaladar_location
+                  : transaction.sender_hawaladar_location
+              }
             </Typography>
             {transaction.sender_hawaladar_phone && (
               <Typography variant="body2" color="text.secondary">
@@ -170,7 +184,7 @@ export const HawalaReceipt = () => {
           {/* Sender and Receiver Information */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
             {/* Sender */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 {t('hawala.senderInfo')}
               </Typography>
@@ -184,13 +198,19 @@ export const HawalaReceipt = () => {
               )}
               {transaction.sender_hawaladar_name && (
                 <Typography variant="body2">
-                  <strong>{t('hawala.agent')}:</strong> {transaction.sender_hawaladar_name}
+                  <strong>{t('hawala.agent')}:</strong> {
+                    i18n.language === 'fa'
+                      ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
+                      : i18n.language === 'ps'
+                      ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
+                      : transaction.sender_hawaladar_name
+                  }
                 </Typography>
               )}
             </Grid>
 
             {/* Receiver */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 {t('hawala.receiverInfo')}
               </Typography>
@@ -204,7 +224,13 @@ export const HawalaReceipt = () => {
               )}
               {transaction.receiver_hawaladar_name && (
                 <Typography variant="body2">
-                  <strong>{t('hawala.agent')}:</strong> {transaction.receiver_hawaladar_name}
+                  <strong>{t('hawala.agent')}:</strong> {
+                    i18n.language === 'fa'
+                      ? transaction.receiver_hawaladar_name_fa || transaction.receiver_hawaladar_name
+                      : i18n.language === 'ps'
+                      ? transaction.receiver_hawaladar_name_ps || transaction.receiver_hawaladar_name
+                      : transaction.receiver_hawaladar_name
+                  }
                 </Typography>
               )}
             </Grid>

@@ -241,13 +241,24 @@ export const getTransactions = (req: Request, res: Response): void => {
       SELECT
         ht.*,
         sh.name as sender_hawaladar_name,
+        sh.name_fa as sender_hawaladar_name_fa,
+        sh.name_ps as sender_hawaladar_name_ps,
         sh.location as sender_hawaladar_location,
+        sh.location_fa as sender_hawaladar_location_fa,
+        sh.location_ps as sender_hawaladar_location_ps,
+        sh.logo as sender_hawaladar_logo,
+        sh.phone as sender_hawaladar_phone,
         sh.province_id as sender_province_id,
         sh.district_id as sender_district_id,
         sp.name as sender_province_name,
         sd.name as sender_district_name,
         rh.name as receiver_hawaladar_name,
+        rh.name_fa as receiver_hawaladar_name_fa,
+        rh.name_ps as receiver_hawaladar_name_ps,
         rh.location as receiver_hawaladar_location,
+        rh.location_fa as receiver_hawaladar_location_fa,
+        rh.location_ps as receiver_hawaladar_location_ps,
+        rh.logo as receiver_hawaladar_logo,
         rh.province_id as receiver_province_id,
         rh.district_id as receiver_district_id,
         rp.name as receiver_province_name,
@@ -361,9 +372,20 @@ export const getTransactionById = (req: Request, res: Response): void => {
       SELECT
         ht.*,
         sh.name as sender_hawaladar_name,
+        sh.name_fa as sender_hawaladar_name_fa,
+        sh.name_ps as sender_hawaladar_name_ps,
         sh.location as sender_hawaladar_location,
+        sh.location_fa as sender_hawaladar_location_fa,
+        sh.location_ps as sender_hawaladar_location_ps,
+        sh.logo as sender_hawaladar_logo,
+        sh.phone as sender_hawaladar_phone,
         rh.name as receiver_hawaladar_name,
+        rh.name_fa as receiver_hawaladar_name_fa,
+        rh.name_ps as receiver_hawaladar_name_ps,
         rh.location as receiver_hawaladar_location,
+        rh.location_fa as receiver_hawaladar_location_fa,
+        rh.location_ps as receiver_hawaladar_location_ps,
+        rh.logo as receiver_hawaladar_logo,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -397,9 +419,20 @@ export const getTransactionByCode = (req: Request, res: Response): void => {
       SELECT
         ht.*,
         sh.name as sender_hawaladar_name,
+        sh.name_fa as sender_hawaladar_name_fa,
+        sh.name_ps as sender_hawaladar_name_ps,
         sh.location as sender_hawaladar_location,
+        sh.location_fa as sender_hawaladar_location_fa,
+        sh.location_ps as sender_hawaladar_location_ps,
+        sh.logo as sender_hawaladar_logo,
+        sh.phone as sender_hawaladar_phone,
         rh.name as receiver_hawaladar_name,
+        rh.name_fa as receiver_hawaladar_name_fa,
+        rh.name_ps as receiver_hawaladar_name_ps,
         rh.location as receiver_hawaladar_location,
+        rh.location_fa as receiver_hawaladar_location_fa,
+        rh.location_ps as receiver_hawaladar_location_ps,
+        rh.logo as receiver_hawaladar_logo,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -1017,7 +1050,11 @@ export const getReportsByAgent = (req: Request, res: Response): void => {
       SELECT
         h.id,
         h.name,
+        h.name_fa,
+        h.name_ps,
         h.location,
+        h.location_fa,
+        h.location_ps,
         h.province_id,
         h.district_id,
         p.name as province_name,
@@ -1045,7 +1082,7 @@ export const getReportsByAgent = (req: Request, res: Response): void => {
       params.push(district_id);
     }
 
-    query += ' GROUP BY h.id, h.name, h.location, h.province_id, h.district_id, p.name, d.name';
+    query += ' GROUP BY h.id, h.name, h.name_fa, h.name_ps, h.location, h.location_fa, h.location_ps, h.province_id, h.district_id, p.name, d.name';
     query += ' ORDER BY h.name';
 
     const byAgent = db.prepare(query).all(...params);
