@@ -13,17 +13,19 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Multiple Markets** - Compare rates across Sarai Shahzada, Khorasan Market, and DAB
 - **Currency Converter** - Convert between AFN and major world currencies
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
-- **News Section** - Stay updated with market news and announcements
 - **Hawala System** - Complete money transfer management with agents, transactions, and reports
+  - **Flexible Commission** - Choose between two commission types: add (sender pays extra) or deduct (cut from amount)
   - **Logo Upload** - Custom branding for each hawaladar with image preview
-  - **Receipt Printing** - Professional transaction receipts with hawaladar logos
+  - **Thermal Printer Support** - Optimized receipts for 80mm thermal/ATM printers
   - **Customer Payments** - Pay from cash or savings accounts
+  - **Enhanced Transaction Table** - Separate columns for sender/receiver agents, commission details, and locations
+  - **Multi-Currency Reports** - Accurate commission reporting per currency
 - **Customer Savings Accounts** - Hawaladar-managed savings accounts for customers with deposit/withdraw tracking
-- **User Accounts** - Save favorite currencies and set price alerts (admin-managed accounts)
+- **User Accounts** - Save favorite currencies and set price alerts
 - **Profile Pictures** - Upload custom profile pictures and hawaladar logos with server-side validation
-- **Admin Panel** - Full CRUD operations for exchange rates, gold prices, news, and hawala
+- **Admin Management** - Distributed CRUD operations across dedicated pages (Rates, Gold, Users)
 - **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
-- **Responsive Design** - Works on desktop, tablet, and mobile devices
+- **Responsive Design** - Full-width layouts optimized for data tables, works on all devices
 
 ## Tech Stack
 
@@ -133,8 +135,6 @@ afghan-exchange-market/
 | GET | `/api/rates/exchange?market_id=1` | Get rates for specific market |
 | GET | `/api/rates/gold` | Get gold/silver rates |
 | GET | `/api/rates/convert?from=USD&to=AFN&amount=100` | Convert currency |
-| GET | `/api/news` | Get published news |
-| GET | `/api/news/:id` | Get news by ID |
 
 ### Authentication
 
@@ -172,9 +172,6 @@ afghan-exchange-market/
 | POST | `/api/rates/gold` | Create gold rate |
 | PUT | `/api/rates/gold/:id` | Update gold rate |
 | DELETE | `/api/rates/gold/:id` | Delete gold rate |
-| POST | `/api/news` | Create news |
-| PUT | `/api/news/:id` | Update news |
-| DELETE | `/api/news/:id` | Delete news |
 
 ### Hawala System (Requires Auth)
 
@@ -275,16 +272,31 @@ The Hawala system provides a complete money transfer management solution, tradit
 - **Agent Management** - Register and manage hawaladar (agent) profiles with locations and commission rates
 - **Logo Upload** - Custom branding for hawaladars with image upload (JPEG/PNG, 5MB max)
 - **Transaction Tracking** - Create, track, and manage money transfers with unique reference codes (HWL-XXXXXX)
+- **Flexible Commission Types** - Choose between two commission modes:
+  - **Add**: Sender pays amount + commission (total = amount + commission)
+  - **Deduct**: Commission deducted from amount, receiver gets net (total = amount, receiver gets amount - commission)
 - **Payment Methods** - Pay with cash or directly from customer savings accounts
 - **Status Workflow** - Track transactions through: Pending → In Transit → Completed (or Cancelled)
-- **Commission Calculation** - Automatic commission calculation based on agent rates
-- **Receipt Printing** - Generate professional receipts for completed transactions
+- **Commission Calculation** - Automatic commission calculation based on agent rates and selected type
+- **Thermal Printer Receipts** - Professional receipts optimized for 80mm thermal/ATM printers
+  - Single-column layout for narrow paper
+  - Minimal spacing and compact fonts
+  - Includes sender/receiver agent details with locations
+  - Print-ready with automatic page sizing
+- **Enhanced Transaction Table** - Clear data visibility with dedicated columns:
+  - Sender name and phone
+  - Sender agent with location
+  - Receiver name and phone
+  - Receiver agent with location
+  - Amount and currency
+  - Commission amount and rate
+- **Multi-Currency Reports** - Accurate reporting with commission totals per currency
 - **Reports & Analytics** - Summary statistics, reports by agent, and reports by currency
 - **Reference Code Lookup** - Quick search transactions by reference code for sender/receiver
 
 ### Database Tables
-- `hawaladars` - Agent profiles with multi-language support (EN/FA/PS)
-- `hawala_transactions` - Transaction records with sender/receiver details, amounts, and status
+- `hawaladars` - Agent profiles with multi-language support (EN/FA/PS) and logo support
+- `hawala_transactions` - Transaction records with sender/receiver details, amounts, commission type, and status
 
 ### Transaction Flow
 ```
@@ -345,11 +357,14 @@ Detailed rates table with search, filtering, and market selection.
 ### Currency Converter
 Real-time currency conversion with swap functionality.
 
-### Admin Panel
-Full CRUD operations for managing exchange rates, gold prices, and news content.
+### Rates & Gold Pages
+Dedicated pages with full CRUD operations for managing exchange rates and gold prices.
 
 ### Hawala Page
-Three-section layout with Transactions, Hawaladars, and Reports management.
+Multi-section layout with Transactions, Hawaladars, Reports, and Savings Account management.
+
+### Users Management
+Dedicated user management page accessible from the user menu.
 
 ## Multi-language Support
 
@@ -362,7 +377,16 @@ Users can switch languages using the dropdown in the header. The selected langua
 
 ## Recent Updates (January 2026)
 
-### Latest Features (2026-01-11)
+### Latest Features (2026-01-14)
+- ✅ **Commission Type Feature** - Flexible commission handling (add/deduct modes)
+- ✅ **Enhanced Transaction Table** - Dedicated columns for sender/receiver agents, commission, and locations
+- ✅ **Multi-Currency Reports** - Accurate commission reporting per currency
+- ✅ **Thermal Printer Receipts** - Optimized for 80mm thermal/ATM printers with single-column layout
+- ✅ **Full-Width Layouts** - Maximized screen space for data tables
+- ✅ **Removed News Feature** - Simplified application focus
+- ✅ **Distributed Admin Functions** - CRUD operations moved to dedicated pages (Rates, Gold, Users)
+
+### Previous Features (2026-01-11)
 - ✅ **Customer Savings Payment** - Pay for hawala transfers using customer savings accounts
 - ✅ **Hawaladar Logos** - Upload custom logos for each hawaladar (admin only)
 - ✅ **Receipt Printing** - Generate and print professional transaction receipts

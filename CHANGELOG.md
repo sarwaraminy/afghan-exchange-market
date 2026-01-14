@@ -2,6 +2,120 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-14
+
+### Added
+
+#### Commission Type Feature
+- **Flexible Commission Handling** - Two commission modes for hawala transactions
+  - **Add Mode**: Sender pays amount + commission (total = amount + commission)
+  - **Deduct Mode**: Commission deducted from amount, receiver gets net balance (total = amount, receiver gets amount - commission)
+  - Added `commission_type` column to `hawala_transactions` table with values ('add', 'deduct')
+  - Database migration with default value 'add' for existing transactions
+  - Frontend UI selector with translated labels for both modes
+  - Backend logic updates for commission calculation based on type
+  - Automatic net amount calculation for receiver payouts when commission is deducted
+
+#### Enhanced Transaction Table
+- **Dedicated Columns** - Improved data visibility with separate columns
+  - Sender Name and Phone column
+  - Sender Agent column with hawaladar name and location
+  - Receiver Name and Phone column
+  - Receiver Agent column with hawaladar name and location
+  - Amount column (separated from commission)
+  - Commission column showing amount, rate, and commission type
+  - Multi-language support for hawaladar locations
+  - Better organization replacing combined sender/receiver displays
+
+#### Multi-Currency Report Improvements
+- **Accurate Commission Reporting** - Fixed misleading total commission aggregation
+  - Removed "Total Commission" summary card (was mixing different currencies)
+  - Replaced with "Cancelled Transactions" count card
+  - Commission totals now only shown per-currency in the "By Currency" table
+  - Each currency shows its own total commission amount
+  - Prevents confusion from adding USD + EUR + AFN commissions together
+
+#### Thermal Printer Receipt Optimization
+- **80mm Printer Support** - Professional receipts for thermal/ATM printers
+  - Page size set to `80mm auto` for continuous thermal paper
+  - Single-column layout (no side-by-side sections)
+  - All hawaladar information displayed vertically
+  - Minimal spacing (2mm margins, compact fonts)
+  - Font sizes optimized: 0.7-0.85rem for body text, 0.6-0.65rem for captions
+  - Transparent backgrounds for clean thermal output
+  - Removed receiver hawaladar logo to save space
+  - Header logo reduced to 35px height
+  - Removed section titles in print mode
+  - Signature sections compacted with 35mm width
+  - Prevents page breaks with proper CSS rules
+  - Complete transaction fits on one continuous receipt
+
+#### Full-Width Page Layouts
+- **Maximized Screen Space** - Better use of wide displays
+  - Changed container `maxWidth` from fixed sizes to `maxWidth={false}`
+  - Updated pages: Hawala, Rates, Gold, Dashboard, ManageUsers, Home
+  - Added horizontal padding (px: 4) for proper spacing
+  - Tables now use full viewport width
+  - Better for displaying multiple columns of data
+  - Maintained centered layouts for Login, Profile, Converter, Receipt pages
+
+### Removed
+
+#### News Feature
+- **Complete Removal** - Simplified application focus
+  - Deleted `frontend/src/pages/News.tsx` (133 lines)
+  - Deleted `backend/src/controllers/newsController.ts` (181 lines)
+  - Deleted `backend/src/routes/news.ts` (48 lines)
+  - Removed News link from header navigation
+  - Removed all News-related API endpoints
+  - Removed News translations from i18n files
+  - Removed News types from type definitions
+  - Updated README and documentation
+
+#### Centralized Admin Panel
+- **Distributed Administration** - Better organization of admin functions
+  - Deleted `frontend/src/pages/Admin.tsx` (1,218 lines)
+  - Removed `/admin` route from App.tsx
+  - Removed "Admin" button from header
+  - **Rates Management** - Full CRUD moved to Rates page with MaterialReactTable
+  - **Gold Management** - Full CRUD moved to Gold page with MaterialReactTable
+  - **User Management** - Moved to new dedicated ManageUsers page
+    - Created `frontend/src/pages/ManageUsers.tsx` (455 lines)
+    - Added `/users` route
+    - Accessible from user menu dropdown
+    - Admin-only access with role checking
+
+### Changed
+
+- **Backend Query Updates** - Include commission type in all responses
+  - Updated `getTransactions()` to return `commission_type` field
+  - Updated `getTransactionById()` to include commission type
+  - Enhanced receiver payout calculation based on commission type
+  - Transaction creation validates and stores commission type
+
+- **Frontend Form Updates** - Commission type selection UI
+  - Added commission type selector with "Add" and "Deduct" options
+  - Real-time calculation of total amount based on selected type
+  - Eligible savings accounts filtered by correct total amount
+  - Translation keys added: `commissionType`, `commissionAdd`, `commissionDeduct`
+
+- **Type Definitions** - Enhanced TypeScript interfaces
+  - Added `commission_type: 'add' | 'deduct'` to HawalaTransaction (frontend and backend)
+  - Updated all transaction-related types for consistency
+
+### Security
+
+- Admin-only access maintained for all management functions
+- CRUD operations properly restricted by role
+- Commission type validation on backend
+
+### Documentation
+
+- Updated README.md with new features and removed News references
+- Updated API documentation to remove News endpoints
+- Enhanced Hawala System section with commission types and thermal printing
+- Updated screenshots section to reflect new UI organization
+
 ## [1.2.1] - 2026-01-12
 
 ### Added
