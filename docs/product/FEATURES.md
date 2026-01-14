@@ -2,7 +2,7 @@
 
 ## Overview
 
-Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform providing real-time exchange rates, gold prices, and financial news for the Afghan market.
+Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform providing real-time exchange rates, gold prices, and hawala money transfer management for the Afghan market.
 
 ---
 
@@ -88,7 +88,7 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 - Full UI translation
 - Currency names in all languages
 - Market names in local languages
-- News content in multiple languages
+- Hawala content in multiple languages
 - RTL layout support for Dari and Pashto
 
 ---
@@ -97,7 +97,7 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 
 #### Account Management
 - Admin-managed user accounts (no self-registration)
-- Users created through Admin Panel
+- Users created through Users Management page
 - Secure password requirements:
   - Minimum 8 characters
   - Uppercase and lowercase letters
@@ -154,22 +154,57 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 
 ---
 
-### 8. News & Announcements
+### 8. Hawala Money Transfer System
 
-#### News Features
-- Market news and updates
-- Official announcements
-- Multi-language content
-- Category filtering:
-  - Market news
-  - Announcements
-  - General news
+#### Hawaladar (Agent) Management
+- Register and manage hawaladar profiles
+- Multi-language support (EN/FA/PS) for names and locations
+- Custom logo upload for branding (JPEG/PNG, 5MB max)
+- Commission rate configuration per agent
+- Province and district location tracking
+- Phone contact information
 
-#### News Display
-- Featured images
-- Publication date
-- Author attribution
-- Category badges
+#### Transaction Management
+- Create money transfer transactions with unique reference codes (HWL-XXXXXX)
+- **Flexible Commission Types**:
+  - **Add Mode**: Sender pays amount + commission
+  - **Deduct Mode**: Commission deducted from amount, receiver gets net balance
+- Track sender and receiver information with phone numbers
+- Link transactions to sending and receiving hawaladars
+- Status workflow: Pending → In Transit → Completed (or Cancelled)
+- Multi-currency support
+- Payment from cash or customer savings accounts
+
+#### Enhanced Transaction Table
+- Dedicated columns for clear data visibility:
+  - Sender name and phone
+  - Sender hawaladar with location
+  - Receiver name and phone
+  - Receiver hawaladar with location
+  - Amount and currency
+  - Commission amount and rate percentage
+
+#### Thermal Printer Receipts
+- Professional receipts optimized for 80mm thermal/ATM printers
+- Single-column layout for narrow paper
+- Minimal spacing and compact fonts for thermal printing
+- Includes transaction details, hawaladar information, and signatures
+- Print-ready with automatic page sizing (80mm auto)
+- Complete transaction fits on one continuous receipt
+
+#### Reports & Analytics
+- Summary statistics (total transactions, amounts, commission)
+- Multi-currency commission reporting (totals per currency)
+- Transactions by agent report
+- Transactions by currency report
+- Reference code lookup for quick search
+
+#### Customer Savings Integration
+- Create customer profiles with Tazkira (National ID)
+- Manage savings accounts per hawaladar/currency
+- Deposit and withdraw tracking
+- Pay for hawala transfers from savings accounts
+- Complete transaction history
 
 ---
 
@@ -183,32 +218,38 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 
 ---
 
-### 10. Admin Panel
+### 10. Admin Management (Distributed)
 
-#### User Management
-- Create new user accounts
-- Update user information
-- Change user roles (user/admin)
-- Delete user accounts
-- View all registered users
+#### Users Management Page
+- Dedicated page accessible from user menu (admin only)
+- Full CRUD operations for user accounts:
+  - Create new user accounts
+  - Update user information
+  - Change user roles (user/admin)
+  - Delete user accounts
+  - View all registered users
+- MaterialReactTable interface with search and filtering
 
-#### Rate Management
+#### Rates Page Management
+- Built-in CRUD operations on Rates page (admin only)
 - Update exchange rates
 - Add new currency pairs
 - Delete rate entries
 - Market-specific rate control
+- Full-width table display
 
-#### Gold Rate Management
+#### Gold Page Management
+- Built-in CRUD operations on Gold page (admin only)
 - Update gold/silver prices
 - Add new precious metal types
 - Manage price units
+- Real-time price tracking
 
-#### News Management
-- Create news articles
-- Multi-language content entry
-- Publish/unpublish control
-- Edit existing articles
-- Delete articles
+#### Hawala Page Management
+- Complete hawaladar (agent) CRUD operations
+- Transaction management and status updates
+- Reports and analytics access
+- Customer and savings account management
 
 #### Market & Currency Management
 - Add new markets
@@ -223,6 +264,8 @@ Afghan Exchange Market (Sarafi) is a comprehensive currency exchange platform pr
 - Mobile-friendly layout
 - Tablet optimization
 - Desktop full-featured view
+- Full-width layouts for data tables (Hawala, Rates, Gold, Dashboard)
+- Maximized screen space utilization
 
 ### Accessibility
 - Semantic HTML structure
