@@ -15,14 +15,14 @@ A full-stack web application for real-time currency exchange rates from Afghanis
 - **Gold & Silver Rates** - Track precious metal prices (24K, 22K, 21K, 18K gold and silver)
 - **Hawala System** - Complete money transfer management with agents, transactions, and reports
   - **Flexible Commission** - Choose between two commission types: add (sender pays extra) or deduct (cut from amount)
-  - **Logo Upload** - Custom branding for each hawaladar with image preview
+  - **Location Details** - Track floor number and shop number for each hawaladar location
   - **Thermal Printer Support** - Optimized receipts for 80mm thermal/ATM printers
   - **Customer Payments** - Pay from cash or savings accounts
   - **Enhanced Transaction Table** - Separate columns for sender/receiver agents, commission details, and locations
   - **Multi-Currency Reports** - Accurate commission reporting per currency
 - **Customer Savings Accounts** - Hawaladar-managed savings accounts for customers with deposit/withdraw tracking
 - **User Accounts** - Save favorite currencies and set price alerts
-- **Profile Pictures** - Upload custom profile pictures and hawaladar logos with server-side validation
+- **Profile Pictures** - Upload custom profile pictures with server-side validation
 - **Admin Management** - Distributed CRUD operations across dedicated pages (Rates, Gold, Users)
 - **Multi-language Support** - English, Dari (دری), and Pashto (پښتو) with full RTL support
 - **Responsive Design** - Full-width layouts optimized for data tables, works on all devices
@@ -61,8 +61,7 @@ afghan-exchange-market/
 │   │   └── seed.ts          # Database seeder
 │   ├── data/                # SQLite database
 │   ├── uploads/             # User uploaded files
-│   │   ├── profiles/        # Profile pictures
-│   │   └── logos/           # Hawaladar logos
+│   │   └── profiles/        # Profile pictures
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -183,7 +182,6 @@ afghan-exchange-market/
 | POST | `/api/hawala/agents` | Create new agent |
 | PUT | `/api/hawala/agents/:id` | Update agent |
 | DELETE | `/api/hawala/agents/:id` | Delete agent |
-| POST | `/api/hawala/agents/:id/logo` | Upload agent logo (admin only) |
 
 #### Transactions
 | Method | Endpoint | Description |
@@ -269,8 +267,8 @@ node set-password.js  # Uses default password: aaAA11!!
 The Hawala system provides a complete money transfer management solution, traditionally used in Afghanistan and South Asia.
 
 ### Features
-- **Agent Management** - Register and manage hawaladar (agent) profiles with locations and commission rates
-- **Logo Upload** - Custom branding for hawaladars with image upload (JPEG/PNG, 5MB max)
+- **Agent Management** - Register and manage hawaladar (agent) profiles with locations, floor/shop numbers, and commission rates
+- **Location Details** - Track detailed address information including floor number and shop number for each hawaladar
 - **Transaction Tracking** - Create, track, and manage money transfers with unique reference codes (HWL-XXXXXX)
 - **Flexible Commission Types** - Choose between two commission modes:
   - **Add**: Sender pays amount + commission (total = amount + commission)
@@ -295,7 +293,7 @@ The Hawala system provides a complete money transfer management solution, tradit
 - **Reference Code Lookup** - Quick search transactions by reference code for sender/receiver
 
 ### Database Tables
-- `hawaladars` - Agent profiles with multi-language support (EN/FA/PS) and logo support
+- `hawaladars` - Agent profiles with multi-language support (EN/FA/PS), location details (floor/shop numbers)
 - `hawala_transactions` - Transaction records with sender/receiver details, amounts, commission type, and status
 
 ### Transaction Flow
@@ -377,7 +375,13 @@ Users can switch languages using the dropdown in the header. The selected langua
 
 ## Recent Updates (January 2026)
 
-### Latest Features (2026-01-14)
+### Latest Features (2026-01-14 - v1.3.1)
+- ✅ **Location Details** - Added floor number and shop number fields for hawaladar addresses
+- ✅ **Simplified Branding** - Removed logo upload system, standardized on default branding
+- ✅ **Receipt Cleanup** - Removed duplicate sender information for cleaner receipts
+- ✅ **Enhanced Location Display** - Floor and shop details shown throughout the system
+
+### Previous Features (2026-01-14 - v1.3.0)
 - ✅ **Commission Type Feature** - Flexible commission handling (add/deduct modes)
 - ✅ **Enhanced Transaction Table** - Dedicated columns for sender/receiver agents, commission, and locations
 - ✅ **Multi-Currency Reports** - Accurate commission reporting per currency
@@ -386,9 +390,8 @@ Users can switch languages using the dropdown in the header. The selected langua
 - ✅ **Removed News Feature** - Simplified application focus
 - ✅ **Distributed Admin Functions** - CRUD operations moved to dedicated pages (Rates, Gold, Users)
 
-### Previous Features (2026-01-11)
+### Additional Features (2026-01-11)
 - ✅ **Customer Savings Payment** - Pay for hawala transfers using customer savings accounts
-- ✅ **Hawaladar Logos** - Upload custom logos for each hawaladar (admin only)
 - ✅ **Receipt Printing** - Generate and print professional transaction receipts
 - ✅ **Dynamic Account Selection** - Real-time eligible savings accounts lookup during hawala creation
 

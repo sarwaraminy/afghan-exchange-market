@@ -18,10 +18,7 @@ import {
   // Reports
   getReportsSummary,
   getReportsByAgent,
-  getReportsByCurrency,
-  // Logo Upload
-  logoUpload,
-  uploadHawaladarLogo
+  getReportsByCurrency
 } from '../controllers/hawalaController';
 import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
@@ -43,6 +40,8 @@ router.post(
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('location').trim().notEmpty().withMessage('Location is required'),
+    body('floor_number').optional().trim(),
+    body('shop_number').optional().trim(),
     body('commission_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Commission rate must be between 0 and 100')
   ],
   validateRequest,
@@ -57,6 +56,8 @@ router.put(
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('location').trim().notEmpty().withMessage('Location is required'),
+    body('floor_number').optional().trim(),
+    body('shop_number').optional().trim(),
     body('commission_rate').optional().isFloat({ min: 0, max: 100 }).withMessage('Commission rate must be between 0 and 100')
   ],
   validateRequest,
@@ -65,9 +66,6 @@ router.put(
 
 // Delete hawaladar (admin only)
 router.delete('/agents/:id', authenticate, isAdmin, deleteHawaladar);
-
-// Upload hawaladar logo (admin only)
-router.post('/agents/:id/logo', authenticate, isAdmin, logoUpload.single('logo'), uploadHawaladarLogo);
 
 // ==================== TRANSACTIONS ====================
 

@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../config/database';
 import { Hawaladar, HawalaTransaction, HawalaTransactionWithDetails } from '../types';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
 // Generate unique reference code using incremental integer
 // Note: This is now atomic - uses a single UPDATE that returns the new value
@@ -106,11 +103,11 @@ export const getHawaladarById = (req: Request, res: Response): void => {
 
 export const createHawaladar = (req: Request, res: Response): void => {
   try {
-    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate } = req.body;
+    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, floor_number, shop_number, commission_rate } = req.body;
 
     const result = db.prepare(`
-      INSERT INTO hawaladars (name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO hawaladars (name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, floor_number, shop_number, commission_rate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       name,
       name_fa || null,
@@ -121,6 +118,8 @@ export const createHawaladar = (req: Request, res: Response): void => {
       location,
       location_fa || null,
       location_ps || null,
+      floor_number || null,
+      shop_number || null,
       commission_rate || 2.0
     );
 
@@ -144,7 +143,7 @@ export const createHawaladar = (req: Request, res: Response): void => {
 export const updateHawaladar = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, commission_rate, is_active } = req.body;
+    const { name, name_fa, name_ps, phone, province_id, district_id, location, location_fa, location_ps, floor_number, shop_number, commission_rate, is_active } = req.body;
 
     const existing = db.prepare('SELECT id FROM hawaladars WHERE id = ?').get(id);
     if (!existing) {
@@ -155,8 +154,8 @@ export const updateHawaladar = (req: Request, res: Response): void => {
     db.prepare(`
       UPDATE hawaladars
       SET name = ?, name_fa = ?, name_ps = ?, phone = ?, province_id = ?, district_id = ?,
-          location = ?, location_fa = ?, location_ps = ?, commission_rate = ?, is_active = ?,
-          updated_at = CURRENT_TIMESTAMP
+          location = ?, location_fa = ?, location_ps = ?, floor_number = ?, shop_number = ?,
+          commission_rate = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
       name,
@@ -168,6 +167,8 @@ export const updateHawaladar = (req: Request, res: Response): void => {
       location,
       location_fa || null,
       location_ps || null,
+      floor_number || null,
+      shop_number || null,
       commission_rate || 2.0,
       is_active !== undefined ? is_active : 1,
       id
@@ -246,7 +247,8 @@ export const getTransactions = (req: Request, res: Response): void => {
         sh.location as sender_hawaladar_location,
         sh.location_fa as sender_hawaladar_location_fa,
         sh.location_ps as sender_hawaladar_location_ps,
-        sh.logo as sender_hawaladar_logo,
+        sh.floor_number as sender_hawaladar_floor_number,
+        sh.shop_number as sender_hawaladar_shop_number,
         sh.phone as sender_hawaladar_phone,
         sh.province_id as sender_province_id,
         sh.district_id as sender_district_id,
@@ -258,7 +260,8 @@ export const getTransactions = (req: Request, res: Response): void => {
         rh.location as receiver_hawaladar_location,
         rh.location_fa as receiver_hawaladar_location_fa,
         rh.location_ps as receiver_hawaladar_location_ps,
-        rh.logo as receiver_hawaladar_logo,
+        rh.floor_number as receiver_hawaladar_floor_number,
+        rh.shop_number as receiver_hawaladar_shop_number,
         rh.province_id as receiver_province_id,
         rh.district_id as receiver_district_id,
         rp.name as receiver_province_name,
@@ -377,7 +380,8 @@ export const getTransactionById = (req: Request, res: Response): void => {
         sh.location as sender_hawaladar_location,
         sh.location_fa as sender_hawaladar_location_fa,
         sh.location_ps as sender_hawaladar_location_ps,
-        sh.logo as sender_hawaladar_logo,
+        sh.floor_number as sender_hawaladar_floor_number,
+        sh.shop_number as sender_hawaladar_shop_number,
         sh.phone as sender_hawaladar_phone,
         rh.name as receiver_hawaladar_name,
         rh.name_fa as receiver_hawaladar_name_fa,
@@ -385,7 +389,8 @@ export const getTransactionById = (req: Request, res: Response): void => {
         rh.location as receiver_hawaladar_location,
         rh.location_fa as receiver_hawaladar_location_fa,
         rh.location_ps as receiver_hawaladar_location_ps,
-        rh.logo as receiver_hawaladar_logo,
+        rh.floor_number as receiver_hawaladar_floor_number,
+        rh.shop_number as receiver_hawaladar_shop_number,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -424,7 +429,8 @@ export const getTransactionByCode = (req: Request, res: Response): void => {
         sh.location as sender_hawaladar_location,
         sh.location_fa as sender_hawaladar_location_fa,
         sh.location_ps as sender_hawaladar_location_ps,
-        sh.logo as sender_hawaladar_logo,
+        sh.floor_number as sender_hawaladar_floor_number,
+        sh.shop_number as sender_hawaladar_shop_number,
         sh.phone as sender_hawaladar_phone,
         rh.name as receiver_hawaladar_name,
         rh.name_fa as receiver_hawaladar_name_fa,
@@ -432,7 +438,8 @@ export const getTransactionByCode = (req: Request, res: Response): void => {
         rh.location as receiver_hawaladar_location,
         rh.location_fa as receiver_hawaladar_location_fa,
         rh.location_ps as receiver_hawaladar_location_ps,
-        rh.logo as receiver_hawaladar_logo,
+        rh.floor_number as receiver_hawaladar_floor_number,
+        rh.shop_number as receiver_hawaladar_shop_number,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -1129,73 +1136,5 @@ export const getReportsByCurrency = (req: Request, res: Response): void => {
   } catch (error) {
     console.error('Get reports by currency error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch reports by currency' });
-  }
-};
-
-// ==================== LOGO UPLOAD ====================
-
-// Configure multer for logo uploads
-const logoStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/logos');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-export const logoUpload = multer({
-  storage: logoStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only JPEG and PNG images are allowed'));
-    }
-  }
-});
-
-export const uploadHawaladarLogo = (req: Request, res: Response): void => {
-  const { id } = req.params;
-
-  if (!req.file) {
-    res.status(400).json({ success: false, error: 'No file uploaded' });
-    return;
-  }
-
-  try {
-    const existing = db.prepare('SELECT logo FROM hawaladars WHERE id = ?').get(id) as Hawaladar | undefined;
-    if (!existing) {
-      res.status(404).json({ success: false, error: 'Hawaladar not found' });
-      return;
-    }
-
-    // Delete old logo if exists
-    if (existing.logo) {
-      const oldLogoPath = path.join(__dirname, '../../uploads/logos', existing.logo);
-      if (fs.existsSync(oldLogoPath)) {
-        fs.unlinkSync(oldLogoPath);
-      }
-    }
-
-    // Update hawaladar with new logo filename
-    db.prepare(`
-      UPDATE hawaladars
-      SET logo = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(req.file.filename, id);
-
-    const updatedHawaladar = db.prepare('SELECT * FROM hawaladars WHERE id = ?').get(id);
-    res.json({ success: true, data: updatedHawaladar });
-  } catch (error) {
-    console.error('Upload hawaladar logo error:', error);
-    res.status(500).json({ success: false, error: 'Failed to upload logo' });
   }
 };

@@ -154,10 +154,12 @@ export const initializeDatabase = async (): Promise<void> => {
       language TEXT DEFAULT 'en' CHECK(language IN ('en', 'fa', 'ps')),
       preferred_market_id INTEGER DEFAULT 1,
       preferred_currency_id INTEGER DEFAULT 1,
+      hawaladar_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (preferred_market_id) REFERENCES markets(id),
-      FOREIGN KEY (preferred_currency_id) REFERENCES currencies(id)
+      FOREIGN KEY (preferred_currency_id) REFERENCES currencies(id),
+      FOREIGN KEY (hawaladar_id) REFERENCES hawaladars(id)
     );
 
     CREATE TABLE IF NOT EXISTS markets (
@@ -265,6 +267,8 @@ export const initializeDatabase = async (): Promise<void> => {
       location TEXT NOT NULL,
       location_fa TEXT,
       location_ps TEXT,
+      floor_number TEXT,
+      shop_number TEXT,
       commission_rate REAL DEFAULT 2.0,
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -710,20 +714,6 @@ export const initializeDatabase = async (): Promise<void> => {
     // Column might already exist
   }
 
-  // Migration: Add logo field to hawaladars table
-  try {
-    const columns = db.exec("PRAGMA table_info(hawaladars)");
-    const hasLogo = columns.length > 0 &&
-      columns[0].values.some((col: any) => col[1] === 'logo');
-
-    if (!hasLogo) {
-      db.exec('ALTER TABLE hawaladars ADD COLUMN logo TEXT');
-      console.log('Added logo column to hawaladars table');
-    }
-  } catch (e) {
-    // Column might already exist
-  }
-
   // Migration: Add commission_type field to hawala_transactions table
   try {
     const columns = db.exec("PRAGMA table_info(hawala_transactions)");
@@ -733,6 +723,35 @@ export const initializeDatabase = async (): Promise<void> => {
     if (!hasCommissionType) {
       db.exec("ALTER TABLE hawala_transactions ADD COLUMN commission_type TEXT DEFAULT 'add' CHECK(commission_type IN ('add', 'deduct'))");
       console.log('Added commission_type column to hawala_transactions table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
+  // Migration: Add floor_number and shop_number fields to hawaladars table
+  try {
+    const columns = db.exec("PRAGMA table_info(hawaladars)");
+    const hasFloorNumber = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'floor_number');
+
+    if (!hasFloorNumber) {
+      db.exec('ALTER TABLE hawaladars ADD COLUMN floor_number TEXT');
+      db.exec('ALTER TABLE hawaladars ADD COLUMN shop_number TEXT');
+      console.log('Added floor_number and shop_number columns to hawaladars table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Migration: Add hawaladar_id field to users table
+  try {
+    const columns = db.exec("PRAGMA table_info(users)");
+    const hasHawaladarId = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'hawaladar_id');
+
+    if (!hasHawaladarId) {
+      db.exec('ALTER TABLE users ADD COLUMN hawaladar_id INTEGER REFERENCES hawaladars(id)');
+      console.log('Added hawaladar_id column to users table');
     }
   } catch (e) {
     // Column might already exist

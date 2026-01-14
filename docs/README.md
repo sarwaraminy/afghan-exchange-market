@@ -31,7 +31,6 @@ Welcome to the Afghan Exchange Market (Sarafi) documentation. This documentation
 ## Feature Implementation Guides
 
 - [Customer Savings Account System](./SAVINGS_ACCOUNT.md) - Complete guide for hawaladar-managed savings accounts
-- [Hawaladar Logo Upload](./LOGO_UPLOAD.md) - Logo upload and branding system documentation
 - [Implementation Summary](./IMPLEMENTATION_SUMMARY.md) - Overview of customer savings implementation
 
 ## About the Project
@@ -40,7 +39,7 @@ Afghan Exchange Market is a comprehensive currency exchange platform designed fo
 
 - Real-time exchange rates from major Afghan markets
 - Gold and precious metal price tracking
-- Hawala money transfer system with agent branding and receipt printing
+- Hawala money transfer system with detailed location tracking and receipt printing
 - Customer savings account management
 - Multi-language support (English, Dari, Pashto)
 - User accounts with favorites and price alerts

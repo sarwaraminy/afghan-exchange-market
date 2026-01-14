@@ -2,6 +2,113 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-01-14
+
+### Added
+
+#### Hawaladar Location Details
+- **Floor and Shop Number Fields** - Enhanced location tracking for hawaladar addresses
+  - Added `floor_number` TEXT column to `hawaladars` table
+  - Added `shop_number` TEXT column to `hawaladars` table
+  - Database migration with automatic schema update on startup
+  - Updated TypeScript interfaces (Hawaladar, HawalaTransaction) with new fields
+  - Added to backend validation routes with optional validators
+  - Frontend form fields added in 3-column responsive layout (desktop) / 1-column (mobile)
+  - Display in Material React Table with proper translations
+  - Added to transaction pages showing sender/receiver floor and shop details
+  - Included in transaction receipts for both sender and receiver hawaladars
+  - Multi-language support (English, Dari, Pashto) for "Floor" and "Shop" labels
+  - Proper formatting: "Floor: X, Shop: Y" display format
+
+### Removed
+
+#### Logo Upload System
+- **Complete Logo Feature Removal** - Simplified hawaladar branding system
+  - Removed `logo` column from `hawaladars` table (migration removed from database.ts)
+  - Deleted logo upload endpoint `POST /api/hawala/agents/:id/logo`
+  - Removed `uploadHawaladarLogo` controller function from hawalaController.ts
+  - Removed Multer configuration and file upload middleware for logos
+  - Removed logo fields from all database queries (getTransactions, getTransactionById, getTransactionByCode)
+  - Removed logo upload UI from Hawala.tsx (upload button, preview, file selection)
+  - Removed `logoFile` and `logoPreview` state management
+  - Removed `uploadHawaladarLogo` API function from api.ts
+  - Removed logo from TypeScript interfaces (User, Hawaladar, HawalaTransaction)
+  - Removed logo display from transaction receipts (sender and receiver)
+  - Removed logo from auth controller login queries
+  - Reverted Header.tsx to default Afghan Exchange logo
+  - Removed hawaladar logo conditional display from header and mobile drawer
+  - Application now uses only the default branding logo throughout
+  - Removed `backend/uploads/logos/` directory usage
+  - Deleted documentation: docs/LOGO_UPLOAD.md
+
+#### Receipt Simplification
+- **Removed Duplicate Information** - Cleaner receipt layout
+  - Removed duplicate sender hawaladar details from receipt body
+  - Sender information now only appears in receipt header
+  - Eliminated redundant display of sender name, location, and contact information
+
+### Changed
+
+- **Backend Controllers** - Updated hawalaController.ts
+  - Added floor_number and shop_number to createHawaladar validation and insertion
+  - Added floor_number and shop_number to updateHawaladar logic
+  - Updated all transaction queries to include sender/receiver floor and shop fields
+  - Removed all logo-related imports (multer, path, fs)
+  - Simplified query structure by removing logo field selects
+
+- **Frontend Components** - Enhanced Hawala.tsx
+  - Reorganized Create/Edit modal with responsive Grid layout (3 columns on desktop, 1 on mobile)
+  - Added floor_number and shop_number TextFields to hawaladar form
+  - Updated Material React Table to display floor/shop in location column with translations
+  - Added floor/shop display to sender/receiver cells in transactions table
+  - Removed CloudUpload import and logo upload section (150+ lines)
+  - Simplified form state management by removing logo-related states
+
+- **Frontend Receipts** - Updated HawalaReceipt.tsx
+  - Added floor and shop display for sender hawaladar in header
+  - Added floor and shop display for receiver hawaladar in body
+  - Removed all logo image elements
+  - Removed duplicate sender information section
+
+- **Type Definitions** - Updated across frontend and backend
+  - Added `floor_number?: string` to Hawaladar interface
+  - Added `shop_number?: string` to Hawaladar interface
+  - Added floor/shop fields to HawalaTransaction for sender and receiver
+  - Removed `logo?: string` from Hawaladar interface
+  - Removed logo fields from HawalaTransaction interface
+  - Removed `hawaladar_logo` from User interface
+
+- **API Routes** - Updated hawala.ts
+  - Added floor_number and shop_number to agent creation/update validation
+  - Removed logo upload route definition
+  - Simplified route structure
+
+- **Translations** - Added new keys to i18n
+  - Added "floor" translations: "Floor" (EN), "منزل" (FA/PS)
+  - Added "shop" translations: "Shop" (EN), "دکان" (FA/PS)
+  - Removed all logo-related translation keys
+
+### Documentation
+
+- Updated CHANGELOG.md with version 1.3.1 changes
+- Updated README.md to remove logo references and add floor/shop field information
+- Removed docs/LOGO_UPLOAD.md (feature no longer exists)
+- Updated API endpoint documentation to reflect removed logo upload endpoint
+- Updated hawala system feature description
+
+### Database Schema
+
+**New Columns:**
+- `hawaladars.floor_number` (TEXT, optional)
+- `hawaladars.shop_number` (TEXT, optional)
+
+**Removed Migrations:**
+- Logo field migration removed from database.ts (lines 717-729)
+
+**Migration Behavior:**
+- floor_number and shop_number added automatically on startup for existing databases
+- Existing records will have NULL values for new fields until updated
+
 ## [1.3.0] - 2026-01-14
 
 ### Added

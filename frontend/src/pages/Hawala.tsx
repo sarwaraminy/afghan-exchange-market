@@ -27,7 +27,8 @@ import {
   Card,
   CardContent,
   Divider,
-  Grid
+  Grid,
+  Tooltip
 } from '@mui/material';
 import {
   Edit,
@@ -42,15 +43,13 @@ import {
   Search,
   AccountBalance,
   ArrowUpward,
-  ArrowDownward,
-  CloudUpload
+  ArrowDownward
 } from '@mui/icons-material';
 import {
   getHawaladars,
   createHawaladar,
   updateHawaladar,
   deleteHawaladar,
-  uploadHawaladarLogo,
   getHawalaTransactions,
   getHawalaTransactionByCode,
   createHawalaTransaction,
@@ -77,8 +76,6 @@ import {
 import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District, Customer, CustomerAccount, AccountTransaction } from '../types';
 import { Loading } from '../components/common/Loading';
 import { useAuth } from '../context/AuthContext';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const Hawala = () => {
   const { t, i18n } = useTranslation();
@@ -143,12 +140,12 @@ export const Hawala = () => {
     location: '',
     location_fa: '',
     location_ps: '',
+    floor_number: '',
+    shop_number: '',
     commission_rate: '2.0',
     is_active: 1
   });
 
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<HawalaTransaction | null>(null);
@@ -571,11 +568,11 @@ export const Hawala = () => {
       location: '',
       location_fa: '',
       location_ps: '',
+      floor_number: '',
+      shop_number: '',
       commission_rate: '2.0',
       is_active: 1
     });
-    setLogoFile(null);
-    setLogoPreview(null);
     setError('');
     setHawaladarDialog(true);
   };
@@ -592,11 +589,11 @@ export const Hawala = () => {
       location: hawaladar.location,
       location_fa: hawaladar.location_fa || '',
       location_ps: hawaladar.location_ps || '',
+      floor_number: hawaladar.floor_number || '',
+      shop_number: hawaladar.shop_number || '',
       commission_rate: hawaladar.commission_rate.toString(),
       is_active: hawaladar.is_active
     });
-    setLogoFile(null);
-    setLogoPreview(null);
     setError('');
     setHawaladarDialog(true);
   };
@@ -613,6 +610,8 @@ export const Hawala = () => {
         location: hawaladarForm.location,
         location_fa: hawaladarForm.location_fa || undefined,
         location_ps: hawaladarForm.location_ps || undefined,
+        floor_number: hawaladarForm.floor_number || undefined,
+        shop_number: hawaladarForm.shop_number || undefined,
         commission_rate: parseFloat(hawaladarForm.commission_rate),
         is_active: hawaladarForm.is_active
       };
@@ -624,16 +623,6 @@ export const Hawala = () => {
       } else {
         const newHawaladar = await createHawaladar(data);
         hawaladarId = newHawaladar.id;
-      }
-
-      // Upload logo if selected
-      if (logoFile) {
-        await uploadHawaladarLogo(hawaladarId, logoFile);
-        setLogoFile(null);
-        if (logoPreview) {
-          URL.revokeObjectURL(logoPreview);
-          setLogoPreview(null);
-        }
       }
 
       setHawaladarDialog(false);
@@ -720,6 +709,11 @@ export const Hawala = () => {
             ? row.original.sender_hawaladar_location_ps || row.original.sender_hawaladar_location
             : row.original.sender_hawaladar_location;
 
+          const senderFloorShopText = [
+            row.original.sender_hawaladar_floor_number && `${t('hawala.floor')}: ${row.original.sender_hawaladar_floor_number}`,
+            row.original.sender_hawaladar_shop_number && `${t('hawala.shop')}: ${row.original.sender_hawaladar_shop_number}`
+          ].filter(Boolean).join(', ');
+
           return (
             <Box>
               <Typography variant="body2" noWrap>
@@ -728,6 +722,11 @@ export const Hawala = () => {
               {senderHawaladarLocation && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
                   {senderHawaladarLocation}
+                </Typography>
+              )}
+              {senderFloorShopText && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {senderFloorShopText}
                 </Typography>
               )}
             </Box>
@@ -766,6 +765,11 @@ export const Hawala = () => {
             ? row.original.receiver_hawaladar_location_ps || row.original.receiver_hawaladar_location
             : row.original.receiver_hawaladar_location;
 
+          const receiverFloorShopText = [
+            row.original.receiver_hawaladar_floor_number && `${t('hawala.floor')}: ${row.original.receiver_hawaladar_floor_number}`,
+            row.original.receiver_hawaladar_shop_number && `${t('hawala.shop')}: ${row.original.receiver_hawaladar_shop_number}`
+          ].filter(Boolean).join(', ');
+
           return (
             <Box>
               <Typography variant="body2" noWrap>
@@ -774,6 +778,11 @@ export const Hawala = () => {
               {receiverHawaladarLocation && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
                   {receiverHawaladarLocation}
+                </Typography>
+              )}
+              {receiverFloorShopText && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {receiverFloorShopText}
                 </Typography>
               )}
             </Box>
@@ -894,7 +903,7 @@ export const Hawala = () => {
       {
         accessorKey: 'location',
         header: t('hawala.location'),
-        size: 150,
+        size: 300,
         Cell: ({ row }) => {
           const locationText = i18n.language === 'fa'
             ? row.original.location_fa || row.original.location
@@ -914,15 +923,43 @@ export const Hawala = () => {
             ? row.original.province_name_ps || row.original.province_name
             : row.original.province_name;
 
+          const floorShopText = [
+            row.original.floor_number && `${t('hawala.floor')}: ${row.original.floor_number}`,
+            row.original.shop_number && `${t('hawala.shop')}: ${row.original.shop_number}`
+          ].filter(Boolean).join(', ');
+
+          const fullLocationText = [
+            locationText,
+            floorShopText
+          ].filter(Boolean).join(' - ');
+
           return (
-            <Box>
-              <Typography variant="body2" noWrap>{locationText}</Typography>
-              {(provinceName || districtName) && (
-                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                  {districtName && `${districtName}, `}{provinceName}
+            <Tooltip title={fullLocationText} placement="top" arrow>
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {locationText}
                 </Typography>
-              )}
-            </Box>
+                {floorShopText && (
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                    {floorShopText}
+                  </Typography>
+                )}
+                {(provinceName || districtName) && (
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                    {districtName && `${districtName}, `}{provinceName}
+                  </Typography>
+                )}
+              </Box>
+            </Tooltip>
           );
         }
       },
@@ -1984,216 +2021,147 @@ export const Hawala = () => {
       </Dialog>
 
       {/* Hawaladar Dialog */}
-      <Dialog open={hawaladarDialog} onClose={() => setHawaladarDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog open={hawaladarDialog} onClose={() => setHawaladarDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>{selectedHawaladar ? t('hawala.editAgent') : t('hawala.addAgent')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <TextField
-            fullWidth
-            label={t('hawala.nameEn')}
-            value={hawaladarForm.name}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, name: e.target.value })}
-            sx={{ mt: 1 }}
-            required
-          />
-          <TextField
-            fullWidth
-            label={t('hawala.nameFa')}
-            value={hawaladarForm.name_fa}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, name_fa: e.target.value })}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            label={t('hawala.namePs')}
-            value={hawaladarForm.name_ps}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, name_ps: e.target.value })}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            label={t('hawala.phone')}
-            value={hawaladarForm.phone}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, phone: e.target.value })}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            select
-            label={t('hawala.province')}
-            value={hawaladarForm.province_id}
-            onChange={(e) => {
-              setHawaladarForm({ ...hawaladarForm, province_id: e.target.value, district_id: '' });
-            }}
-            sx={{ mt: 2 }}
-          >
-            <MenuItem value="">{t('hawala.selectProvince')}</MenuItem>
-            {provinces.map((p) => (
-              <MenuItem key={p.id} value={p.id}>
-                {i18n.language === 'fa' ? p.name_fa || p.name : i18n.language === 'ps' ? p.name_ps || p.name : p.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label={t('hawala.district')}
-            value={hawaladarForm.district_id}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, district_id: e.target.value })}
-            sx={{ mt: 2 }}
-            disabled={!hawaladarForm.province_id}
-          >
-            <MenuItem value="">{t('hawala.selectDistrict')}</MenuItem>
-            {districts
-              .filter(d => d.province_id === parseInt(hawaladarForm.province_id))
-              .map((d) => (
-                <MenuItem key={d.id} value={d.id}>
-                  {i18n.language === 'fa' ? d.name_fa || d.name : i18n.language === 'ps' ? d.name_ps || d.name : d.name}
-                </MenuItem>
-              ))}
-          </TextField>
-          <TextField
-            fullWidth
-            label={t('hawala.locationEn')}
-            value={hawaladarForm.location}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, location: e.target.value })}
-            sx={{ mt: 2 }}
-            required
-          />
-          <TextField
-            fullWidth
-            label={t('hawala.locationFa')}
-            value={hawaladarForm.location_fa}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, location_fa: e.target.value })}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            label={t('hawala.locationPs')}
-            value={hawaladarForm.location_ps}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, location_ps: e.target.value })}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            type="number"
-            label={t('hawala.commissionRate')}
-            value={hawaladarForm.commission_rate}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, commission_rate: e.target.value })}
-            sx={{ mt: 2 }}
-            InputProps={{ endAdornment: '%' }}
-          />
-
-          {/* Logo Upload */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('hawala.logo')}
-            </Typography>
-
-            {/* Show current logo if no new file selected */}
-            {selectedHawaladar?.logo && !logoFile && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                  {t('hawala.currentLogo')}:
-                </Typography>
-                <Box
-                  component="img"
-                  src={`${API_BASE_URL}/uploads/logos/${selectedHawaladar.logo}`}
-                  alt="Current Logo"
-                  sx={{
-                    maxWidth: '200px',
-                    maxHeight: '100px',
-                    display: 'block',
-                    border: '1px solid #ddd',
-                    borderRadius: 1,
-                    padding: 1
-                  }}
-                />
-              </Box>
-            )}
-
-            {/* Show preview of newly selected file */}
-            {logoPreview && logoFile && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="caption" color="primary" display="block" gutterBottom>
-                  {t('hawala.currentLogo')}: {logoFile.name}
-                </Typography>
-                <Box
-                  component="img"
-                  src={logoPreview}
-                  alt="Logo Preview"
-                  sx={{
-                    maxWidth: '200px',
-                    maxHeight: '100px',
-                    display: 'block',
-                    border: '2px solid',
-                    borderColor: 'primary.main',
-                    borderRadius: 1,
-                    padding: 1
-                  }}
-                />
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<CloudUpload />}
-                size="small"
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.nameEn')}
+                value={hawaladarForm.name}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, name: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.nameFa')}
+                value={hawaladarForm.name_fa}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, name_fa: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.namePs')}
+                value={hawaladarForm.name_ps}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, name_ps: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.phone')}
+                value={hawaladarForm.phone}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, phone: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                select
+                label={t('hawala.province')}
+                value={hawaladarForm.province_id}
+                onChange={(e) => {
+                  setHawaladarForm({ ...hawaladarForm, province_id: e.target.value, district_id: '' });
+                }}
               >
-                {selectedHawaladar?.logo || logoFile ? t('hawala.changeLogo') : t('hawala.uploadLogo')}
-                <input
-                  type="file"
-                  hidden
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // Clean up old preview URL
-                      if (logoPreview) {
-                        URL.revokeObjectURL(logoPreview);
-                      }
-                      // Create new preview URL
-                      const previewUrl = URL.createObjectURL(file);
-                      setLogoFile(file);
-                      setLogoPreview(previewUrl);
-                    }
-                  }}
-                />
-              </Button>
-              {logoFile && (
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={() => {
-                    if (logoPreview) {
-                      URL.revokeObjectURL(logoPreview);
-                    }
-                    setLogoFile(null);
-                    setLogoPreview(null);
-                  }}
-                >
-                  {t('hawala.removeLogo')}
-                </Button>
-              )}
-            </Box>
-            <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-              {t('hawala.logoMaxSize')}
-            </Typography>
-          </Box>
+                <MenuItem value="">{t('hawala.selectProvince')}</MenuItem>
+                {provinces.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {i18n.language === 'fa' ? p.name_fa || p.name : i18n.language === 'ps' ? p.name_ps || p.name : p.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                select
+                label={t('hawala.district')}
+                value={hawaladarForm.district_id}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, district_id: e.target.value })}
+                disabled={!hawaladarForm.province_id}
+              >
+                <MenuItem value="">{t('hawala.selectDistrict')}</MenuItem>
+                {districts
+                  .filter(d => d.province_id === parseInt(hawaladarForm.province_id))
+                  .map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {i18n.language === 'fa' ? d.name_fa || d.name : i18n.language === 'ps' ? d.name_ps || d.name : d.name}
+                    </MenuItem>
+                  ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.locationEn')}
+                value={hawaladarForm.location}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, location: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.locationFa')}
+                value={hawaladarForm.location_fa}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, location_fa: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.locationPs')}
+                value={hawaladarForm.location_ps}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, location_ps: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.floorNumber')}
+                value={hawaladarForm.floor_number}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, floor_number: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.shopNumber')}
+                value={hawaladarForm.shop_number}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, shop_number: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                type="number"
+                label={t('hawala.commissionRate')}
+                value={hawaladarForm.commission_rate}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, commission_rate: e.target.value })}
+                InputProps={{ endAdornment: '%' }}
+              />
+            </Grid>
 
-          <TextField
-            fullWidth
-            select
-            label={t('hawala.statusActive')}
-            value={hawaladarForm.is_active}
-            onChange={(e) => setHawaladarForm({ ...hawaladarForm, is_active: Number(e.target.value) })}
-            sx={{ mt: 2 }}
-          >
-            <MenuItem value={1}>{t('hawala.active')}</MenuItem>
-            <MenuItem value={0}>{t('hawala.inactive')}</MenuItem>
-          </TextField>
+            {/* Status Field */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                select
+                label={t('hawala.statusActive')}
+                value={hawaladarForm.is_active}
+                onChange={(e) => setHawaladarForm({ ...hawaladarForm, is_active: Number(e.target.value) })}
+              >
+                <MenuItem value={1}>{t('hawala.active')}</MenuItem>
+                <MenuItem value={0}>{t('hawala.inactive')}</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setHawaladarDialog(false)}>{t('common.cancel')}</Button>

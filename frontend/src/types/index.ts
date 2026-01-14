@@ -7,6 +7,7 @@ export interface User {
   language: 'en' | 'fa' | 'ps';
   preferred_market_id?: number;
   preferred_currency_id?: number;
+  hawaladar_id?: number;
   profile_picture?: string;
 }
 
@@ -117,9 +118,10 @@ export interface Hawaladar {
   location: string;
   location_fa?: string;
   location_ps?: string;
+  floor_number?: string;
+  shop_number?: string;
   commission_rate: number;
   is_active: number;
-  logo?: string;
   created_at: string;
   updated_at: string;
 }
@@ -195,7 +197,8 @@ export interface HawalaTransaction {
   sender_hawaladar_location?: string;
   sender_hawaladar_location_fa?: string;
   sender_hawaladar_location_ps?: string;
-  sender_hawaladar_logo?: string;
+  sender_hawaladar_floor_number?: string;
+  sender_hawaladar_shop_number?: string;
   sender_hawaladar_phone?: string;
   receiver_name: string;
   receiver_phone?: string;
@@ -206,7 +209,8 @@ export interface HawalaTransaction {
   receiver_hawaladar_location?: string;
   receiver_hawaladar_location_fa?: string;
   receiver_hawaladar_location_ps?: string;
-  receiver_hawaladar_logo?: string;
+  receiver_hawaladar_floor_number?: string;
+  receiver_hawaladar_shop_number?: string;
   amount: number;
   currency_id: number;
   currency_code: string;

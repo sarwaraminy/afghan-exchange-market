@@ -86,6 +86,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           language: user.language,
           preferred_market_id: user.preferred_market_id,
           preferred_currency_id: user.preferred_currency_id,
+          hawaladar_id: user.hawaladar_id,
           profile_picture: user.profile_picture
         }
       }

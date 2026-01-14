@@ -236,6 +236,8 @@ export const createHawaladar = async (hawaladarData: {
   location: string;
   location_fa?: string;
   location_ps?: string;
+  floor_number?: string;
+  shop_number?: string;
   commission_rate?: number;
 }): Promise<Hawaladar> => {
   const { data } = await api.post<ApiResponse<Hawaladar>>('/hawala/agents', hawaladarData);

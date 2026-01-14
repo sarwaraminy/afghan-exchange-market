@@ -118,16 +118,8 @@ export const HawalaReceipt = () => {
             }
           }}
         >
-          {/* Header with Logo */}
+          {/* Header */}
           <Box sx={{ textAlign: 'center', mb: 3, '@media print': { mb: 1 } }}>
-            {transaction.sender_hawaladar_logo && (
-              <img
-                src={getLogoUrl(transaction.sender_hawaladar_logo)}
-                alt="Hawaladar Logo"
-                style={{ maxHeight: '100px', marginBottom: '16px' }}
-                className="header-logo"
-              />
-            )}
             <Typography variant="h4" fontWeight={700} gutterBottom>
               {
                 transaction.sender_hawaladar_name
@@ -148,6 +140,14 @@ export const HawalaReceipt = () => {
                   : transaction.sender_hawaladar_location
               }
             </Typography>
+            {(transaction.sender_hawaladar_floor_number || transaction.sender_hawaladar_shop_number) && (
+              <Typography variant="body2" color="text.secondary">
+                {[
+                  transaction.sender_hawaladar_floor_number && `${t('hawala.floor')}: ${transaction.sender_hawaladar_floor_number}`,
+                  transaction.sender_hawaladar_shop_number && `${t('hawala.shop')}: ${transaction.sender_hawaladar_shop_number}`
+                ].filter(Boolean).join(', ')}
+              </Typography>
+            )}
             {transaction.sender_hawaladar_phone && (
               <Typography variant="body2" color="text.secondary">
                 {t('hawala.phone')}: {transaction.sender_hawaladar_phone}
@@ -189,46 +189,6 @@ export const HawalaReceipt = () => {
               {t('hawala.agents')}
             </Typography>
             <Grid container spacing={3} sx={{ '@media print': { spacing: 0.5 } }}>
-              {/* Sender Hawaladar */}
-              <Grid size={{ xs: 12 }}>
-                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, '@media print': { p: 0.75, bgcolor: 'transparent', border: '1px solid #ccc' } }}>
-                  <Typography variant="body2" fontWeight={600} color="primary" gutterBottom>
-                    {t('hawala.senderAgent')}
-                  </Typography>
-                  {transaction.sender_hawaladar_name ? (
-                    <>
-                      <Typography variant="body2">
-                        <strong>{t('hawala.name')}:</strong> {
-                          i18n.language === 'fa'
-                            ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
-                            : i18n.language === 'ps'
-                            ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
-                            : transaction.sender_hawaladar_name
-                        }
-                      </Typography>
-                      {transaction.sender_hawaladar_location && (
-                        <Typography variant="body2">
-                          <strong>{t('hawala.location')}:</strong> {
-                            i18n.language === 'fa'
-                              ? transaction.sender_hawaladar_location_fa || transaction.sender_hawaladar_location
-                              : i18n.language === 'ps'
-                              ? transaction.sender_hawaladar_location_ps || transaction.sender_hawaladar_location
-                              : transaction.sender_hawaladar_location
-                          }
-                        </Typography>
-                      )}
-                      {transaction.sender_hawaladar_phone && (
-                        <Typography variant="body2">
-                          <strong>{t('hawala.phone')}:</strong> {transaction.sender_hawaladar_phone}
-                        </Typography>
-                      )}
-                    </>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  )}
-                </Box>
-              </Grid>
-
               {/* Receiver Hawaladar */}
               <Grid size={{ xs: 12 }}>
                 <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, '@media print': { p: 0.75, bgcolor: 'transparent', border: '1px solid #ccc' } }}>
@@ -257,14 +217,15 @@ export const HawalaReceipt = () => {
                           }
                         </Typography>
                       )}
-                      {transaction.receiver_hawaladar_logo && (
-                        <Box sx={{ mt: 1, '@media print': { display: 'none' } }}>
-                          <img
-                            src={getLogoUrl(transaction.receiver_hawaladar_logo)}
-                            alt="Receiver Hawaladar Logo"
-                            style={{ maxHeight: '50px' }}
-                          />
-                        </Box>
+                      {(transaction.receiver_hawaladar_floor_number || transaction.receiver_hawaladar_shop_number) && (
+                        <Typography variant="body2">
+                          <strong>{t('hawala.floor')}/{t('hawala.shop')}:</strong> {
+                            [
+                              transaction.receiver_hawaladar_floor_number && `${t('hawala.floor')}: ${transaction.receiver_hawaladar_floor_number}`,
+                              transaction.receiver_hawaladar_shop_number && `${t('hawala.shop')}: ${transaction.receiver_hawaladar_shop_number}`
+                            ].filter(Boolean).join(', ')
+                          }
+                        </Typography>
                       )}
                     </>
                   ) : (
