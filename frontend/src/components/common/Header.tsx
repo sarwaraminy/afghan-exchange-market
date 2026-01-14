@@ -33,14 +33,13 @@ import {
   Menu as MenuIcon,
   Logout,
   Dashboard,
-  AdminPanelSettings,
   CurrencyExchange,
   TrendingUp,
-  Newspaper,
   Calculate,
   AttachMoney,
   Diamond,
-  SwapHoriz
+  SwapHoriz,
+  People
 } from '@mui/icons-material';
 
 export const Header = () => {
@@ -85,7 +84,6 @@ export const Header = () => {
     { label: t('nav.rates'), path: '/rates', icon: <CurrencyExchange /> },
     { label: t('nav.converter'), path: '/converter', icon: <Calculate /> },
     { label: t('nav.gold'), path: '/gold', icon: <TrendingUp /> },
-    { label: t('nav.news'), path: '/news', icon: <Newspaper /> },
     { label: t('nav.hawala'), path: '/hawala', icon: <SwapHoriz /> },
   ] : [];
 
@@ -391,20 +389,6 @@ export const Header = () => {
 
           {isAuthenticated ? (
             <>
-              <Button
-                component={Link}
-                to="/admin"
-                startIcon={<AdminPanelSettings />}
-                sx={{
-                  mr: 1,
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                  }
-                }}
-              >
-                {!isMobile && t('nav.admin')}
-              </Button>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                 <Avatar
                   src={getProfilePictureUrl(user?.profile_picture) || undefined}
@@ -447,6 +431,11 @@ export const Header = () => {
                 <MenuItem component={Link} to="/dashboard" onClick={() => setAnchorEl(null)}>
                   <Dashboard sx={{ mr: 1 }} /> {t('nav.dashboard')}
                 </MenuItem>
+                {user?.role === 'admin' && (
+                  <MenuItem component={Link} to="/users" onClick={() => setAnchorEl(null)}>
+                    <People sx={{ mr: 1 }} /> {t('admin.manageUsers')}
+                  </MenuItem>
+                )}
                 <Divider />
                 <MenuItem onClick={handleLogout}>
                   <Logout sx={{ mr: 1 }} /> {t('nav.logout')}

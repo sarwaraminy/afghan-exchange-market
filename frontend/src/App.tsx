@@ -14,10 +14,9 @@ import { Footer } from './components/common/Footer';
 import { Rates } from './pages/Rates';
 import { Converter } from './pages/Converter';
 import { Gold } from './pages/Gold';
-import { News } from './pages/News';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
-import { Admin } from './pages/Admin';
+import { ManageUsers } from './pages/ManageUsers';
 import { Profile } from './pages/Profile';
 import { Hawala } from './pages/Hawala';
 import { HawalaReceipt } from './pages/HawalaReceipt';
@@ -59,12 +58,11 @@ const AppRoutes = () => (
     <Route path="/rates" element={<PrivateRoute><Rates /></PrivateRoute>} />
     <Route path="/converter" element={<PrivateRoute><Converter /></PrivateRoute>} />
     <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />
-    <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
     <Route path="/hawala" element={<PrivateRoute><Hawala /></PrivateRoute>} />
     <Route path="/hawala/receipt/:id" element={<PrivateRoute><HawalaReceipt /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-    <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+    <Route path="/users" element={<AdminRoute><ManageUsers /></AdminRoute>} />
   </Routes>
 );
 

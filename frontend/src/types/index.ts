@@ -62,21 +62,6 @@ export interface GoldRate {
   updated_at: string;
 }
 
-export interface News {
-  id: number;
-  title: string;
-  title_fa?: string;
-  title_ps?: string;
-  content: string;
-  content_fa?: string;
-  content_ps?: string;
-  category: string;
-  image_url?: string;
-  is_published: number;
-  author_name?: string;
-  created_at: string;
-}
-
 export interface PriceAlert {
   id: number;
   currency_id: number;
@@ -227,6 +212,7 @@ export interface HawalaTransaction {
   currency_code: string;
   currency_name: string;
   commission_rate: number;
+  commission_type: 'add' | 'deduct';
   commission_amount: number;
   total_amount: number;
   status: 'pending' | 'in_transit' | 'completed' | 'cancelled';

@@ -104,7 +104,7 @@ export const Home = () => {
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
         {loading ? (
           <Loading />
         ) : (

@@ -470,6 +470,7 @@ export const createTransaction = (req: Request, res: Response): void => {
       amount,
       currency_id,
       commission_rate,
+      commission_type = 'add',
       notes,
       customer_savings_account_id
     } = req.body;
@@ -478,10 +479,12 @@ export const createTransaction = (req: Request, res: Response): void => {
     // Generate unique reference code (incremental)
     const referenceCode = generateReferenceCode();
 
-    // Calculate commission
+    // Calculate commission based on commission type
     const rate = commission_rate || 2.0;
     const commissionAmount = amount * (rate / 100);
-    const totalAmount = amount + commissionAmount;
+    // If 'add': sender pays amount + commission (total = amount + commission)
+    // If 'deduct': sender pays amount, receiver gets amount - commission (total = amount, but receiver gets less)
+    const totalAmount = commission_type === 'add' ? amount + commissionAmount : amount;
 
     // Validate payment method: cannot have both sender_hawaladar_id and customer_savings_account_id
     if (sender_hawaladar_id && customer_savings_account_id) {
@@ -626,10 +629,10 @@ export const createTransaction = (req: Request, res: Response): void => {
       INSERT INTO hawala_transactions (
         reference_code, sender_name, sender_phone, sender_hawaladar_id,
         receiver_name, receiver_phone, receiver_hawaladar_id,
-        amount, currency_id, commission_rate, commission_amount, total_amount,
+        amount, currency_id, commission_rate, commission_type, commission_amount, total_amount,
         notes, sender_account_transaction_id, customer_savings_account_id, created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       referenceCode,
       sender_name,
@@ -641,6 +644,7 @@ export const createTransaction = (req: Request, res: Response): void => {
       amount,
       currency_id,
       rate,
+      commission_type,
       commissionAmount,
       totalAmount,
       notes || null,
@@ -687,6 +691,7 @@ export const updateTransaction = (req: Request, res: Response): void => {
       amount,
       currency_id,
       commission_rate,
+      commission_type,
       notes
     } = req.body;
 
@@ -710,17 +715,18 @@ export const updateTransaction = (req: Request, res: Response): void => {
       return;
     }
 
-    // Recalculate commission if amount or rate changed
+    // Recalculate commission if amount, rate, or commission type changed
     const newAmount = amount || existing.amount;
     const rate = commission_rate || existing.commission_rate;
+    const commType = commission_type || existing.commission_type || 'add';
     const commissionAmount = newAmount * (rate / 100);
-    const totalAmount = newAmount + commissionAmount;
+    const totalAmount = commType === 'add' ? newAmount + commissionAmount : newAmount;
 
     db.prepare(`
       UPDATE hawala_transactions
       SET sender_name = ?, sender_phone = ?, sender_hawaladar_id = ?,
           receiver_name = ?, receiver_phone = ?, receiver_hawaladar_id = ?,
-          amount = ?, currency_id = ?, commission_rate = ?,
+          amount = ?, currency_id = ?, commission_rate = ?, commission_type = ?,
           commission_amount = ?, total_amount = ?, notes = ?
       WHERE id = ?
     `).run(
@@ -733,6 +739,7 @@ export const updateTransaction = (req: Request, res: Response): void => {
       newAmount,
       currency_id || existing.currency_id,
       rate,
+      commType,
       commissionAmount,
       totalAmount,
       notes !== undefined ? notes : existing.notes,
@@ -812,9 +819,15 @@ export const updateTransactionStatus = (req: Request, res: Response): void => {
           return;
         }
 
-        // Add to receiver account (only the amount, not including commission)
+        // Calculate net amount for receiver based on commission type
+        // If 'add': receiver gets full amount (sender paid extra for commission)
+        // If 'deduct': receiver gets amount - commission (commission was deducted)
+        const netAmount = existing.commission_type === 'deduct'
+          ? existing.amount - existing.commission_amount
+          : existing.amount;
+
         const balanceBefore = receiverAccount.cash_balance;
-        const balanceAfter = balanceBefore + existing.amount;
+        const balanceAfter = balanceBefore + netAmount;
 
         db.prepare(`
           UPDATE saraf_accounts
@@ -833,7 +846,7 @@ export const updateTransactionStatus = (req: Request, res: Response): void => {
           'saraf_cash',
           receiverAccount.id,
           'hawala_receive',
-          existing.amount,
+          netAmount,
           balanceBefore,
           balanceAfter,
           existing.currency_id,

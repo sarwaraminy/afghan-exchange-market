@@ -124,6 +124,7 @@ export const Hawala = () => {
     amount: '',
     currency_id: '',
     commission_rate: '2.0',
+    commission_type: 'add' as 'add' | 'deduct',
     notes: '',
     customer_id: '',
     customer_savings_account_id: ''
@@ -267,7 +268,12 @@ export const Hawala = () => {
       try {
         const amount = parseFloat(transactionForm.amount);
         const rate = parseFloat(transactionForm.commission_rate);
-        const totalAmount = amount + (amount * rate / 100);
+        const commissionAmount = amount * (rate / 100);
+        // If 'add': sender pays amount + commission
+        // If 'deduct': sender pays only amount (commission deducted from amount, receiver gets less)
+        const totalAmount = transactionForm.commission_type === 'add'
+          ? amount + commissionAmount
+          : amount;
 
         const accounts = await getEligibleSavingsAccounts(
           parseInt(transactionForm.customer_id),
@@ -288,7 +294,8 @@ export const Hawala = () => {
     transactionForm.sender_hawaladar_id,
     transactionForm.currency_id,
     transactionForm.amount,
-    transactionForm.commission_rate
+    transactionForm.commission_rate,
+    transactionForm.commission_type
   ]);
 
   // Customer handlers
@@ -443,6 +450,7 @@ export const Hawala = () => {
       amount: '',
       currency_id: currencies[0]?.id.toString() || '',
       commission_rate: '2.0',
+      commission_type: 'add',
       notes: '',
       customer_id: '',
       customer_savings_account_id: ''
@@ -463,6 +471,7 @@ export const Hawala = () => {
       amount: transaction.amount.toString(),
       currency_id: transaction.currency_id.toString(),
       commission_rate: transaction.commission_rate.toString(),
+      commission_type: transaction.commission_type || 'add',
       notes: transaction.notes || '',
       customer_id: '',
       customer_savings_account_id: ''
@@ -483,6 +492,7 @@ export const Hawala = () => {
         amount: parseFloat(transactionForm.amount),
         currency_id: parseInt(transactionForm.currency_id),
         commission_rate: parseFloat(transactionForm.commission_rate),
+        commission_type: transactionForm.commission_type,
         notes: transactionForm.notes || undefined,
         customer_savings_account_id: transactionForm.customer_savings_account_id ? parseInt(transactionForm.customer_savings_account_id) : undefined
       };
@@ -681,6 +691,21 @@ export const Hawala = () => {
       {
         accessorKey: 'sender_name',
         header: t('hawala.sender'),
+        size: 130,
+        Cell: ({ row }) => (
+          <Box>
+            <Typography variant="body2" noWrap>{row.original.sender_name}</Typography>
+            {row.original.sender_phone && (
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                {row.original.sender_phone}
+              </Typography>
+            )}
+          </Box>
+        )
+      },
+      {
+        accessorKey: 'sender_hawaladar_name',
+        header: t('hawala.senderAgent'),
         size: 150,
         Cell: ({ row }) => {
           const senderHawaladarName = i18n.language === 'fa'
@@ -689,12 +714,20 @@ export const Hawala = () => {
             ? row.original.sender_hawaladar_name_ps || row.original.sender_hawaladar_name
             : row.original.sender_hawaladar_name;
 
+          const senderHawaladarLocation = i18n.language === 'fa'
+            ? row.original.sender_hawaladar_location_fa || row.original.sender_hawaladar_location
+            : i18n.language === 'ps'
+            ? row.original.sender_hawaladar_location_ps || row.original.sender_hawaladar_location
+            : row.original.sender_hawaladar_location;
+
           return (
             <Box>
-              <Typography variant="body2" noWrap>{row.original.sender_name}</Typography>
-              {row.original.sender_hawaladar_name && (
+              <Typography variant="body2" noWrap>
+                {senderHawaladarName || '-'}
+              </Typography>
+              {senderHawaladarLocation && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                  {senderHawaladarName}
+                  {senderHawaladarLocation}
                 </Typography>
               )}
             </Box>
@@ -704,6 +737,21 @@ export const Hawala = () => {
       {
         accessorKey: 'receiver_name',
         header: t('hawala.receiver'),
+        size: 130,
+        Cell: ({ row }) => (
+          <Box>
+            <Typography variant="body2" noWrap>{row.original.receiver_name}</Typography>
+            {row.original.receiver_phone && (
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                {row.original.receiver_phone}
+              </Typography>
+            )}
+          </Box>
+        )
+      },
+      {
+        accessorKey: 'receiver_hawaladar_name',
+        header: t('hawala.receiverAgent'),
         size: 150,
         Cell: ({ row }) => {
           const receiverHawaladarName = i18n.language === 'fa'
@@ -712,12 +760,20 @@ export const Hawala = () => {
             ? row.original.receiver_hawaladar_name_ps || row.original.receiver_hawaladar_name
             : row.original.receiver_hawaladar_name;
 
+          const receiverHawaladarLocation = i18n.language === 'fa'
+            ? row.original.receiver_hawaladar_location_fa || row.original.receiver_hawaladar_location
+            : i18n.language === 'ps'
+            ? row.original.receiver_hawaladar_location_ps || row.original.receiver_hawaladar_location
+            : row.original.receiver_hawaladar_location;
+
           return (
             <Box>
-              <Typography variant="body2" noWrap>{row.original.receiver_name}</Typography>
-              {row.original.receiver_hawaladar_name && (
+              <Typography variant="body2" noWrap>
+                {receiverHawaladarName || '-'}
+              </Typography>
+              {receiverHawaladarLocation && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                  {receiverHawaladarName}
+                  {receiverHawaladarLocation}
                 </Typography>
               )}
             </Box>
@@ -735,8 +791,22 @@ export const Hawala = () => {
             <Typography variant="body2" noWrap>
               {formatCurrency(row.original.amount)} {row.original.currency_code}
             </Typography>
+          </Box>
+        )
+      },
+      {
+        accessorKey: 'commission_amount',
+        header: t('hawala.commission'),
+        size: 120,
+        muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        Cell: ({ row }) => (
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="body2" noWrap>
+              {formatCurrency(row.original.commission_amount)} {row.original.currency_code}
+            </Typography>
             <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-              +{formatCurrency(row.original.commission_amount)}
+              {row.original.commission_rate}%
             </Typography>
           </Box>
         )
@@ -1240,10 +1310,10 @@ export const Hawala = () => {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ bgcolor: '#f3e5f5' }}>
+          <Card sx={{ bgcolor: '#ffebee' }}>
             <CardContent>
-              <Typography color="text.secondary" variant="body2">{t('hawala.totalCommission')}</Typography>
-              <Typography variant="h4" fontWeight={700}>{formatCurrency(reportSummary?.total_commission || 0)}</Typography>
+              <Typography color="text.secondary" variant="body2">{t('hawala.statuses.cancelled')}</Typography>
+              <Typography variant="h4" fontWeight={700}>{reportSummary?.cancelled_count || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -1620,7 +1690,7 @@ export const Hawala = () => {
   if (loading) return <Loading />;
 
   return (
-    <Container maxWidth="xl" sx={{ py: isMobile ? 2 : 4, px: isMobile ? 1 : 3 }}>
+    <Container maxWidth={false} sx={{ py: isMobile ? 2 : 4, px: isMobile ? 2 : 4 }}>
       <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight={700} gutterBottom>
         {t('hawala.title')}
       </Typography>
@@ -1758,6 +1828,19 @@ export const Hawala = () => {
                 onChange={(e) => setTransactionForm({ ...transactionForm, commission_rate: e.target.value })}
                 InputProps={{ endAdornment: '%' }}
               />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                select
+                label={t('hawala.commissionType')}
+                value={transactionForm.commission_type}
+                onChange={(e) => setTransactionForm({ ...transactionForm, commission_type: e.target.value as 'add' | 'deduct' })}
+                SelectProps={{ native: false }}
+              >
+                <MenuItem value="add">{t('hawala.commissionAdd')}</MenuItem>
+                <MenuItem value="deduct">{t('hawala.commissionDeduct')}</MenuItem>
+              </TextField>
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField

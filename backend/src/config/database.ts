@@ -211,23 +211,6 @@ export const initializeDatabase = async (): Promise<void> => {
       FOREIGN KEY (updated_by) REFERENCES users(id)
     );
 
-    CREATE TABLE IF NOT EXISTS news (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      title_fa TEXT,
-      title_ps TEXT,
-      content TEXT NOT NULL,
-      content_fa TEXT,
-      content_ps TEXT,
-      category TEXT DEFAULT 'general',
-      image_url TEXT,
-      is_published INTEGER DEFAULT 0,
-      author_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    );
-
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -736,6 +719,20 @@ export const initializeDatabase = async (): Promise<void> => {
     if (!hasLogo) {
       db.exec('ALTER TABLE hawaladars ADD COLUMN logo TEXT');
       console.log('Added logo column to hawaladars table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
+  // Migration: Add commission_type field to hawala_transactions table
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const hasCommissionType = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'commission_type');
+
+    if (!hasCommissionType) {
+      db.exec("ALTER TABLE hawala_transactions ADD COLUMN commission_type TEXT DEFAULT 'add' CHECK(commission_type IN ('add', 'deduct'))");
+      console.log('Added commission_type column to hawala_transactions table');
     }
   } catch (e) {
     // Column might already exist

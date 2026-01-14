@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
   Container,
   Typography,
@@ -11,21 +12,57 @@ import {
   ListItemIcon,
   ListItemText,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Alert,
+  IconButton,
+  Fab
 } from '@mui/material';
-import { Store } from '@mui/icons-material';
-import { getExchangeRates, getMarkets } from '../services/api';
-import type { ExchangeRate, Market } from '../types';
+import { Store, Add, Edit, Delete } from '@mui/icons-material';
+import {
+  getExchangeRates,
+  getMarkets,
+  getCurrencies,
+  updateExchangeRate,
+  createExchangeRate,
+  deleteExchangeRate
+} from '../services/api';
+import type { ExchangeRate, Market, Currency } from '../types';
 import { RatesTable } from '../components/rates/RatesTable';
+import { useAuth } from '../context/AuthContext';
 
 export const Rates = () => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Admin CRUD states
+  const [editRateDialog, setEditRateDialog] = useState(false);
+  const [createRateDialog, setCreateRateDialog] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
+  const [buyRate, setBuyRate] = useState('');
+  const [sellRate, setSellRate] = useState('');
+  const [newRateForm, setNewRateForm] = useState({
+    market_id: '',
+    currency_id: '',
+    buy_rate: '',
+    sell_rate: ''
+  });
+  const [error, setError] = useState('');
+
+  const isAdmin = user?.role === 'admin';
+  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   const getMarketName = (market: Market) => {
     if (i18n.language === 'fa' && market.name_fa) return market.name_fa;
@@ -33,23 +70,37 @@ export const Rates = () => {
     return market.name;
   };
 
-  useEffect(() => {
-    const fetchMarkets = async () => {
-      try {
-        const data = await getMarkets();
-        // Remove duplicates by id
-        const uniqueMarkets = data.filter(
-          (market, index, self) => index === self.findIndex((m) => m.id === market.id)
-        );
-        setMarkets(uniqueMarkets);
-        if (uniqueMarkets.length > 0) {
-          setSelectedMarket(uniqueMarkets[0].id);
-        }
-      } catch (error) {
-        console.error('Error fetching markets:', error);
+  const getCurrencyName = (code: string) => {
+    const translated = t(`currencies.${code}`, { defaultValue: '' });
+    return translated || code;
+  };
+
+  const getTranslatedMarketName = (name: string) => {
+    const translated = t(`rates.markets.${name}`, { defaultValue: '' });
+    return translated || name;
+  };
+
+  const fetchData = async () => {
+    try {
+      const [marketsData, currenciesData] = await Promise.all([
+        getMarkets(),
+        getCurrencies()
+      ]);
+      const uniqueMarkets = marketsData.filter(
+        (market, index, self) => index === self.findIndex((m) => m.id === market.id)
+      );
+      setMarkets(uniqueMarkets);
+      setCurrencies(currenciesData);
+      if (uniqueMarkets.length > 0 && selectedMarket === null) {
+        setSelectedMarket(uniqueMarkets[0].id);
       }
-    };
-    fetchMarkets();
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -67,6 +118,98 @@ export const Rates = () => {
     };
     fetchRates();
   }, [selectedMarket]);
+
+  // Admin CRUD handlers
+  const handleEditRate = (rate: ExchangeRate) => {
+    setSelectedRate(rate);
+    setBuyRate(rate.buy_rate.toString());
+    setSellRate(rate.sell_rate.toString());
+    setError('');
+    setEditRateDialog(true);
+  };
+
+  const handleSaveRate = async () => {
+    if (!selectedRate) return;
+    try {
+      await updateExchangeRate(selectedRate.id, parseFloat(buyRate), parseFloat(sellRate));
+      setEditRateDialog(false);
+      const data = await getExchangeRates(selectedMarket!);
+      setRates(data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedUpdateRate'));
+    }
+  };
+
+  const handleNewRate = () => {
+    setNewRateForm({
+      market_id: selectedMarket?.toString() || '',
+      currency_id: '',
+      buy_rate: '',
+      sell_rate: ''
+    });
+    setError('');
+    setCreateRateDialog(true);
+  };
+
+  const handleCreateRate = async () => {
+    try {
+      await createExchangeRate(
+        parseInt(newRateForm.market_id),
+        parseInt(newRateForm.currency_id),
+        parseFloat(newRateForm.buy_rate),
+        parseFloat(newRateForm.sell_rate)
+      );
+      setCreateRateDialog(false);
+      const data = await getExchangeRates(selectedMarket!);
+      setRates(data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('admin.failedCreateRate'));
+    }
+  };
+
+  const handleDeleteRate = async (id: number) => {
+    if (confirm(t('admin.confirmDeleteRate'))) {
+      try {
+        await deleteExchangeRate(id);
+        const data = await getExchangeRates(selectedMarket!);
+        setRates(data);
+      } catch (error) {
+        console.error('Error deleting rate:', error);
+      }
+    }
+  };
+
+  const adminColumns = useMemo<MRT_ColumnDef<ExchangeRate>[]>(
+    () => [
+      {
+        accessorKey: 'currency_code',
+        header: t('rates.currency'),
+        Cell: ({ row }) => `${row.original.currency_code} - ${getCurrencyName(row.original.currency_code)}`
+      },
+      {
+        accessorKey: 'market_name',
+        header: t('rates.market'),
+        Cell: ({ cell }) => getTranslatedMarketName(cell.getValue<string>())
+      },
+      { accessorKey: 'buy_rate', header: t('rates.buy') },
+      { accessorKey: 'sell_rate', header: t('rates.sell') },
+      {
+        id: 'actions',
+        header: t('admin.actions'),
+        Cell: ({ row }) => (
+          <Box>
+            <IconButton onClick={() => handleEditRate(row.original)} size="small">
+              <Edit />
+            </IconButton>
+            <IconButton onClick={() => handleDeleteRate(row.original.id)} color="error" size="small">
+              <Delete />
+            </IconButton>
+          </Box>
+        )
+      }
+    ],
+    [t, i18n.language]
+  );
 
   const sidebar = (
     <Paper
@@ -127,7 +270,7 @@ export const Rates = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t('rates.title')}
       </Typography>
@@ -142,9 +285,125 @@ export const Rates = () => {
         {sidebar}
 
         <Paper sx={{ flex: 1, p: 2, borderRadius: 2 }}>
-          <RatesTable rates={rates} isLoading={loading} />
+          {isAdmin ? (
+            <>
+              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" fontWeight={600}>{t('rates.title')}</Typography>
+                <Button variant="contained" startIcon={<Add />} onClick={handleNewRate}>
+                  {t('admin.addNew')}
+                </Button>
+              </Box>
+              <MaterialReactTable
+                columns={adminColumns}
+                data={rates}
+                enablePagination
+                enableSorting
+                enableGlobalFilter
+                state={{ isLoading: loading }}
+                muiTableProps={{
+                  sx: { direction: isRtl ? 'rtl' : 'ltr' }
+                }}
+                muiTableHeadCellProps={{
+                  sx: { textAlign: isRtl ? 'right' : 'left' }
+                }}
+                muiTableBodyCellProps={{
+                  sx: { textAlign: isRtl ? 'right' : 'left' }
+                }}
+              />
+            </>
+          ) : (
+            <RatesTable rates={rates} isLoading={loading} />
+          )}
         </Paper>
       </Box>
+
+      {/* Edit Rate Dialog */}
+      <Dialog open={editRateDialog} onClose={() => setEditRateDialog(false)}>
+        <DialogTitle>{t('admin.editRate')} - {selectedRate?.currency_code}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.buy')}
+            value={buyRate}
+            onChange={(e) => setBuyRate(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.sell')}
+            value={sellRate}
+            onChange={(e) => setSellRate(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditRateDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleSaveRate}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Rate Dialog */}
+      <Dialog open={createRateDialog} onClose={() => setCreateRateDialog(false)}>
+        <DialogTitle>{t('admin.createRate')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            select
+            label={t('rates.market')}
+            value={newRateForm.market_id}
+            onChange={(e) => setNewRateForm({ ...newRateForm, market_id: e.target.value })}
+            sx={{ mt: 1 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="">{t('admin.selectMarket')}</option>
+            {markets.map((market) => (
+              <option key={market.id} value={market.id}>
+                {getTranslatedMarketName(market.name)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label={t('rates.currency')}
+            value={newRateForm.currency_id}
+            onChange={(e) => setNewRateForm({ ...newRateForm, currency_id: e.target.value })}
+            sx={{ mt: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="">{t('admin.selectCurrency')}</option>
+            {currencies.map((currency) => (
+              <option key={currency.id} value={currency.id}>
+                {currency.code} - {getCurrencyName(currency.code)}
+              </option>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.buy')}
+            value={newRateForm.buy_rate}
+            onChange={(e) => setNewRateForm({ ...newRateForm, buy_rate: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label={t('rates.sell')}
+            value={newRateForm.sell_rate}
+            onChange={(e) => setNewRateForm({ ...newRateForm, sell_rate: e.target.value })}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateRateDialog(false)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={handleCreateRate}>{t('common.save')}</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

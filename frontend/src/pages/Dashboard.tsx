@@ -123,7 +123,7 @@ export const Dashboard = () => {
   if (loading) return <Loading />;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t('user.dashboard')}
       </Typography>

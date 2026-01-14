@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, News, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, Customer, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
+import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, Customer, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -147,36 +147,6 @@ export const createMarket = async (name: string, name_fa?: string, name_ps?: str
 export const createCurrency = async (code: string, name: string, name_fa?: string, name_ps?: string, symbol?: string, flag_code?: string): Promise<{ id: number }> => {
   const { data } = await api.post<ApiResponse<{ id: number }>>('/rates/currencies', { code, name, name_fa, name_ps, symbol, flag_code });
   return data.data!;
-};
-
-// News
-export const getNews = async (category?: string, limit = 10, offset = 0): Promise<{ news: News[]; total: number }> => {
-  const params = { ...(category && { category }), limit, offset };
-  const { data } = await api.get<ApiResponse<{ news: News[]; total: number }>>('/news', { params });
-  return data.data!;
-};
-
-export const getNewsById = async (id: number): Promise<News> => {
-  const { data } = await api.get<ApiResponse<News>>(`/news/${id}`);
-  return data.data!;
-};
-
-export const getAllNews = async (limit = 50, offset = 0): Promise<{ news: News[]; total: number }> => {
-  const { data } = await api.get<ApiResponse<{ news: News[]; total: number }>>('/news/admin/all', { params: { limit, offset } });
-  return data.data!;
-};
-
-export const createNews = async (newsData: Partial<News>): Promise<{ id: number }> => {
-  const { data } = await api.post<ApiResponse<{ id: number }>>('/news', newsData);
-  return data.data!;
-};
-
-export const updateNews = async (id: number, newsData: Partial<News>): Promise<void> => {
-  await api.put(`/news/${id}`, newsData);
-};
-
-export const deleteNews = async (id: number): Promise<void> => {
-  await api.delete(`/news/${id}`);
 };
 
 // User

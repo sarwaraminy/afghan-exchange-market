@@ -7,7 +7,6 @@ export const translations = {
         rates: 'Exchange Rates',
         converter: 'Converter',
         gold: 'Gold & Silver',
-        news: 'News',
         hawala: 'Hawala',
         login: 'Login',
         register: 'Register',
@@ -169,17 +168,6 @@ export const translations = {
         leaveBlankToKeep: 'Leave blank to keep current password',
         passwordRequirements: 'Min 8 chars, uppercase, lowercase, number, special char'
       },
-      // News
-      news: {
-        title: 'News',
-        latest: 'Latest News',
-        readMore: 'Read More',
-        category: 'Category',
-        all: 'All',
-        market: 'Market',
-        announcement: 'Announcement',
-        general: 'General'
-      },
       // Common
       common: {
         loading: 'Loading...',
@@ -284,6 +272,9 @@ export const translations = {
         currency: 'Currency',
         commission: 'Commission',
         commissionRate: 'Commission Rate (%)',
+        commissionType: 'Commission Type',
+        commissionAdd: 'Add to Amount (sender pays extra)',
+        commissionDeduct: 'Deduct from Amount (receiver gets net)',
         commissionEarned: 'Commission Earned',
         totalAmount: 'Total Amount',
         status: 'Status',
@@ -384,7 +375,8 @@ export const translations = {
         changeLogo: 'Change Logo',
         removeLogo: 'Remove Logo',
         logoMaxSize: 'Max size: 5MB (JPEG, PNG)',
-        currentLogo: 'Current Logo'
+        currentLogo: 'Current Logo',
+        receipt: 'Receipt'
       }
     }
   },
@@ -396,7 +388,6 @@ export const translations = {
         rates: 'نرخ ارز',
         converter: 'تبدیل ارز',
         gold: 'طلا و نقره',
-        news: 'اخبار',
         hawala: 'حواله',
         login: 'ورود',
         register: 'ثبت نام',
@@ -558,17 +549,6 @@ export const translations = {
         leaveBlankToKeep: 'برای نگه داشتن رمز فعلی خالی بگذارید',
         passwordRequirements: 'حداقل ۸ حرف، حروف بزرگ، کوچک، عدد، کاراکتر خاص'
       },
-      // News
-      news: {
-        title: 'اخبار',
-        latest: 'آخرین اخبار',
-        readMore: 'بیشتر بخوانید',
-        category: 'دسته‌بندی',
-        all: 'همه',
-        market: 'بازار',
-        announcement: 'اعلان',
-        general: 'عمومی'
-      },
       // Common
       common: {
         loading: 'در حال بارگذاری...',
@@ -673,6 +653,9 @@ export const translations = {
         currency: 'ارز',
         commission: 'کمیشن',
         commissionRate: 'نرخ کمیشن (%)',
+        commissionType: 'نوع کمیشن',
+        commissionAdd: 'اضافه به مبلغ (فرستنده اضافی می‌پردازد)',
+        commissionDeduct: 'کسر از مبلغ (گیرنده مبلغ خالص دریافت می‌کند)',
         commissionEarned: 'کمیشن کسب شده',
         totalAmount: 'مبلغ کل',
         status: 'وضعیت',
@@ -773,7 +756,8 @@ export const translations = {
         changeLogo: 'تغییر لوگو',
         removeLogo: 'حذف لوگو',
         logoMaxSize: 'حداکثر حجم: ۵ مگابایت (JPEG، PNG)',
-        currentLogo: 'لوگوی فعلی'
+        currentLogo: 'لوگوی فعلی',
+        receipt: 'رسید'
       }
     }
   },
@@ -785,7 +769,6 @@ export const translations = {
         rates: 'د اسعارو نرخ',
         converter: 'د اسعارو تبادله',
         gold: 'سره زر او سپین زر',
-        news: 'خبرونه',
         hawala: 'حواله',
         login: 'ننوتل',
         register: 'نوم لیکنه',
@@ -947,17 +930,6 @@ export const translations = {
         leaveBlankToKeep: 'د اوسني پټنوم ساتلو لپاره خالي پرېږدئ',
         passwordRequirements: 'لږ تر لږه ۸ توري، لوی توري، کوچني توري، شمېره، ځانګړی توری'
       },
-      // News
-      news: {
-        title: 'خبرونه',
-        latest: 'وروستي خبرونه',
-        readMore: 'نور ولولئ',
-        category: 'کټګوري',
-        all: 'ټول',
-        market: 'بازار',
-        announcement: 'اعلان',
-        general: 'عمومي'
-      },
       // Common
       common: {
         loading: 'بارول...',
@@ -1062,6 +1034,9 @@ export const translations = {
         currency: 'اسعار',
         commission: 'کمیشن',
         commissionRate: 'د کمیشن نرخ (%)',
+        commissionType: 'د کمیشن ډول',
+        commissionAdd: 'مقدار ته اضافه (لېږونکی اضافي ورکوي)',
+        commissionDeduct: 'له مقدار څخه کمول (ترلاسه کوونکی خالص مقدار ترلاسه کوي)',
         commissionEarned: 'ترلاسه شوی کمیشن',
         totalAmount: 'ټول مقدار',
         status: 'حالت',
@@ -1162,7 +1137,8 @@ export const translations = {
         changeLogo: 'لوګو بدلول',
         removeLogo: 'لوګو لرې کول',
         logoMaxSize: 'ډیره کچه: ۵ مګابایټ (JPEG، PNG)',
-        currentLogo: 'اوسنی لوګو'
+        currentLogo: 'اوسنی لوګو',
+        receipt: 'رسید'
       }
     }
   }

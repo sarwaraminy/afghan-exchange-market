@@ -106,24 +106,26 @@ export const HawalaReceipt = () => {
       </Box>
 
       {/* Receipt Content */}
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="xs" sx={{ py: 4, '@media print': { py: 0, px: 0 } }}>
         <Paper
           elevation={3}
           sx={{
             p: 4,
             '@media print': {
               boxShadow: 'none',
-              p: 2
+              p: 1,
+              margin: 0
             }
           }}
         >
           {/* Header with Logo */}
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Box sx={{ textAlign: 'center', mb: 3, '@media print': { mb: 1 } }}>
             {transaction.sender_hawaladar_logo && (
               <img
                 src={getLogoUrl(transaction.sender_hawaladar_logo)}
                 alt="Hawaladar Logo"
                 style={{ maxHeight: '100px', marginBottom: '16px' }}
+                className="header-logo"
               />
             )}
             <Typography variant="h4" fontWeight={700} gutterBottom>
@@ -153,15 +155,15 @@ export const HawalaReceipt = () => {
             )}
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
 
           {/* Transaction Details */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Box sx={{ mb: 3, '@media print': { mb: 0.5 } }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ '@media print': { display: 'none' } }}>
               {t('hawala.hawalaTransferReceipt')}
             </Typography>
 
-            <Table size="small">
+            <Table size="small" sx={{ '@media print': { '& .MuiTableCell-root': { fontSize: '0.7rem' } } }}>
               <TableBody>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600 }}>{t('hawala.referenceCode')}:</TableCell>
@@ -179,12 +181,106 @@ export const HawalaReceipt = () => {
             </Table>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
+
+          {/* Hawaladar Information */}
+          <Box sx={{ mb: 3, '@media print': { mb: 1 } }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              {t('hawala.agents')}
+            </Typography>
+            <Grid container spacing={3} sx={{ '@media print': { spacing: 0.5 } }}>
+              {/* Sender Hawaladar */}
+              <Grid size={{ xs: 12 }}>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, '@media print': { p: 0.75, bgcolor: 'transparent', border: '1px solid #ccc' } }}>
+                  <Typography variant="body2" fontWeight={600} color="primary" gutterBottom>
+                    {t('hawala.senderAgent')}
+                  </Typography>
+                  {transaction.sender_hawaladar_name ? (
+                    <>
+                      <Typography variant="body2">
+                        <strong>{t('hawala.name')}:</strong> {
+                          i18n.language === 'fa'
+                            ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
+                            : i18n.language === 'ps'
+                            ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
+                            : transaction.sender_hawaladar_name
+                        }
+                      </Typography>
+                      {transaction.sender_hawaladar_location && (
+                        <Typography variant="body2">
+                          <strong>{t('hawala.location')}:</strong> {
+                            i18n.language === 'fa'
+                              ? transaction.sender_hawaladar_location_fa || transaction.sender_hawaladar_location
+                              : i18n.language === 'ps'
+                              ? transaction.sender_hawaladar_location_ps || transaction.sender_hawaladar_location
+                              : transaction.sender_hawaladar_location
+                          }
+                        </Typography>
+                      )}
+                      {transaction.sender_hawaladar_phone && (
+                        <Typography variant="body2">
+                          <strong>{t('hawala.phone')}:</strong> {transaction.sender_hawaladar_phone}
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">-</Typography>
+                  )}
+                </Box>
+              </Grid>
+
+              {/* Receiver Hawaladar */}
+              <Grid size={{ xs: 12 }}>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1, '@media print': { p: 0.75, bgcolor: 'transparent', border: '1px solid #ccc' } }}>
+                  <Typography variant="body2" fontWeight={600} color="primary" gutterBottom>
+                    {t('hawala.receiverAgent')}
+                  </Typography>
+                  {transaction.receiver_hawaladar_name ? (
+                    <>
+                      <Typography variant="body2">
+                        <strong>{t('hawala.name')}:</strong> {
+                          i18n.language === 'fa'
+                            ? transaction.receiver_hawaladar_name_fa || transaction.receiver_hawaladar_name
+                            : i18n.language === 'ps'
+                            ? transaction.receiver_hawaladar_name_ps || transaction.receiver_hawaladar_name
+                            : transaction.receiver_hawaladar_name
+                        }
+                      </Typography>
+                      {transaction.receiver_hawaladar_location && (
+                        <Typography variant="body2">
+                          <strong>{t('hawala.location')}:</strong> {
+                            i18n.language === 'fa'
+                              ? transaction.receiver_hawaladar_location_fa || transaction.receiver_hawaladar_location
+                              : i18n.language === 'ps'
+                              ? transaction.receiver_hawaladar_location_ps || transaction.receiver_hawaladar_location
+                              : transaction.receiver_hawaladar_location
+                          }
+                        </Typography>
+                      )}
+                      {transaction.receiver_hawaladar_logo && (
+                        <Box sx={{ mt: 1, '@media print': { display: 'none' } }}>
+                          <img
+                            src={getLogoUrl(transaction.receiver_hawaladar_logo)}
+                            alt="Receiver Hawaladar Logo"
+                            style={{ maxHeight: '50px' }}
+                          />
+                        </Box>
+                      )}
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">-</Typography>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
 
           {/* Sender and Receiver Information */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid container spacing={3} sx={{ mb: 3, '@media print': { mb: 1, spacing: 0.5 } }}>
             {/* Sender */}
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 {t('hawala.senderInfo')}
               </Typography>
@@ -196,21 +292,10 @@ export const HawalaReceipt = () => {
                   <strong>{t('hawala.phone')}:</strong> {transaction.sender_phone}
                 </Typography>
               )}
-              {transaction.sender_hawaladar_name && (
-                <Typography variant="body2">
-                  <strong>{t('hawala.agent')}:</strong> {
-                    i18n.language === 'fa'
-                      ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
-                      : i18n.language === 'ps'
-                      ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
-                      : transaction.sender_hawaladar_name
-                  }
-                </Typography>
-              )}
             </Grid>
 
             {/* Receiver */}
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 {t('hawala.receiverInfo')}
               </Typography>
@@ -222,28 +307,17 @@ export const HawalaReceipt = () => {
                   <strong>{t('hawala.phone')}:</strong> {transaction.receiver_phone}
                 </Typography>
               )}
-              {transaction.receiver_hawaladar_name && (
-                <Typography variant="body2">
-                  <strong>{t('hawala.agent')}:</strong> {
-                    i18n.language === 'fa'
-                      ? transaction.receiver_hawaladar_name_fa || transaction.receiver_hawaladar_name
-                      : i18n.language === 'ps'
-                      ? transaction.receiver_hawaladar_name_ps || transaction.receiver_hawaladar_name
-                      : transaction.receiver_hawaladar_name
-                  }
-                </Typography>
-              )}
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
 
           {/* Amount Details */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          <Box sx={{ mb: 3, '@media print': { mb: 0.5 } }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ '@media print': { fontSize: '0.8rem', mb: 0.25 } }}>
               {t('hawala.amountDetails')}
             </Typography>
-            <Table size="small">
+            <Table size="small" sx={{ '@media print': { '& .MuiTableCell-root': { fontSize: '0.7rem', padding: '1mm' } } }}>
               <TableBody>
                 <TableRow>
                   <TableCell>{t('hawala.amount')}:</TableCell>
@@ -260,10 +334,10 @@ export const HawalaReceipt = () => {
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '1.1rem', '@media print': { fontSize: '0.75rem', fontWeight: 700 } }}>
                     {t('hawala.totalAmount')}:
                   </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                  <TableCell align="right" sx={{ fontWeight: 700, fontSize: '1.1rem', '@media print': { fontSize: '0.75rem', fontWeight: 700 } }}>
                     {formatCurrency(transaction.total_amount)} {transaction.currency_code}
                   </TableCell>
                 </TableRow>
@@ -274,36 +348,36 @@ export const HawalaReceipt = () => {
           {/* Notes */}
           {transaction.notes && (
             <>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
+              <Box sx={{ mb: 3, '@media print': { mb: 0.5 } }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ '@media print': { fontSize: '0.75rem', mb: 0.25 } }}>
                   {t('hawala.notes')}:
                 </Typography>
-                <Typography variant="body2">{transaction.notes}</Typography>
+                <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>{transaction.notes}</Typography>
               </Box>
             </>
           )}
 
           {/* Footer */}
-          <Divider sx={{ my: 2 }} />
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
-            <Typography variant="caption" color="text.secondary">
+          <Divider sx={{ my: 2, '@media print': { my: 0.5 } }} />
+          <Box sx={{ textAlign: 'center', mt: 2, mb: 2, '@media print': { mt: 0.5, mb: 0.5 } }}>
+            <Typography variant="caption" color="text.secondary" sx={{ '@media print': { fontSize: '0.6rem' } }}>
               {t('hawala.createdBy')}: {transaction.created_by_name}
             </Typography>
             {transaction.completed_at && (
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ '@media print': { fontSize: '0.6rem' } }}>
                 {t('hawala.completedAt')}: {new Date(transaction.completed_at).toLocaleString(i18n.language)}
               </Typography>
             )}
           </Box>
 
           {/* Signature Line */}
-          <Box sx={{ mt: 5, display: 'flex', justifyContent: 'space-between' }}>
-            <Box sx={{ borderTop: '1px solid #000', pt: 1, minWidth: 150, textAlign: 'center' }}>
-              <Typography variant="caption">{t('hawala.senderSignature')}</Typography>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', gap: 1, '@media print': { mt: 0.5, gap: 0.5 } }}>
+            <Box sx={{ borderTop: '1px solid #000', pt: 1, minWidth: 150, textAlign: 'center', '@media print': { minWidth: '35mm', pt: 0.25 } }}>
+              <Typography variant="caption" sx={{ '@media print': { fontSize: '0.6rem' } }}>{t('hawala.senderSignature')}</Typography>
             </Box>
-            <Box sx={{ borderTop: '1px solid #000', pt: 1, minWidth: 150, textAlign: 'center' }}>
-              <Typography variant="caption">{t('hawala.agentSignature')}</Typography>
+            <Box sx={{ borderTop: '1px solid #000', pt: 1, minWidth: 150, textAlign: 'center', '@media print': { minWidth: '35mm', pt: 0.25 } }}>
+              <Typography variant="caption" sx={{ '@media print': { fontSize: '0.6rem' } }}>{t('hawala.agentSignature')}</Typography>
             </Box>
           </Box>
         </Paper>
@@ -319,10 +393,105 @@ export const HawalaReceipt = () => {
           body {
             margin: 0;
             padding: 0;
+            width: 80mm;
           }
 
           @page {
-            margin: 1cm;
+            margin: 2mm;
+            size: 80mm auto;
+          }
+
+          /* Control page breaks */
+          .MuiBox-root,
+          .MuiTable-root,
+          .MuiGrid-root {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+
+          .MuiTableRow-root {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          /* Reduce spacing for thermal print */
+          .MuiContainer-root {
+            max-width: 80mm !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .MuiPaper-root {
+            padding: 3mm !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            width: 100% !important;
+          }
+
+          .MuiDivider-root {
+            margin-top: 2mm !important;
+            margin-bottom: 2mm !important;
+          }
+
+          .MuiBox-root {
+            margin-bottom: 2mm !important;
+          }
+
+          .MuiTypography-h4 {
+            font-size: 1.1rem !important;
+            margin-bottom: 1mm !important;
+          }
+
+          .MuiTypography-h6 {
+            font-size: 0.9rem !important;
+            margin-bottom: 1mm !important;
+          }
+
+          .MuiTypography-subtitle1 {
+            font-size: 0.85rem !important;
+            margin-bottom: 1mm !important;
+            font-weight: 700 !important;
+          }
+
+          .MuiTypography-body2 {
+            font-size: 0.75rem !important;
+            line-height: 1.2 !important;
+          }
+
+          .MuiTypography-caption {
+            font-size: 0.65rem !important;
+          }
+
+          .MuiTableCell-root {
+            padding: 1mm 2mm !important;
+            font-size: 0.75rem !important;
+            border: none !important;
+          }
+
+          img {
+            max-height: 40px !important;
+            margin-bottom: 2mm !important;
+          }
+
+          .header-logo {
+            max-height: 35px !important;
+            margin-bottom: 2mm !important;
+          }
+
+          .MuiGrid-root {
+            margin: 0 !important;
+            width: 100% !important;
+          }
+
+          .MuiGrid-item {
+            padding: 0 !important;
+            margin-bottom: 2mm !important;
+          }
+
+          /* Remove backgrounds for thermal printing */
+          * {
+            background-color: transparent !important;
+            color: black !important;
           }
         }
       `}</style>

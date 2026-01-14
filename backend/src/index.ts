@@ -7,7 +7,6 @@ import dotenv from 'dotenv';
 import db, { initializeDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import ratesRoutes from './routes/rates';
-import newsRoutes from './routes/news';
 import userRoutes from './routes/user';
 import adminRoutes from './routes/admin';
 import hawalaRoutes from './routes/hawala';
@@ -71,7 +70,6 @@ app.use(express.json({ limit: '10kb' })); // Limit body size
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rates', ratesRoutes);
-app.use('/api/news', newsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/hawala', hawalaRoutes);
