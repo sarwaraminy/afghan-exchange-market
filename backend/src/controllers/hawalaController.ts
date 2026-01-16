@@ -468,6 +468,7 @@ export const getTransactionByCode = (req: Request, res: Response): void => {
 export const createTransaction = (req: Request, res: Response): void => {
   try {
     const {
+      transaction_direction = 'outgoing',
       sender_name,
       sender_phone,
       sender_hawaladar_id,
@@ -634,14 +635,15 @@ export const createTransaction = (req: Request, res: Response): void => {
     // Create hawala transaction
     const result = db.prepare(`
       INSERT INTO hawala_transactions (
-        reference_code, sender_name, sender_phone, sender_hawaladar_id,
+        reference_code, transaction_direction, sender_name, sender_phone, sender_hawaladar_id,
         receiver_name, receiver_phone, receiver_hawaladar_id,
         amount, currency_id, commission_rate, commission_type, commission_amount, total_amount,
         notes, sender_account_transaction_id, customer_savings_account_id, created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       referenceCode,
+      transaction_direction,
       sender_name,
       sender_phone || null,
       sender_hawaladar_id || null,
@@ -1012,6 +1014,176 @@ export const deleteTransaction = (req: Request, res: Response): void => {
   } catch (error) {
     console.error('Delete transaction error:', error);
     res.status(500).json({ success: false, error: 'Failed to delete transaction' });
+  }
+};
+
+export const completePayout = (req: Request, res: Response): void => {
+  try {
+    const { id } = req.params;
+    const { receiver_tazkira_number, receiver_phone } = req.body;
+    const userId = req.user?.userId;
+
+    // Validate required fields
+    if (!receiver_tazkira_number || !receiver_tazkira_number.trim()) {
+      res.status(400).json({
+        success: false,
+        error: 'Receiver Tazkira number is required for payout completion'
+      });
+      return;
+    }
+
+    if (!receiver_phone || !receiver_phone.trim()) {
+      res.status(400).json({
+        success: false,
+        error: 'Receiver phone number is required for payout completion'
+      });
+      return;
+    }
+
+    // Fetch transaction
+    const existing = db.prepare('SELECT * FROM hawala_transactions WHERE id = ?')
+      .get(id) as HawalaTransaction | undefined;
+
+    if (!existing) {
+      res.status(404).json({ success: false, error: 'Transaction not found' });
+      return;
+    }
+
+    // Validate transaction can be paid out
+    if (existing.status === 'completed') {
+      res.status(400).json({
+        success: false,
+        error: 'Transaction already completed'
+      });
+      return;
+    }
+
+    if (existing.status === 'cancelled') {
+      res.status(400).json({
+        success: false,
+        error: 'Cannot complete payout for cancelled transaction'
+      });
+      return;
+    }
+
+    // If receiver hawaladar exists, add funds to their account
+    let receiverAccountTransactionId: number | null = null;
+
+    if (existing.receiver_hawaladar_id) {
+      const receiverAccount = db.prepare(`
+        SELECT * FROM saraf_accounts WHERE saraf_id = ?
+      `).get(existing.receiver_hawaladar_id) as any;
+
+      if (receiverAccount) {
+        // Validate currency match
+        if (receiverAccount.currency_id !== existing.currency_id) {
+          res.status(400).json({
+            success: false,
+            error: 'Receiver hawaladar account currency does not match transaction currency'
+          });
+          return;
+        }
+
+        // Calculate net amount for receiver based on commission type
+        const netAmount = existing.commission_type === 'deduct'
+          ? existing.amount - existing.commission_amount
+          : existing.amount;
+
+        const balanceBefore = receiverAccount.cash_balance;
+        const balanceAfter = balanceBefore + netAmount;
+
+        // Update receiver account balance
+        db.prepare(`
+          UPDATE saraf_accounts
+          SET cash_balance = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(balanceAfter, receiverAccount.id);
+
+        // Record account transaction
+        const accountTxResult = db.prepare(`
+          INSERT INTO account_transactions (
+            account_type, account_id, transaction_type, amount, balance_before, balance_after,
+            currency_id, reference_id, notes, created_by
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          'saraf_cash',
+          receiverAccount.id,
+          'hawala_receive',
+          netAmount,
+          balanceBefore,
+          balanceAfter,
+          existing.currency_id,
+          existing.sender_account_transaction_id,
+          `Hawala payout: ${existing.reference_code} - From ${existing.sender_name} to ${existing.receiver_name} (Tazkira: ${receiver_tazkira_number})`,
+          userId
+        );
+
+        receiverAccountTransactionId = accountTxResult.lastInsertRowid as number;
+      }
+    }
+
+    // Update transaction with payout completion details
+    db.prepare(`
+      UPDATE hawala_transactions
+      SET status = 'completed',
+          receiver_tazkira_number = ?,
+          receiver_phone = ?,
+          payout_completed_by = ?,
+          payout_completed_at = CURRENT_TIMESTAMP,
+          completed_by = ?,
+          completed_at = CURRENT_TIMESTAMP,
+          receiver_account_transaction_id = ?
+      WHERE id = ?
+    `).run(
+      receiver_tazkira_number.trim(),
+      receiver_phone.trim(),
+      userId,
+      userId,
+      receiverAccountTransactionId,
+      id
+    );
+
+    // Fetch and return updated transaction with all details
+    const updatedTransaction = db.prepare(`
+      SELECT
+        ht.*,
+        sh.name as sender_hawaladar_name,
+        sh.name_fa as sender_hawaladar_name_fa,
+        sh.name_ps as sender_hawaladar_name_ps,
+        sh.location as sender_hawaladar_location,
+        sh.location_fa as sender_hawaladar_location_fa,
+        sh.location_ps as sender_hawaladar_location_ps,
+        sh.phone as sender_hawaladar_phone,
+        sh.floor_number as sender_hawaladar_floor_number,
+        sh.shop_number as sender_hawaladar_shop_number,
+        rh.name as receiver_hawaladar_name,
+        rh.name_fa as receiver_hawaladar_name_fa,
+        rh.name_ps as receiver_hawaladar_name_ps,
+        rh.location as receiver_hawaladar_location,
+        rh.location_fa as receiver_hawaladar_location_fa,
+        rh.location_ps as receiver_hawaladar_location_ps,
+        rh.floor_number as receiver_hawaladar_floor_number,
+        rh.shop_number as receiver_hawaladar_shop_number,
+        c.code as currency_code,
+        c.name as currency_name,
+        u.username as created_by_name,
+        cu.username as completed_by_name,
+        pu.username as payout_completed_by_name
+      FROM hawala_transactions ht
+      LEFT JOIN hawaladars sh ON ht.sender_hawaladar_id = sh.id
+      LEFT JOIN hawaladars rh ON ht.receiver_hawaladar_id = rh.id
+      JOIN currencies c ON ht.currency_id = c.id
+      JOIN users u ON ht.created_by = u.id
+      LEFT JOIN users cu ON ht.completed_by = cu.id
+      LEFT JOIN users pu ON ht.payout_completed_by = pu.id
+      WHERE ht.id = ?
+    `).get(id);
+
+    res.json({ success: true, data: updatedTransaction });
+  } catch (error) {
+    console.error('Complete payout error:', error);
+    res.status(500).json({ success: false, error: 'Failed to complete payout' });
   }
 };
 

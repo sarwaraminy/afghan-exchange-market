@@ -39,7 +39,8 @@ import {
   AttachMoney,
   Diamond,
   SwapHoriz,
-  People
+  People,
+  HelpOutline
 } from '@mui/icons-material';
 
 export const Header = () => {
@@ -436,6 +437,9 @@ export const Header = () => {
                     <People sx={{ mr: 1 }} /> {t('admin.manageUsers')}
                   </MenuItem>
                 )}
+                <MenuItem component={Link} to="/user-guide" onClick={() => setAnchorEl(null)}>
+                  <HelpOutline sx={{ mr: 1 }} /> {t('nav.userGuide') || 'User Guide'}
+                </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>
                   <Logout sx={{ mr: 1 }} /> {t('nav.logout')}

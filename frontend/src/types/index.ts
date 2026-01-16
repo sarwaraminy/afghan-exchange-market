@@ -188,6 +188,7 @@ export interface AccountTransaction {
 export interface HawalaTransaction {
   id: number;
   reference_code: string;
+  transaction_direction: 'outgoing' | 'incoming';
   sender_name: string;
   sender_phone?: string;
   sender_hawaladar_id?: number;
@@ -227,6 +228,10 @@ export interface HawalaTransaction {
   completed_by_name?: string;
   created_at: string;
   completed_at?: string;
+  receiver_tazkira_number?: string;
+  payout_completed_by?: number;
+  payout_completed_by_name?: string;
+  payout_completed_at?: string;
 }
 
 export interface HawalaReportSummary {

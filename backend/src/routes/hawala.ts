@@ -14,6 +14,7 @@ import {
   createTransaction,
   updateTransaction,
   updateTransactionStatus,
+  completePayout,
   deleteTransaction,
   // Reports
   getReportsSummary,
@@ -119,6 +120,28 @@ router.put(
   ],
   validateRequest,
   updateTransactionStatus
+);
+
+// Complete payout with receiver verification (any authenticated saraf can complete)
+router.post(
+  '/transactions/:id/payout',
+  authenticate,
+  [
+    body('receiver_tazkira_number')
+      .trim()
+      .notEmpty()
+      .withMessage('Receiver Tazkira number is required')
+      .isLength({ min: 6, max: 20 })
+      .withMessage('Tazkira number must be between 6 and 20 characters'),
+    body('receiver_phone')
+      .trim()
+      .notEmpty()
+      .withMessage('Receiver phone number is required')
+      .isLength({ min: 8, max: 20 })
+      .withMessage('Phone number must be between 8 and 20 characters')
+  ],
+  validateRequest,
+  completePayout
 );
 
 // Delete transaction (admin only)

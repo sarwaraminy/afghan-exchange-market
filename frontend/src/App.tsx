@@ -20,6 +20,7 @@ import { ManageUsers } from './pages/ManageUsers';
 import { Profile } from './pages/Profile';
 import { Hawala } from './pages/Hawala';
 import { HawalaReceipt } from './pages/HawalaReceipt';
+import { UserGuide } from './pages/UserGuide';
 
 import './i18n';
 
@@ -62,6 +63,7 @@ const AppRoutes = () => (
     <Route path="/hawala/receipt/:id" element={<PrivateRoute><HawalaReceipt /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+    <Route path="/user-guide" element={<PrivateRoute><UserGuide /></PrivateRoute>} />
     <Route path="/users" element={<AdminRoute><ManageUsers /></AdminRoute>} />
   </Routes>
 );

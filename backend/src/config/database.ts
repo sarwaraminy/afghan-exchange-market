@@ -757,6 +757,36 @@ export const initializeDatabase = async (): Promise<void> => {
     // Column might already exist
   }
 
+  // Migration: Add payout tracking fields to hawala_transactions
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const hasReceiverTazkira = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'receiver_tazkira_number');
+
+    if (!hasReceiverTazkira) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN receiver_tazkira_number TEXT');
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN payout_completed_by INTEGER REFERENCES users(id)');
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN payout_completed_at DATETIME');
+      console.log('Added receiver_tazkira_number, payout_completed_by, and payout_completed_at columns to hawala_transactions table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Migration: Add transaction_direction field to hawala_transactions
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const hasTransactionDirection = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'transaction_direction');
+
+    if (!hasTransactionDirection) {
+      db.exec("ALTER TABLE hawala_transactions ADD COLUMN transaction_direction TEXT DEFAULT 'outgoing' CHECK(transaction_direction IN ('outgoing', 'incoming'))");
+      console.log('Added transaction_direction column to hawala_transactions table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
   // Save initial state
   const data = db.export();
   const buffer = Buffer.from(data);

@@ -55,6 +55,7 @@ import {
   createHawalaTransaction,
   updateHawalaTransaction,
   updateHawalaTransactionStatus,
+  completeHawalaTransactionPayout,
   deleteHawalaTransaction,
   getHawalaReportsSummary,
   getHawalaReportsByAgent,
@@ -104,6 +105,7 @@ export const Hawala = () => {
   const [transactionDialog, setTransactionDialog] = useState(false);
   const [hawaladarDialog, setHawaladarDialog] = useState(false);
   const [statusDialog, setStatusDialog] = useState(false);
+  const [payoutDialog, setPayoutDialog] = useState(false);
   const [searchDialog, setSearchDialog] = useState(false);
 
   // Selected items
@@ -112,6 +114,7 @@ export const Hawala = () => {
 
   // Forms
   const [transactionForm, setTransactionForm] = useState({
+    transaction_direction: 'outgoing' as 'outgoing' | 'incoming',
     sender_name: '',
     sender_phone: '',
     sender_hawaladar_id: '',
@@ -147,6 +150,11 @@ export const Hawala = () => {
   });
 
   const [newStatus, setNewStatus] = useState<string>('');
+  const [payoutForm, setPayoutForm] = useState({
+    receiver_tazkira_number: '',
+    receiver_phone: '',
+    receiver_name_verification: ''
+  });
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<HawalaTransaction | null>(null);
   const [searchError, setSearchError] = useState('');
@@ -438,6 +446,7 @@ export const Hawala = () => {
   const handleNewTransaction = () => {
     setSelectedTransaction(null);
     setTransactionForm({
+      transaction_direction: 'outgoing',
       sender_name: '',
       sender_phone: '',
       sender_hawaladar_id: '',
@@ -459,6 +468,7 @@ export const Hawala = () => {
   const handleEditTransaction = (transaction: HawalaTransaction) => {
     setSelectedTransaction(transaction);
     setTransactionForm({
+      transaction_direction: transaction.transaction_direction || 'outgoing',
       sender_name: transaction.sender_name,
       sender_phone: transaction.sender_phone || '',
       sender_hawaladar_id: transaction.sender_hawaladar_id?.toString() || '',
@@ -480,6 +490,7 @@ export const Hawala = () => {
   const handleSaveTransaction = async () => {
     try {
       const data = {
+        transaction_direction: transactionForm.transaction_direction,
         sender_name: transactionForm.sender_name,
         sender_phone: transactionForm.sender_phone || undefined,
         sender_hawaladar_id: transactionForm.sender_hawaladar_id ? parseInt(transactionForm.sender_hawaladar_id) : undefined,
@@ -539,6 +550,64 @@ export const Hawala = () => {
     } catch (err: any) {
       console.error('Error updating status:', err);
       const errorMessage = err.response?.data?.error || t('hawala.failedUpdateStatus');
+      setError(errorMessage);
+    }
+  };
+
+  const handleCompletePayout = (transaction: HawalaTransaction) => {
+    setSelectedTransaction(transaction);
+    setPayoutForm({
+      receiver_tazkira_number: '',
+      receiver_phone: transaction.receiver_phone || '',
+      receiver_name_verification: transaction.receiver_name
+    });
+    setError('');
+    setPayoutDialog(true);
+  };
+
+  const handleSavePayout = async () => {
+    if (!selectedTransaction) return;
+
+    setError('');
+
+    if (!payoutForm.receiver_tazkira_number.trim()) {
+      setError(t('hawala.receiverTazkiraRequired'));
+      return;
+    }
+
+    if (payoutForm.receiver_tazkira_number.trim().length < 6 || payoutForm.receiver_tazkira_number.trim().length > 20) {
+      setError(t('hawala.receiverTazkiraHelp'));
+      return;
+    }
+
+    if (!payoutForm.receiver_phone.trim()) {
+      setError(t('hawala.receiverPhoneRequired'));
+      return;
+    }
+
+    if (payoutForm.receiver_phone.trim().length < 8 || payoutForm.receiver_phone.trim().length > 20) {
+      setError(t('hawala.receiverPhoneHelp'));
+      return;
+    }
+
+    // Warn if receiver name doesn't match verification name
+    if (payoutForm.receiver_name_verification &&
+        payoutForm.receiver_name_verification.trim().toLowerCase() !== selectedTransaction.receiver_name.toLowerCase()) {
+      if (!confirm(t('hawala.receiverNameMismatchWarning'))) {
+        return;
+      }
+    }
+
+    try {
+      await completeHawalaTransactionPayout(
+        selectedTransaction.id,
+        payoutForm.receiver_tazkira_number.trim(),
+        payoutForm.receiver_phone.trim()
+      );
+      setPayoutDialog(false);
+      await fetchData();
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || t('hawala.failedCompletePayout');
       setError(errorMessage);
     }
   };
@@ -676,6 +745,23 @@ export const Hawala = () => {
         Cell: ({ cell }) => (
           <Chip label={cell.getValue<string>()} size="small" variant="outlined" />
         )
+      },
+      {
+        accessorKey: 'transaction_direction',
+        header: t('hawala.transactionDirection'),
+        size: 120,
+        Cell: ({ row }) => {
+          const direction = row.original.transaction_direction || 'outgoing';
+          const isOutgoing = direction === 'outgoing';
+          return (
+            <Chip
+              label={t(`hawala.${direction}`)}
+              size="small"
+              color={isOutgoing ? 'warning' : 'success'}
+              icon={isOutgoing ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />}
+            />
+          );
+        }
       },
       {
         accessorKey: 'sender_name',
@@ -864,6 +950,17 @@ export const Hawala = () => {
             >
               <Receipt fontSize="small" />
             </IconButton>
+            {(row.original.status === 'pending' || row.original.status === 'in_transit') && (
+              <Tooltip title={t('hawala.completePayout')}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleCompletePayout(row.original)}
+                  color="success"
+                >
+                  <CheckCircle fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
             {isAdmin && (
               <>
                 <IconButton size="small" onClick={() => handleChangeStatus(row.original)} title={t('hawala.changeStatus')}>
@@ -1752,6 +1849,37 @@ export const Hawala = () => {
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+          {/* Transaction Direction */}
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1, border: '1px solid', borderColor: 'info.200' }}>
+            <Typography variant="subtitle2" fontWeight={600} color="info.dark" gutterBottom>
+              {t('hawala.transactionDirection')}
+            </Typography>
+            <TextField
+              fullWidth
+              select
+              value={transactionForm.transaction_direction}
+              onChange={(e) => setTransactionForm({ ...transactionForm, transaction_direction: e.target.value as 'outgoing' | 'incoming' })}
+              size="small"
+            >
+              <MenuItem value="outgoing">
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>{t('hawala.outgoing')}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('hawala.outgoingDesc')}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value="incoming">
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>{t('hawala.incoming')}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('hawala.incomingDesc')}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </TextField>
+          </Box>
+
           <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1, mb: 1 }}>{t('hawala.senderInfo')}</Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -2017,6 +2145,100 @@ export const Hawala = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => { setSearchDialog(false); setSearchResult(null); setSearchError(''); setSearchCode(''); }}>{t('common.close')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Payout Dialog */}
+      <Dialog open={payoutDialog} onClose={() => setPayoutDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('hawala.completePayout')}</DialogTitle>
+        <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+          {selectedTransaction && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom color="primary" fontWeight={600}>
+                {t('hawala.transactionDetails')}
+              </Typography>
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ display: 'grid', gap: 1 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">{t('hawala.referenceCode')}:</Typography>
+                  <Typography variant="body2" fontWeight={600}>{selectedTransaction.reference_code}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">{t('hawala.sender')}:</Typography>
+                  <Typography variant="body2">{selectedTransaction.sender_name}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">{t('hawala.receiver')}:</Typography>
+                  <Typography variant="body2" fontWeight={600} color="primary">{selectedTransaction.receiver_name}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">{t('hawala.amount')}:</Typography>
+                  <Typography variant="body2" fontWeight={600}>{formatCurrency(selectedTransaction.amount)} {selectedTransaction.currency_code}</Typography>
+                </Box>
+                {selectedTransaction.commission_amount > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">{t('hawala.commission')}:</Typography>
+                    <Typography variant="body2">{formatCurrency(selectedTransaction.commission_amount)} {selectedTransaction.currency_code}</Typography>
+                  </Box>
+                )}
+                {selectedTransaction.commission_type === 'deduct' && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">{t('hawala.payoutAmount')}:</Typography>
+                    <Typography variant="body1" fontWeight={700} color="success.main">
+                      {formatCurrency(selectedTransaction.amount - selectedTransaction.commission_amount)} {selectedTransaction.currency_code}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )}
+
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('hawala.payoutWarning')}
+          </Alert>
+
+          <TextField
+            fullWidth
+            label={t('hawala.receiverNameVerification')}
+            value={payoutForm.receiver_name_verification}
+            onChange={(e) => setPayoutForm({ ...payoutForm, receiver_name_verification: e.target.value })}
+            helperText={t('hawala.receiverNameVerificationHelp')}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            required
+            label={t('hawala.receiverTazkira')}
+            value={payoutForm.receiver_tazkira_number}
+            onChange={(e) => setPayoutForm({ ...payoutForm, receiver_tazkira_number: e.target.value })}
+            helperText={t('hawala.receiverTazkiraHelp')}
+            inputProps={{ minLength: 6, maxLength: 20 }}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            required
+            label={t('hawala.receiverPhoneNumber')}
+            value={payoutForm.receiver_phone}
+            onChange={(e) => setPayoutForm({ ...payoutForm, receiver_phone: e.target.value })}
+            helperText={t('hawala.receiverPhoneNumberHelp')}
+            inputProps={{ minLength: 8, maxLength: 20 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPayoutDialog(false)}>{t('common.cancel')}</Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleSavePayout}
+            disabled={!payoutForm.receiver_tazkira_number.trim() || !payoutForm.receiver_phone.trim()}
+          >
+            {t('hawala.confirmPayout')}
+          </Button>
         </DialogActions>
       </Dialog>
 
