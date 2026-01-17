@@ -91,6 +91,10 @@ export const Header = () => {
   // Get current tab value based on path
   const getCurrentTab = () => {
     const currentPath = location.pathname;
+    // Check if we're on a hawala page (including reports)
+    if (currentPath.startsWith('/hawala')) {
+      return navItems.findIndex(item => item.path === '/hawala');
+    }
     const tabIndex = navItems.findIndex(item => item.path === currentPath);
     return tabIndex >= 0 ? tabIndex : false;
   };
@@ -165,7 +169,7 @@ export const Header = () => {
               component={Link}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              selected={location.pathname === item.path}
+              selected={location.pathname.startsWith(item.path)}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
                 {item.icon}

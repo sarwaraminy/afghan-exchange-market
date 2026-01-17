@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
   Container,
@@ -43,7 +43,13 @@ import {
   Search,
   AccountBalance,
   ArrowUpward,
-  ArrowDownward
+  ArrowDownward,
+  Balance,
+  Schedule,
+  TrendingUp,
+  AttachMoney,
+  CalendarToday,
+  ChevronRight
 } from '@mui/icons-material';
 import {
   getHawaladars,
@@ -153,13 +159,18 @@ export const Hawala = () => {
   const [payoutForm, setPayoutForm] = useState({
     receiver_tazkira_number: '',
     receiver_phone: '',
-    receiver_name_verification: ''
+    receiver_name_verification: '',
+    secret_pin: ''
   });
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<HawalaTransaction | null>(null);
   const [searchError, setSearchError] = useState('');
 
   const [error, setError] = useState('');
+
+  // Secret PIN dialog states
+  const [secretPinDialog, setSecretPinDialog] = useState(false);
+  const [createdTransaction, setCreatedTransaction] = useState<HawalaTransaction | null>(null);
 
   // Savings account states
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -507,11 +518,15 @@ export const Hawala = () => {
 
       if (selectedTransaction) {
         await updateHawalaTransaction(selectedTransaction.id, data);
+        setTransactionDialog(false);
+        fetchData();
       } else {
-        await createHawalaTransaction(data);
+        const newTransaction = await createHawalaTransaction(data);
+        setCreatedTransaction(newTransaction);
+        setTransactionDialog(false);
+        setSecretPinDialog(true);
+        fetchData();
       }
-      setTransactionDialog(false);
-      fetchData();
     } catch (err: any) {
       setError(err.response?.data?.error || t('hawala.failedSaveTransaction'));
     }
@@ -559,7 +574,8 @@ export const Hawala = () => {
     setPayoutForm({
       receiver_tazkira_number: '',
       receiver_phone: transaction.receiver_phone || '',
-      receiver_name_verification: transaction.receiver_name
+      receiver_name_verification: transaction.receiver_name,
+      secret_pin: ''
     });
     setError('');
     setPayoutDialog(true);
@@ -590,6 +606,16 @@ export const Hawala = () => {
       return;
     }
 
+    if (!payoutForm.secret_pin.trim()) {
+      setError(t('hawala.secretPinRequired') || 'Secret PIN is required');
+      return;
+    }
+
+    if (payoutForm.secret_pin.trim().length !== 4 || !/^\d{4}$/.test(payoutForm.secret_pin.trim())) {
+      setError(t('hawala.secretPinHelp') || 'Secret PIN must be exactly 4 digits');
+      return;
+    }
+
     // Warn if receiver name doesn't match verification name
     if (payoutForm.receiver_name_verification &&
         payoutForm.receiver_name_verification.trim().toLowerCase() !== selectedTransaction.receiver_name.toLowerCase()) {
@@ -602,7 +628,8 @@ export const Hawala = () => {
       await completeHawalaTransactionPayout(
         selectedTransaction.id,
         payoutForm.receiver_tazkira_number.trim(),
-        payoutForm.receiver_phone.trim()
+        payoutForm.receiver_phone.trim(),
+        payoutForm.secret_pin.trim()
       );
       setPayoutDialog(false);
       await fetchData();
@@ -934,6 +961,55 @@ export const Hawala = () => {
             {new Date(cell.getValue()).toLocaleDateString()}
           </Box>
         )
+      }, {
+        accessorKey: 'expires_at' as const,
+        header: t('hawala.expiresAt') || 'Expires',
+        size: 120,
+        muiTableHeadCellProps: { sx: { textAlign: 'center' } },
+        muiTableBodyCellProps: { sx: { textAlign: 'center' } },
+        Cell: ({ row }: { row: any }) => {
+          const transaction = row.original;
+          if (!transaction.expires_at || transaction.status === 'completed' || transaction.status === 'cancelled') {
+            return <Box sx={{ textAlign: 'center' }}>-</Box>;
+          }
+
+          const expiresAt = new Date(transaction.expires_at);
+          const now = new Date();
+          const daysUntilExpiry = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+          let color: 'success' | 'warning' | 'error' = 'success';
+          let label = '';
+
+          if (daysUntilExpiry < 0) {
+            color = 'error';
+            label = t('hawala.expired') || 'Expired';
+          } else if (daysUntilExpiry === 0) {
+            color = 'error';
+            label = t('hawala.today') || 'Today';
+          } else if (daysUntilExpiry <= 1) {
+            color = 'error';
+            label = `${daysUntilExpiry}d`;
+          } else if (daysUntilExpiry <= 3) {
+            color = 'warning';
+            label = `${daysUntilExpiry}d`;
+          } else {
+            color = 'success';
+            label = `${daysUntilExpiry}d`;
+          }
+
+          return (
+            <Box sx={{ textAlign: 'center' }}>
+              <Chip
+                label={label}
+                size="small"
+                color={color}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                {expiresAt.toLocaleDateString()}
+              </Typography>
+            </Box>
+          );
+        }
       }] : []),
       {
         id: 'actions',
@@ -1416,6 +1492,112 @@ export const Hawala = () => {
   const renderReports = () => (
     <>
       <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>{t('hawala.reports')}</Typography>
+
+      {/* Security Reports Navigation */}
+      <Paper sx={{ p: 0, mb: 3 }}>
+        <List>
+          <ListItem
+            component={Link}
+            to="/hawala/reports/net-position"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon>
+              <Balance color="primary" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('hawala.netPositionReport') || 'Net Position Report'}
+              secondary={t('hawala.netPositionReportDescription') || 'View who owes money to whom between hawaladar pairs'}
+            />
+            <ChevronRight />
+          </ListItem>
+          <Divider />
+          <ListItem
+            component={Link}
+            to="/hawala/reports/unpaid"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon>
+              <Schedule color="warning" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('hawala.unpaidHawalasReport') || 'Unpaid Hawalas Report'}
+              secondary={t('hawala.unpaidHawalasDescription') || 'View all pending and in-transit transactions with aging information'}
+            />
+            <ChevronRight />
+          </ListItem>
+          <Divider />
+          <ListItem
+            component={Link}
+            to="/hawala/reports/commission"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon>
+              <AttachMoney color="success" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('hawala.commissionReport') || 'Commission Report'}
+              secondary={t('hawala.commissionReportDescription') || 'View commission earnings by hawaladar'}
+            />
+            <ChevronRight />
+          </ListItem>
+          <Divider />
+          <ListItem
+            component={Link}
+            to="/hawala/reports/daily-cash-flow"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon>
+              <TrendingUp color="info" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('hawala.dailyCashFlowReport') || 'Daily Cash Flow Report'}
+              secondary={t('hawala.dailyCashFlowDescription') || 'View daily cash flow activity for hawaladars'}
+            />
+            <ChevronRight />
+          </ListItem>
+          <Divider />
+          <ListItem
+            component={Link}
+            to="/hawala/reports/transaction-aging"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon>
+              <CalendarToday color="error" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('hawala.transactionAgingReport') || 'Transaction Aging Report'}
+              secondary={t('hawala.transactionAgingDescription') || 'Analyze pending transactions by age brackets'}
+            />
+            <ChevronRight />
+          </ListItem>
+        </List>
+      </Paper>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+        {t('hawala.quickSummary') || 'Quick Summary'}
+      </Typography>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -2227,6 +2409,18 @@ export const Hawala = () => {
             onChange={(e) => setPayoutForm({ ...payoutForm, receiver_phone: e.target.value })}
             helperText={t('hawala.receiverPhoneNumberHelp')}
             inputProps={{ minLength: 8, maxLength: 20 }}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            required
+            label={t('hawala.secretPin') || 'Secret PIN'}
+            value={payoutForm.secret_pin}
+            onChange={(e) => setPayoutForm({ ...payoutForm, secret_pin: e.target.value })}
+            helperText={t('hawala.secretPinHelp') || 'Enter the 4-digit secret PIN provided by sender'}
+            inputProps={{ maxLength: 4, pattern: '[0-9]*', inputMode: 'numeric' }}
+            type="password"
           />
         </DialogContent>
         <DialogActions>
@@ -2235,9 +2429,138 @@ export const Hawala = () => {
             variant="contained"
             color="success"
             onClick={handleSavePayout}
-            disabled={!payoutForm.receiver_tazkira_number.trim() || !payoutForm.receiver_phone.trim()}
+            disabled={!payoutForm.receiver_tazkira_number.trim() || !payoutForm.receiver_phone.trim() || !payoutForm.secret_pin.trim()}
           >
             {t('hawala.confirmPayout')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Secret PIN Success Dialog */}
+      <Dialog
+        open={secretPinDialog}
+        onClose={() => setSecretPinDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        disableEscapeKeyDown
+      >
+        <DialogTitle sx={{ bgcolor: 'success.main', color: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircle />
+            {t('hawala.transactionCreated') || 'Transaction Created Successfully'}
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {createdTransaction && (
+            <>
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  ⚠️ IMPORTANT: Save this information immediately!
+                </Typography>
+                <Typography variant="body2">
+                  The Secret PIN will only be shown once and cannot be retrieved later.
+                </Typography>
+              </Alert>
+
+              <Paper sx={{ p: 3, bgcolor: 'primary.light', mb: 2 }}>
+                <Typography variant="h6" align="center" gutterBottom color="primary.contrastText">
+                  Secret PIN
+                </Typography>
+                <Typography
+                  variant="h3"
+                  align="center"
+                  fontWeight={700}
+                  sx={{
+                    letterSpacing: '0.5em',
+                    fontFamily: 'monospace',
+                    color: 'primary.contrastText',
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  {(createdTransaction as any).secret_pin || 'N/A'}
+                </Typography>
+              </Paper>
+
+              <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom color="primary" fontWeight={600}>
+                  {t('hawala.transactionDetails')}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: 'grid', gap: 1 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('hawala.referenceCode')}:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {createdTransaction.reference_code}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('hawala.sender')}:
+                    </Typography>
+                    <Typography variant="body2">{createdTransaction.sender_name}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('hawala.receiver')}:
+                    </Typography>
+                    <Typography variant="body2">{createdTransaction.receiver_name}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('hawala.amount')}:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {formatCurrency(createdTransaction.amount)} {createdTransaction.currency_code}
+                    </Typography>
+                  </Box>
+                  {createdTransaction.commission_amount > 0 && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('hawala.commission')}:
+                      </Typography>
+                      <Typography variant="body2">
+                        {formatCurrency(createdTransaction.commission_amount)} {createdTransaction.currency_code}
+                      </Typography>
+                    </Box>
+                  )}
+                  {(createdTransaction as any).expires_at && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Expires At:
+                      </Typography>
+                      <Typography variant="body2" color="warning.main">
+                        {new Date((createdTransaction as any).expires_at).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              <Alert severity="info">
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Next Steps:
+                </Typography>
+                <Typography variant="body2" component="div">
+                  1. Write the Secret PIN on the receipt<br />
+                  2. Give receipt to sender<br />
+                  3. Sender must share PIN with receiver verbally (NOT via SMS/WhatsApp)<br />
+                  4. Receiver will need this PIN to collect the money
+                </Typography>
+              </Alert>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setSecretPinDialog(false);
+              setCreatedTransaction(null);
+            }}
+          >
+            {t('common.close') || 'I have saved this information'}
           </Button>
         </DialogActions>
       </Dialog>

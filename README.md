@@ -68,6 +68,8 @@ afghan-exchange-market/
 │   │   ├── components/      # Reusable components
 │   │   ├── context/         # React context (Auth)
 │   │   ├── i18n/            # Translations
+│   │   │   ├── locales/     # Separate language files (en, fa, ps)
+│   │   │   └── index.ts     # i18n configuration
 │   │   ├── pages/           # Page components
 │   │   ├── services/        # API service
 │   │   ├── types/           # TypeScript types
@@ -373,9 +375,27 @@ The application supports three languages with full RTL (Right-to-Left) support:
 
 Users can switch languages using the dropdown in the header. The selected language is persisted in localStorage.
 
+### Translation Structure
+Translations are organized in separate files for better maintainability:
+- `frontend/src/i18n/locales/en.ts` - English translations (~670 lines)
+- `frontend/src/i18n/locales/fa.ts` - Farsi (Dari) translations (~670 lines)
+- `frontend/src/i18n/locales/ps.ts` - Pashto translations (~670 lines)
+
+Each file contains complete translations for all UI elements, making it easier to:
+- Update translations for a specific language
+- Add new translation keys
+- Review language-specific changes in version control
+- Collaborate with translators
+
 ## Recent Updates (January 2026)
 
-### Latest Features (2026-01-14 - v1.3.1)
+### Latest Features (2026-01-17 - v1.3.2)
+- ✅ **Translation System Restructure** - Split translations into separate files per language for easier management
+- ✅ **Reports Navigation** - Improved reports interface with list-based navigation under Hawala > Reports
+- ✅ **Better Accessibility** - Enhanced UI with semantic HTML and improved mobile responsiveness
+- ✅ **UTF-8 Encoding Fixed** - Resolved encoding issues with Farsi and Pashto text
+
+### Previous Features (2026-01-14 - v1.3.1)
 - ✅ **Location Details** - Added floor number and shop number fields for hawaladar addresses
 - ✅ **Simplified Branding** - Removed logo upload system, standardized on default branding
 - ✅ **Receipt Cleanup** - Removed duplicate sender information for cleaner receipts

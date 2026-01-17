@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-01-17
+
+### Changed
+
+#### Translation System Restructure
+- **Separated Translation Files** - Improved maintainability for multi-language support
+  - Split monolithic `translations.ts` into three separate files:
+    - `frontend/src/i18n/locales/en.ts` - English translations
+    - `frontend/src/i18n/locales/fa.ts` - Farsi (Dari) translations
+    - `frontend/src/i18n/locales/ps.ts` - Pashto translations
+  - Updated `frontend/src/i18n/index.ts` to import from separate locale files
+  - Each language file is now ~670 lines instead of one 2000+ line file
+  - Easier to manage, edit, and maintain translations per language
+  - Better for version control and collaboration
+  - Fixed UTF-8 encoding issues with Farsi and Pashto text
+
+#### Reports Navigation Improvements
+- **List-Based Navigation** - Cleaner and more accessible reports interface
+  - Replaced large card-based layout with compact List component
+  - Each report now displays:
+    - Color-coded icon (Balance/Primary, Schedule/Warning, AttachMoney/Success, etc.)
+    - Primary title with full translation support
+    - Secondary description explaining the report purpose
+    - ChevronRight navigation arrow for better UX
+    - Hover effect for visual feedback
+  - Reports remain accessible under Hawala > Reports tab (not as separate top-level menu)
+  - Improved mobile responsiveness with List layout
+  - Better accessibility with proper semantic HTML structure
+  - 5 reports available:
+    1. Net Position Report - Who owes money to whom between hawaladar pairs
+    2. Unpaid Hawalas Report - Pending and in-transit transactions with aging
+    3. Commission Report - Commission earnings by hawaladar
+    4. Daily Cash Flow Report - Daily cash flow activity tracking
+    5. Transaction Aging Report - Pending transactions grouped by age brackets
+
+### Documentation
+
+- Updated CHANGELOG.md with version 1.3.2 changes
+- Updated README.md with translation system structure
+- Enhanced user guide with reports navigation information
+
 ## [1.3.1] - 2026-01-14
 
 ### Added

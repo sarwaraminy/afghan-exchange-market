@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, Customer, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport } from '../types';
+import type { ApiResponse, AuthResponse, ExchangeRate, GoldRate, Market, Currency, ConversionResult, PriceAlert, User, Province, District, Hawaladar, HawaladarAccount, Customer, CustomerAccount, AccountTransaction, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, HawalaNetPosition, HawalaUnpaidTransaction, HawalaCommissionReport, HawalaDailyCashFlow, HawalaTransactionAging } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -292,6 +292,7 @@ export const getHawalaTransactionByCode = async (code: string): Promise<HawalaTr
 };
 
 export const createHawalaTransaction = async (transactionData: {
+  transaction_direction?: 'outgoing' | 'incoming';
   sender_name: string;
   sender_phone?: string;
   sender_hawaladar_id?: number;
@@ -301,6 +302,7 @@ export const createHawalaTransaction = async (transactionData: {
   amount: number;
   currency_id: number;
   commission_rate?: number;
+  commission_type?: 'add' | 'deduct';
   notes?: string;
   customer_savings_account_id?: number;
 }): Promise<HawalaTransaction> => {
@@ -309,6 +311,7 @@ export const createHawalaTransaction = async (transactionData: {
 };
 
 export const updateHawalaTransaction = async (id: number, transactionData: Partial<{
+  transaction_direction?: 'outgoing' | 'incoming';
   sender_name: string;
   sender_phone?: string;
   sender_hawaladar_id?: number;
@@ -318,6 +321,7 @@ export const updateHawalaTransaction = async (id: number, transactionData: Parti
   amount: number;
   currency_id: number;
   commission_rate?: number;
+  commission_type?: 'add' | 'deduct';
   notes?: string;
 }>): Promise<HawalaTransaction> => {
   const { data } = await api.put<ApiResponse<HawalaTransaction>>(`/hawala/transactions/${id}`, transactionData);
@@ -333,8 +337,8 @@ export const deleteHawalaTransaction = async (id: number): Promise<void> => {
   await api.delete(`/hawala/transactions/${id}`);
 };
 
-export const completeHawalaTransactionPayout = async (id: number, receiver_tazkira_number: string, receiver_phone: string): Promise<HawalaTransaction> => {
-  const { data } = await api.post<ApiResponse<HawalaTransaction>>(`/hawala/transactions/${id}/payout`, { receiver_tazkira_number, receiver_phone });
+export const completeHawalaTransactionPayout = async (id: number, receiver_tazkira_number: string, receiver_phone: string, secret_pin?: string): Promise<HawalaTransaction> => {
+  const { data } = await api.post<ApiResponse<HawalaTransaction>>(`/hawala/transactions/${id}/payout`, { receiver_tazkira_number, receiver_phone, secret_pin });
   return data.data!;
 };
 
@@ -351,6 +355,45 @@ export const getHawalaReportsByAgent = async (): Promise<HawalaAgentReport[]> =>
 
 export const getHawalaReportsByCurrency = async (): Promise<HawalaCurrencyReport[]> => {
   const { data } = await api.get<ApiResponse<HawalaCurrencyReport[]>>('/hawala/reports/by-currency');
+  return data.data!;
+};
+
+// New Security Reports
+export const getHawalaNetPositions = async (currencyId?: number): Promise<HawalaNetPosition[]> => {
+  const params = currencyId ? { currency_id: currencyId } : {};
+  const { data } = await api.get<ApiResponse<HawalaNetPosition[]>>('/hawala/reports/net-positions', { params });
+  return data.data!;
+};
+
+export const getHawalaUnpaidTransactions = async (params?: {
+  status?: string;
+  min_days?: number;
+  hawaladar_id?: number;
+}): Promise<HawalaUnpaidTransaction[]> => {
+  const { data } = await api.get<ApiResponse<HawalaUnpaidTransaction[]>>('/hawala/reports/unpaid-hawalas', { params });
+  return data.data!;
+};
+
+export const getHawalaCommissionReport = async (params?: {
+  start_date?: string;
+  end_date?: string;
+  hawaladar_id?: number;
+}): Promise<HawalaCommissionReport[]> => {
+  const { data } = await api.get<ApiResponse<HawalaCommissionReport[]>>('/hawala/reports/commission', { params });
+  return data.data!;
+};
+
+export const getHawalaDailyCashFlow = async (params?: {
+  date?: string;
+  hawaladar_id?: number;
+}): Promise<HawalaDailyCashFlow[]> => {
+  const { data } = await api.get<ApiResponse<HawalaDailyCashFlow[]>>('/hawala/reports/daily-cash-flow', { params });
+  return data.data!;
+};
+
+export const getHawalaTransactionAging = async (hawaladarId?: number): Promise<HawalaTransactionAging[]> => {
+  const params = hawaladarId ? { hawaladar_id: hawaladarId } : {};
+  const { data } = await api.get<ApiResponse<HawalaTransactionAging[]>>('/hawala/reports/transaction-aging', { params });
   return data.data!;
 };
 
