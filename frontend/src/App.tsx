@@ -21,6 +21,11 @@ import { Profile } from './pages/Profile';
 import { Hawala } from './pages/Hawala';
 import { HawalaReceipt } from './pages/HawalaReceipt';
 import { UserGuide } from './pages/UserGuide';
+import { HawalaNetPositionReport } from './pages/HawalaNetPositionReport';
+import { HawalaUnpaidReport } from './pages/HawalaUnpaidReport';
+import { HawalaCommissionReportPage } from './pages/HawalaCommissionReport';
+import { HawalaDailyCashFlowReportPage } from './pages/HawalaDailyCashFlowReport';
+import { HawalaTransactionAgingReportPage } from './pages/HawalaTransactionAgingReport';
 
 import './i18n';
 
@@ -61,6 +66,11 @@ const AppRoutes = () => (
     <Route path="/gold" element={<PrivateRoute><Gold /></PrivateRoute>} />
     <Route path="/hawala" element={<PrivateRoute><Hawala /></PrivateRoute>} />
     <Route path="/hawala/receipt/:id" element={<PrivateRoute><HawalaReceipt /></PrivateRoute>} />
+    <Route path="/hawala/reports/net-position" element={<PrivateRoute><HawalaNetPositionReport /></PrivateRoute>} />
+    <Route path="/hawala/reports/unpaid" element={<PrivateRoute><HawalaUnpaidReport /></PrivateRoute>} />
+    <Route path="/hawala/reports/commission" element={<PrivateRoute><HawalaCommissionReportPage /></PrivateRoute>} />
+    <Route path="/hawala/reports/daily-cash-flow" element={<PrivateRoute><HawalaDailyCashFlowReportPage /></PrivateRoute>} />
+    <Route path="/hawala/reports/transaction-aging" element={<PrivateRoute><HawalaTransactionAgingReportPage /></PrivateRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
     <Route path="/user-guide" element={<PrivateRoute><UserGuide /></PrivateRoute>} />

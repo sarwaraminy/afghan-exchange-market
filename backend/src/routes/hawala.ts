@@ -19,7 +19,13 @@ import {
   // Reports
   getReportsSummary,
   getReportsByAgent,
-  getReportsByCurrency
+  getReportsByCurrency,
+  // New Reports
+  getNetPositions,
+  getUnpaidHawalas,
+  getCommissionReport,
+  getDailyCashFlow,
+  getTransactionAging
 } from '../controllers/hawalaController';
 import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
@@ -157,5 +163,20 @@ router.get('/reports/by-agent', authenticate, getReportsByAgent);
 
 // Get reports by currency (authenticated users can view)
 router.get('/reports/by-currency', authenticate, getReportsByCurrency);
+
+// Get net position report (shows who owes whom)
+router.get('/reports/net-positions', authenticate, getNetPositions);
+
+// Get unpaid hawalas report
+router.get('/reports/unpaid-hawalas', authenticate, getUnpaidHawalas);
+
+// Get commission report
+router.get('/reports/commission', authenticate, getCommissionReport);
+
+// Get daily cash flow report
+router.get('/reports/daily-cash-flow', authenticate, getDailyCashFlow);
+
+// Get transaction aging report
+router.get('/reports/transaction-aging', authenticate, getTransactionAging);
 
 export default router;

@@ -787,6 +787,172 @@ export const initializeDatabase = async (): Promise<void> => {
     // Column might already exist
   }
 
+  // Migration: Add hawaladar prefix field to hawaladars table
+  try {
+    const columns = db.exec("PRAGMA table_info(hawaladars)");
+    const hasPrefix = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'hawaladar_prefix');
+
+    if (!hasPrefix) {
+      db.exec('ALTER TABLE hawaladars ADD COLUMN hawaladar_prefix TEXT UNIQUE');
+      console.log('Added hawaladar_prefix column to hawaladars table');
+    }
+  } catch (e) {
+    // Column might already exist
+  }
+
+  // Migration: Add transaction limits to hawaladars table
+  try {
+    const columns = db.exec("PRAGMA table_info(hawaladars)");
+    const hasMaxTransaction = columns.length > 0 &&
+      columns[0].values.some((col: any) => col[1] === 'max_transaction_amount');
+
+    if (!hasMaxTransaction) {
+      db.exec('ALTER TABLE hawaladars ADD COLUMN max_transaction_amount REAL DEFAULT 100000');
+      db.exec('ALTER TABLE hawaladars ADD COLUMN daily_transaction_limit REAL DEFAULT 500000');
+      console.log('Added transaction limit columns to hawaladars table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Migration: Add security and tracking fields to hawala_transactions
+  try {
+    const columns = db.exec("PRAGMA table_info(hawala_transactions)");
+    const columnNames = columns.length > 0 ? columns[0].values.map((row: any) => row[1]) : [];
+
+    if (!columnNames.includes('secret_pin')) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN secret_pin TEXT');
+      console.log('Added secret_pin column to hawala_transactions table');
+    }
+
+    if (!columnNames.includes('expires_at')) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN expires_at DATETIME');
+      console.log('Added expires_at column to hawala_transactions table');
+    }
+
+    if (!columnNames.includes('linked_transaction_id')) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN linked_transaction_id INTEGER REFERENCES hawala_transactions(id)');
+      console.log('Added linked_transaction_id column to hawala_transactions table');
+    }
+
+    if (!columnNames.includes('is_origin_transaction')) {
+      db.exec('ALTER TABLE hawala_transactions ADD COLUMN is_origin_transaction INTEGER DEFAULT 0');
+      console.log('Added is_origin_transaction column to hawala_transactions table');
+    }
+  } catch (e) {
+    // Columns might already exist
+  }
+
+  // Migration: Create hawala_transaction_history table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS hawala_transaction_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER NOT NULL,
+        changed_field TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        changed_by INTEGER NOT NULL,
+        changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        change_reason TEXT,
+        FOREIGN KEY (transaction_id) REFERENCES hawala_transactions(id),
+        FOREIGN KEY (changed_by) REFERENCES users(id)
+      );
+    `);
+    console.log('Created hawala_transaction_history table');
+  } catch (e) {
+    // Table might already exist
+  }
+
+  // Migration: Create hawala_audit_log table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS hawala_audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        actor_id INTEGER NOT NULL,
+        actor_name TEXT,
+        details TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (transaction_id) REFERENCES hawala_transactions(id),
+        FOREIGN KEY (actor_id) REFERENCES users(id)
+      );
+    `);
+    console.log('Created hawala_audit_log table');
+  } catch (e) {
+    // Table might already exist
+  }
+
+  // Migration: Create hawala_settlements table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS hawala_settlements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        creditor_hawaladar_id INTEGER NOT NULL,
+        debtor_hawaladar_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        currency_id INTEGER NOT NULL,
+        settlement_method TEXT CHECK(settlement_method IN ('cash', 'goods', 'services', 'offset', 'other')),
+        settlement_date DATE NOT NULL,
+        notes TEXT,
+        recorded_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (creditor_hawaladar_id) REFERENCES hawaladars(id),
+        FOREIGN KEY (debtor_hawaladar_id) REFERENCES hawaladars(id),
+        FOREIGN KEY (currency_id) REFERENCES currencies(id),
+        FOREIGN KEY (recorded_by) REFERENCES users(id)
+      );
+    `);
+    console.log('Created hawala_settlements table');
+  } catch (e) {
+    // Table might already exist
+  }
+
+  // Migration: Create daily_hawaladar_snapshots table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS daily_hawaladar_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hawaladar_id INTEGER NOT NULL,
+        snapshot_date DATE NOT NULL,
+        opening_balance REAL,
+        closing_balance REAL,
+        transactions_in_count INTEGER,
+        transactions_out_count INTEGER,
+        total_in_amount REAL,
+        total_out_amount REAL,
+        currency_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (hawaladar_id) REFERENCES hawaladars(id),
+        FOREIGN KEY (currency_id) REFERENCES currencies(id),
+        UNIQUE(hawaladar_id, snapshot_date, currency_id)
+      );
+    `);
+    console.log('Created daily_hawaladar_snapshots table');
+  } catch (e) {
+    // Table might already exist
+  }
+
+  // Migration: Create indexes for new tables
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_hawala_transaction_history_transaction ON hawala_transaction_history(transaction_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_audit_log_transaction ON hawala_audit_log(transaction_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_audit_log_action ON hawala_audit_log(action);
+      CREATE INDEX IF NOT EXISTS idx_hawala_settlements_creditor ON hawala_settlements(creditor_hawaladar_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_settlements_debtor ON hawala_settlements(debtor_hawaladar_id);
+      CREATE INDEX IF NOT EXISTS idx_daily_snapshots_hawaladar ON daily_hawaladar_snapshots(hawaladar_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_linked ON hawala_transactions(linked_transaction_id);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_expires ON hawala_transactions(expires_at);
+    `);
+  } catch (e) {
+    // Indexes might already exist
+  }
+
   // Save initial state
   const data = db.export();
   const buffer = Buffer.from(data);

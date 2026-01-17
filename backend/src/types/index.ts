@@ -9,6 +9,7 @@ export interface User {
   preferred_market_id?: number;
   preferred_currency_id?: number;
   profile_picture?: string;
+  hawaladar_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -116,9 +117,14 @@ export interface Hawaladar {
   location: string;
   location_fa?: string;
   location_ps?: string;
+  floor_number?: string;
+  shop_number?: string;
   commission_rate: number;
   is_active: number;
   logo?: string;
+  hawaladar_prefix?: string;
+  max_transaction_amount: number;
+  daily_transaction_limit: number;
   created_at: string;
   updated_at: string;
 }
@@ -218,6 +224,10 @@ export interface HawalaTransaction {
   receiver_tazkira_number?: string;
   payout_completed_by?: number;
   payout_completed_at?: string;
+  secret_pin?: string;
+  expires_at?: string;
+  linked_transaction_id?: number;
+  is_origin_transaction?: number;
 }
 
 export interface HawalaTransactionWithDetails extends HawalaTransaction {
@@ -246,6 +256,8 @@ export interface HawalaTransactionWithDetails extends HawalaTransaction {
 export interface JwtPayload {
   userId: number;
   role: string;
+  username?: string;
+  hawaladarId?: number;
 }
 
 export interface ApiResponse<T = any> {

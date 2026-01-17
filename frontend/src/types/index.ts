@@ -232,6 +232,10 @@ export interface HawalaTransaction {
   payout_completed_by?: number;
   payout_completed_by_name?: string;
   payout_completed_at?: string;
+  secret_pin?: string;
+  expires_at?: string;
+  linked_transaction_id?: number;
+  is_origin_transaction?: number;
 }
 
 export interface HawalaReportSummary {
@@ -269,6 +273,62 @@ export interface HawalaCurrencyReport {
   total_amount: number;
   total_commission: number;
   completed_amount: number;
+}
+
+export interface HawalaNetPosition {
+  hawaladar1_id: number;
+  hawaladar1_name: string;
+  hawaladar2_id: number;
+  hawaladar2_name: string;
+  currency_code: string;
+  sent_to_h2: number;
+  received_from_h2: number;
+  net_position: number;
+  debtor: string;
+}
+
+export interface HawalaUnpaidTransaction {
+  id: number;
+  reference_code: string;
+  sender_name: string;
+  receiver_name: string;
+  amount: number;
+  commission_amount: number;
+  currency_code: string;
+  sender_hawaladar_name: string;
+  receiver_hawaladar_name: string;
+  status: string;
+  created_at: string;
+  expires_at?: string;
+  days_pending: number;
+}
+
+export interface HawalaCommissionReport {
+  hawaladar_id: number;
+  hawaladar_name: string;
+  total_transactions: number;
+  total_commission: number;
+  currency_code: string;
+}
+
+export interface HawalaDailyCashFlow {
+  date: string;
+  hawaladar_id: number;
+  hawaladar_name: string;
+  opening_balance: number;
+  cash_in: number;
+  cash_out: number;
+  closing_balance: number;
+  transactions_in_count: number;
+  transactions_out_count: number;
+  currency_code: string;
+}
+
+export interface HawalaTransactionAging {
+  age_bracket: string;
+  count: number;
+  total_amount: number;
+  currency_code: string;
 }
 
 export interface ApiResponse<T = unknown> {
