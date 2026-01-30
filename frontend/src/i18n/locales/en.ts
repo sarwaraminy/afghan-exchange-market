@@ -19,6 +19,8 @@ export const en = {
     // User Guide
     userGuide: {
       subtitle: 'Learn how to use the Afghan Exchange Market System',
+      gettingStarted: 'Getting Started',
+      coreFeatures: 'Core Features',
       quickStart: 'Quick Start',
       quickStartDesc: 'The Afghan Exchange Market System helps you manage currency exchange rates, hawala transfers, gold prices, and more. Here\'s a quick overview of the main features:',
       dashboardDesc: 'View summary of all activities, recent transactions, and quick stats.',
