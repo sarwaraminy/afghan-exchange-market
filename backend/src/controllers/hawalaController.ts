@@ -3,7 +3,6 @@ import db from '../config/database';
 import { Hawaladar, HawalaTransaction, HawalaTransactionWithDetails } from '../types';
 import {
   generateReferenceCode,
-  generateSecretPin,
   logAuditEvent,
   logTransactionHistory,
   validateTransactionLimits,
@@ -441,6 +440,7 @@ export const createTransaction = (req: Request, res: Response): void => {
   try {
     const {
       transaction_direction = 'outgoing',
+      reference_code,
       sender_name,
       sender_phone,
       sender_hawaladar_id,
@@ -458,17 +458,45 @@ export const createTransaction = (req: Request, res: Response): void => {
     const userId = req.user?.userId;
     const username = req.user?.username || 'unknown';
 
-    // Determine which hawaladar_id to use for reference code generation
-    // For outgoing: use sender_hawaladar_id
-    // For incoming: use receiver_hawaladar_id
-    const hawaladarForCode = transaction_direction === 'outgoing' ? sender_hawaladar_id : receiver_hawaladar_id;
+    // For incoming transactions, use provided reference code; for outgoing, generate one
+    let referenceCode: string;
 
-    if (!hawaladarForCode) {
-      res.status(400).json({
-        success: false,
-        error: `${transaction_direction === 'outgoing' ? 'Sender' : 'Receiver'} hawaladar is required for reference code generation`
-      });
-      return;
+    if (transaction_direction === 'incoming') {
+      // For incoming transactions, require manual reference code
+      if (!reference_code || !reference_code.trim()) {
+        res.status(400).json({
+          success: false,
+          error: 'Reference code is required for incoming transactions'
+        });
+        return;
+      }
+
+      // Check if reference code already exists
+      const existingTransaction = db.prepare('SELECT id FROM hawala_transactions WHERE reference_code = ?')
+        .get(reference_code.trim().toUpperCase()) as any;
+
+      if (existingTransaction) {
+        res.status(400).json({
+          success: false,
+          error: 'This reference code already exists in the system'
+        });
+        return;
+      }
+
+      referenceCode = reference_code.trim().toUpperCase();
+    } else {
+      // For outgoing transactions, generate reference code
+      const hawaladarForCode = sender_hawaladar_id;
+
+      if (!hawaladarForCode) {
+        res.status(400).json({
+          success: false,
+          error: 'Sender hawaladar is required for reference code generation'
+        });
+        return;
+      }
+
+      referenceCode = generateReferenceCode(hawaladarForCode);
     }
 
     // Validate transaction limits if sender hawaladar is involved
@@ -482,12 +510,6 @@ export const createTransaction = (req: Request, res: Response): void => {
         return;
       }
     }
-
-    // Generate unique reference code with hawaladar prefix
-    const referenceCode = generateReferenceCode(hawaladarForCode);
-
-    // Generate secret PIN for transaction verification
-    const secretPin = generateSecretPin();
 
     // Calculate expiration date (7 days from now)
     const expiresAt = calculateExpirationDate(7);
@@ -659,9 +681,9 @@ export const createTransaction = (req: Request, res: Response): void => {
         receiver_name, receiver_phone, receiver_hawaladar_id,
         amount, currency_id, commission_rate, commission_type, commission_amount, total_amount,
         notes, sender_account_transaction_id, customer_savings_account_id, created_by,
-        secret_pin, expires_at, linked_transaction_id, is_origin_transaction
+        expires_at, linked_transaction_id, is_origin_transaction
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       referenceCode,
       transaction_direction,
@@ -681,7 +703,6 @@ export const createTransaction = (req: Request, res: Response): void => {
       senderAccountTransactionId,
       customer_savings_account_id || null,
       userId,
-      secretPin,
       expiresAt,
       linkedTransactionId,
       transaction_direction === 'outgoing' && !linked_transaction_reference_code ? 1 : 0
@@ -701,8 +722,7 @@ export const createTransaction = (req: Request, res: Response): void => {
         currency_id,
         transaction_direction,
         sender_name,
-        receiver_name,
-        has_secret_pin: true
+        receiver_name
       },
       req.ip,
       req.get('user-agent')
@@ -726,11 +746,11 @@ export const createTransaction = (req: Request, res: Response): void => {
       WHERE ht.id = ?
     `).get(transactionId);
 
-    // Return transaction with secret PIN (only shown once at creation)
+    // Return transaction
     res.status(201).json({
       success: true,
-      data: { ...newTransaction, secret_pin: secretPin },
-      message: 'Transaction created successfully. Secret PIN will only be shown once.'
+      data: newTransaction,
+      message: 'Transaction created successfully'
     });
   } catch (error) {
     console.error('Create transaction error:', error);
@@ -1071,7 +1091,7 @@ export const deleteTransaction = (req: Request, res: Response): void => {
 export const completePayout = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { receiver_tazkira_number, receiver_phone, secret_pin } = req.body;
+    const { receiver_tazkira_number, receiver_phone } = req.body;
     const userId = req.user?.userId;
     const username = req.user?.username || 'unknown';
     const hawaladarId = req.user?.hawaladarId;
@@ -1118,26 +1138,6 @@ export const completePayout = (req: Request, res: Response): void => {
       res.status(400).json({
         success: false,
         error: `Transaction has expired. Expiry date: ${existing.expires_at}. Please contact the sender.`
-      });
-      return;
-    }
-
-    // Verify secret PIN if provided
-    if (secret_pin && secret_pin !== existing.secret_pin) {
-      // Log failed payout attempt
-      logAuditEvent(
-        parseInt(id),
-        'payout_failed',
-        userId!,
-        username,
-        { reason: 'Invalid secret PIN' },
-        req.ip,
-        req.get('user-agent')
-      );
-
-      res.status(400).json({
-        success: false,
-        error: 'Invalid secret PIN. Please verify the PIN with the sender.'
       });
       return;
     }

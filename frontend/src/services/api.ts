@@ -337,8 +337,8 @@ export const deleteHawalaTransaction = async (id: number): Promise<void> => {
   await api.delete(`/hawala/transactions/${id}`);
 };
 
-export const completeHawalaTransactionPayout = async (id: number, receiver_tazkira_number: string, receiver_phone: string, secret_pin?: string): Promise<HawalaTransaction> => {
-  const { data } = await api.post<ApiResponse<HawalaTransaction>>(`/hawala/transactions/${id}/payout`, { receiver_tazkira_number, receiver_phone, secret_pin });
+export const completeHawalaTransactionPayout = async (id: number, receiver_tazkira_number: string, receiver_phone: string): Promise<HawalaTransaction> => {
+  const { data } = await api.post<ApiResponse<HawalaTransaction>>(`/hawala/transactions/${id}/payout`, { receiver_tazkira_number, receiver_phone });
   return data.data!;
 };
 

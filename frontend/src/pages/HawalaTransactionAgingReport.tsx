@@ -81,6 +81,9 @@ export const HawalaTransactionAgingReportPage = () => {
   };
 
   const summary = useMemo(() => {
+    if (!Array.isArray(reports)) {
+      return { totalTransactions: 0, totalAmount: 0, critical: 0, aging: 0 };
+    }
     const totalTransactions = reports.reduce((sum, r) => sum + r.count, 0);
     const totalAmount = reports.reduce((sum, r) => sum + r.total_amount, 0);
     const critical = reports.find(r => r.age_bracket.includes('7+'))?.count || 0;

@@ -121,7 +121,7 @@ export const HawalaCommissionReportPage = () => {
         muiTableBodyCellProps: { sx: { textAlign: 'right' } },
         Cell: ({ cell }) => (
           <Typography variant="body2">
-            {cell.getValue<number>().toLocaleString()}
+            {cell.getValue<number>()?.toLocaleString() || '0'}
           </Typography>
         )
       },

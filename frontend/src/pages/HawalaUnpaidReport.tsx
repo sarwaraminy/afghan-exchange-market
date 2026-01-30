@@ -84,6 +84,9 @@ export const HawalaUnpaidReport = () => {
   };
 
   const summary = useMemo(() => {
+    if (!Array.isArray(transactions)) {
+      return { total: 0, totalAmount: 0, expiringSoon: 0, aged: 0 };
+    }
     const total = transactions.length;
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
     const expiringSoon = transactions.filter(t => t.days_pending >= 5).length;

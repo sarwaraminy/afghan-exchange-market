@@ -79,6 +79,16 @@ export const HawalaDailyCashFlowReportPage = () => {
   };
 
   const summary = useMemo(() => {
+    if (!Array.isArray(reports)) {
+      return {
+        totalCashIn: 0,
+        totalCashOut: 0,
+        netFlow: 0,
+        totalTransactionsIn: 0,
+        totalTransactionsOut: 0,
+        totalHawaladars: 0
+      };
+    }
     const totalCashIn = reports.reduce((sum, r) => sum + r.cash_in, 0);
     const totalCashOut = reports.reduce((sum, r) => sum + r.cash_out, 0);
     const netFlow = totalCashIn - totalCashOut;

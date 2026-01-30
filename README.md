@@ -291,7 +291,15 @@ The Hawala system provides a complete money transfer management solution, tradit
   - Amount and currency
   - Commission amount and rate
 - **Multi-Currency Reports** - Accurate reporting with commission totals per currency
-- **Reports & Analytics** - Summary statistics, reports by agent, and reports by currency
+- **Separated Transaction Views** - Dedicated tabs for Outgoing (Sending) and Incoming (Receiving) transactions
+- **Manual Reference Code Entry** - Enter reference codes for incoming transactions to link with sender
+- **Reports Sidebar Navigation** - Easy access to reports through expandable sidebar menu:
+  - **Summary View**: Quick overview with key metrics and statistics
+  - **Net Position Report**: Who owes money to whom between hawaladars
+  - **Unpaid Transactions Report**: Monitor pending transactions and aging
+  - **Commission Report**: Track commission earnings by hawaladar
+  - **Daily Cash Flow Report**: Daily reconciliation and cash tracking
+  - **Transaction Aging Report**: Identify stuck or expiring transactions
 - **Reference Code Lookup** - Quick search transactions by reference code for sender/receiver
 
 ### Database Tables

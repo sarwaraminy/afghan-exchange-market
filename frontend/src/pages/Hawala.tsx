@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { HawalaNetPositionReport } from './HawalaNetPositionReport';
+import { HawalaUnpaidReport } from './HawalaUnpaidReport';
+import { HawalaCommissionReportPage } from './HawalaCommissionReport';
+import { HawalaDailyCashFlowReportPage } from './HawalaDailyCashFlowReport';
+import { HawalaTransactionAgingReportPage } from './HawalaTransactionAgingReport';
 import {
   Container,
   Typography,
@@ -28,7 +33,9 @@ import {
   CardContent,
   Divider,
   Grid,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Edit,
@@ -49,7 +56,10 @@ import {
   TrendingUp,
   AttachMoney,
   CalendarToday,
-  ChevronRight
+  ChevronRight,
+  ExpandMore,
+  ExpandLess,
+  Dashboard
 } from '@mui/icons-material';
 import {
   getHawaladars,
@@ -95,6 +105,9 @@ export const Hawala = () => {
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   const [selectedSection, setSelectedSection] = useState(0);
+  const [transactionTab, setTransactionTab] = useState(0); // 0 = Sending, 1 = Receiving
+  const [selectedReport, setSelectedReport] = useState<string | null>(null); // null = summary view, or specific report name
+  const [reportsExpanded, setReportsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Data states
@@ -121,6 +134,7 @@ export const Hawala = () => {
   // Forms
   const [transactionForm, setTransactionForm] = useState({
     transaction_direction: 'outgoing' as 'outgoing' | 'incoming',
+    reference_code: '',
     sender_name: '',
     sender_phone: '',
     sender_hawaladar_id: '',
@@ -159,18 +173,13 @@ export const Hawala = () => {
   const [payoutForm, setPayoutForm] = useState({
     receiver_tazkira_number: '',
     receiver_phone: '',
-    receiver_name_verification: '',
-    secret_pin: ''
+    receiver_name_verification: ''
   });
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<HawalaTransaction | null>(null);
   const [searchError, setSearchError] = useState('');
 
   const [error, setError] = useState('');
-
-  // Secret PIN dialog states
-  const [secretPinDialog, setSecretPinDialog] = useState(false);
-  const [createdTransaction, setCreatedTransaction] = useState<HawalaTransaction | null>(null);
 
   // Savings account states
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -205,7 +214,18 @@ export const Hawala = () => {
   const menuItems = [
     { label: t('hawala.transactions'), icon: <Receipt /> },
     { label: t('hawala.agents'), icon: <People /> },
-    { label: t('hawala.reports'), icon: <Assessment /> },
+    {
+      label: t('hawala.reports'),
+      icon: <Assessment />,
+      subItems: [
+        { label: t('hawala.summary') || 'Summary', value: null },
+        { label: t('hawala.netPosition'), icon: <Balance fontSize="small" />, value: 'netPosition' },
+        { label: t('hawala.unpaid'), icon: <Schedule fontSize="small" />, value: 'unpaid' },
+        { label: t('hawala.commission'), icon: <AttachMoney fontSize="small" />, value: 'commission' },
+        { label: t('hawala.cashFlow'), icon: <TrendingUp fontSize="small" />, value: 'cashFlow' },
+        { label: t('hawala.aging'), icon: <CalendarToday fontSize="small" />, value: 'aging' }
+      ]
+    },
     { label: t('hawala.savingsAccount'), icon: <AccountBalance /> }
   ];
 
@@ -458,6 +478,7 @@ export const Hawala = () => {
     setSelectedTransaction(null);
     setTransactionForm({
       transaction_direction: 'outgoing',
+      reference_code: '',
       sender_name: '',
       sender_phone: '',
       sender_hawaladar_id: '',
@@ -480,6 +501,7 @@ export const Hawala = () => {
     setSelectedTransaction(transaction);
     setTransactionForm({
       transaction_direction: transaction.transaction_direction || 'outgoing',
+      reference_code: transaction.reference_code || '',
       sender_name: transaction.sender_name,
       sender_phone: transaction.sender_phone || '',
       sender_hawaladar_id: transaction.sender_hawaladar_id?.toString() || '',
@@ -500,8 +522,15 @@ export const Hawala = () => {
 
   const handleSaveTransaction = async () => {
     try {
+      // Validate reference code for incoming transactions
+      if (transactionForm.transaction_direction === 'incoming' && !transactionForm.reference_code.trim()) {
+        setError(t('hawala.referenceCodeRequired'));
+        return;
+      }
+
       const data = {
         transaction_direction: transactionForm.transaction_direction,
+        reference_code: transactionForm.transaction_direction === 'incoming' ? transactionForm.reference_code.trim().toUpperCase() : undefined,
         sender_name: transactionForm.sender_name,
         sender_phone: transactionForm.sender_phone || undefined,
         sender_hawaladar_id: transactionForm.sender_hawaladar_id ? parseInt(transactionForm.sender_hawaladar_id) : undefined,
@@ -521,10 +550,8 @@ export const Hawala = () => {
         setTransactionDialog(false);
         fetchData();
       } else {
-        const newTransaction = await createHawalaTransaction(data);
-        setCreatedTransaction(newTransaction);
+        await createHawalaTransaction(data);
         setTransactionDialog(false);
-        setSecretPinDialog(true);
         fetchData();
       }
     } catch (err: any) {
@@ -574,8 +601,7 @@ export const Hawala = () => {
     setPayoutForm({
       receiver_tazkira_number: '',
       receiver_phone: transaction.receiver_phone || '',
-      receiver_name_verification: transaction.receiver_name,
-      secret_pin: ''
+      receiver_name_verification: transaction.receiver_name
     });
     setError('');
     setPayoutDialog(true);
@@ -606,16 +632,6 @@ export const Hawala = () => {
       return;
     }
 
-    if (!payoutForm.secret_pin.trim()) {
-      setError(t('hawala.secretPinRequired') || 'Secret PIN is required');
-      return;
-    }
-
-    if (payoutForm.secret_pin.trim().length !== 4 || !/^\d{4}$/.test(payoutForm.secret_pin.trim())) {
-      setError(t('hawala.secretPinHelp') || 'Secret PIN must be exactly 4 digits');
-      return;
-    }
-
     // Warn if receiver name doesn't match verification name
     if (payoutForm.receiver_name_verification &&
         payoutForm.receiver_name_verification.trim().toLowerCase() !== selectedTransaction.receiver_name.toLowerCase()) {
@@ -628,8 +644,7 @@ export const Hawala = () => {
       await completeHawalaTransactionPayout(
         selectedTransaction.id,
         payoutForm.receiver_tazkira_number.trim(),
-        payoutForm.receiver_phone.trim(),
-        payoutForm.secret_pin.trim()
+        payoutForm.receiver_phone.trim()
       );
       setPayoutDialog(false);
       await fetchData();
@@ -1326,113 +1341,221 @@ export const Hawala = () => {
       </Box>
       <List disablePadding>
         {menuItems.map((item, index) => (
-          <ListItem key={index} disablePadding>
-            <ListItemButton
-              selected={selectedSection === index}
-              onClick={() => setSelectedSection(index)}
-              sx={{
-                py: 1.5,
-                '&.Mui-selected': {
-                  bgcolor: '#e3f2fd',
-                  borderRight: '3px solid #1e3a5f',
-                  '&:hover': {
-                    bgcolor: '#bbdefb',
-                  },
-                },
-                '&:hover': {
-                  bgcolor: '#f5f5f5',
-                },
-              }}
-            >
-              <ListItemIcon
+          <Box key={index}>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={selectedSection === index && !item.subItems}
+                onClick={() => {
+                  if (item.subItems) {
+                    if (selectedSection === index) {
+                      setReportsExpanded(!reportsExpanded);
+                    } else {
+                      setSelectedSection(index);
+                      setReportsExpanded(true);
+                      setSelectedReport(null); // Show summary by default
+                    }
+                  } else {
+                    setSelectedSection(index);
+                    setReportsExpanded(false);
+                  }
+                }}
                 sx={{
-                  minWidth: 40,
-                  color: selectedSection === index ? '#1e3a5f' : 'text.secondary',
+                  py: 1.5,
+                  '&.Mui-selected': {
+                    bgcolor: '#e3f2fd',
+                    borderRight: '3px solid #1e3a5f',
+                    '&:hover': {
+                      bgcolor: '#bbdefb',
+                    },
+                  },
+                  '&:hover': {
+                    bgcolor: '#f5f5f5',
+                  },
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.label}
-                primaryTypographyProps={{
-                  fontWeight: selectedSection === index ? 600 : 400,
-                  color: selectedSection === index ? '#1e3a5f' : 'text.primary',
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
+                <ListItemIcon
+                  sx={{
+                    minWidth: 40,
+                    color: selectedSection === index ? '#1e3a5f' : 'text.secondary',
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontWeight: selectedSection === index ? 600 : 400,
+                    color: selectedSection === index ? '#1e3a5f' : 'text.primary',
+                  }}
+                />
+                {item.subItems && (
+                  <Box sx={{ color: selectedSection === index ? '#1e3a5f' : 'text.secondary' }}>
+                    {selectedSection === index && reportsExpanded ? <ExpandLess /> : <ExpandMore />}
+                  </Box>
+                )}
+              </ListItemButton>
+            </ListItem>
+
+            {/* Sub-items for Reports */}
+            {item.subItems && selectedSection === index && reportsExpanded && (
+              <List disablePadding sx={{ bgcolor: '#f5f5f5' }}>
+                {item.subItems.map((subItem: any) => (
+                  <ListItem key={subItem.value || 'summary'} disablePadding>
+                    <ListItemButton
+                      selected={selectedReport === subItem.value}
+                      onClick={() => setSelectedReport(subItem.value)}
+                      sx={{
+                        pl: 6,
+                        py: 1,
+                        '&.Mui-selected': {
+                          bgcolor: '#bbdefb',
+                          borderRight: '3px solid #1976d2',
+                          '&:hover': {
+                            bgcolor: '#90caf9',
+                          },
+                        },
+                        '&:hover': {
+                          bgcolor: '#e3f2fd',
+                        },
+                      }}
+                    >
+                      {subItem.icon && (
+                        <ListItemIcon sx={{ minWidth: 32, color: selectedReport === subItem.value ? '#1976d2' : 'text.secondary' }}>
+                          {subItem.icon}
+                        </ListItemIcon>
+                      )}
+                      {!subItem.icon && (
+                        <ListItemIcon sx={{ minWidth: 32, color: selectedReport === subItem.value ? '#1976d2' : 'text.secondary' }}>
+                          <Dashboard fontSize="small" />
+                        </ListItemIcon>
+                      )}
+                      <ListItemText
+                        primary={subItem.label}
+                        primaryTypographyProps={{
+                          variant: 'body2',
+                          fontWeight: selectedReport === subItem.value ? 600 : 400,
+                          color: selectedReport === subItem.value ? '#1976d2' : 'text.primary',
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
         ))}
       </List>
     </Paper>
   );
 
-  const renderTransactions = () => (
-    <>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600}>{t('hawala.transactions')}</Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            startIcon={!isMobile ? <Search /> : undefined}
-            onClick={() => setSearchDialog(true)}
-            size={isMobile ? 'small' : 'medium'}
-          >
-            {isMobile ? <Search /> : t('hawala.searchByCode')}
-          </Button>
-          {isAdmin && (
+  const renderTransactions = () => {
+    // Filter transactions based on selected tab
+    const filteredTransactions = transactions.filter(tx => {
+      if (transactionTab === 0) {
+        return tx.transaction_direction === 'outgoing';
+      } else {
+        return tx.transaction_direction === 'incoming';
+      }
+    });
+
+    return (
+      <>
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600}>{t('hawala.transactions')}</Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
-              variant="contained"
-              startIcon={!isMobile ? <Add /> : undefined}
-              onClick={handleNewTransaction}
+              variant="outlined"
+              startIcon={!isMobile ? <Search /> : undefined}
+              onClick={() => setSearchDialog(true)}
               size={isMobile ? 'small' : 'medium'}
             >
-              {isMobile ? <Add /> : t('hawala.newTransaction')}
+              {isMobile ? <Search /> : t('hawala.searchByCode')}
             </Button>
-          )}
+            {isAdmin && (
+              <Button
+                variant="contained"
+                startIcon={!isMobile ? <Add /> : undefined}
+                onClick={handleNewTransaction}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                {isMobile ? <Add /> : t('hawala.newTransaction')}
+              </Button>
+            )}
+          </Box>
         </Box>
-      </Box>
-      <Box sx={{ overflowX: 'auto', width: '100%' }}>
-        <MaterialReactTable
-          columns={transactionColumns}
-          data={transactions}
-          enablePagination
-          enableSorting
-          enableGlobalFilter
-          enableDensityToggle
-          initialState={{
-            density: isMobile ? 'compact' : 'comfortable',
-            pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-          }}
-          muiTableContainerProps={{
-            sx: { maxWidth: '100%' }
-          }}
-          muiTableProps={{
-            sx: {
-              direction: isRtl ? 'rtl' : 'ltr',
-              minWidth: isMobile ? 600 : 800
-            }
-          }}
-          muiTableHeadCellProps={{
-            sx: {
-              py: isMobile ? 1 : 1.5,
-              px: isMobile ? 1 : 2,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              fontWeight: 600
-            }
-          }}
-          muiTableBodyCellProps={{
-            sx: {
-              py: isMobile ? 0.5 : 1,
-              px: isMobile ? 1 : 2
-            }
-          }}
-          muiTopToolbarProps={{
-            sx: { flexWrap: 'wrap', gap: 1 }
-          }}
-        />
-      </Box>
-    </>
-  );
+
+        {/* Transaction Type Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={transactionTab}
+            onChange={(_event, newValue) => setTransactionTab(newValue)}
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 48,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+              },
+            }}
+          >
+            <Tab
+              icon={<ArrowUpward fontSize="small" />}
+              iconPosition="start"
+              label={t('hawala.outgoing')}
+              sx={{ gap: 1 }}
+            />
+            <Tab
+              icon={<ArrowDownward fontSize="small" />}
+              iconPosition="start"
+              label={t('hawala.incoming')}
+              sx={{ gap: 1 }}
+            />
+          </Tabs>
+        </Box>
+
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+          <MaterialReactTable
+            columns={transactionColumns}
+            data={filteredTransactions}
+            enablePagination
+            enableSorting
+            enableGlobalFilter
+            enableDensityToggle
+            initialState={{
+              density: isMobile ? 'compact' : 'comfortable',
+              pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+            }}
+            muiTableContainerProps={{
+              sx: { maxWidth: '100%' }
+            }}
+            muiTableProps={{
+              sx: {
+                direction: isRtl ? 'rtl' : 'ltr',
+                minWidth: isMobile ? 600 : 800
+              }
+            }}
+            muiTableHeadCellProps={{
+              sx: {
+                py: isMobile ? 1 : 1.5,
+                px: isMobile ? 1 : 2,
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                fontWeight: 600
+              }
+            }}
+            muiTableBodyCellProps={{
+              sx: {
+                py: isMobile ? 0.5 : 1,
+                px: isMobile ? 1 : 2
+              }
+            }}
+            muiTopToolbarProps={{
+              sx: { flexWrap: 'wrap', gap: 1 }
+            }}
+          />
+        </Box>
+      </>
+    );
+  };
 
   const renderHawaladars = () => (
     <>
@@ -1489,237 +1612,149 @@ export const Hawala = () => {
     </>
   );
 
-  const renderReports = () => (
-    <>
-      <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>{t('hawala.reports')}</Typography>
+  const renderReports = () => {
+    // Summary view - shown when selectedReport is null
+    if (selectedReport === null) {
+      return (
+        <>
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>
+            {t('hawala.summary') || 'Hawala Summary'}
+          </Typography>
 
-      {/* Security Reports Navigation */}
-      <Paper sx={{ p: 0, mb: 3 }}>
-        <List>
-          <ListItem
-            component={Link}
-            to="/hawala/reports/net-position"
-            sx={{
-              textDecoration: 'none',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon>
-              <Balance color="primary" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('hawala.netPositionReport') || 'Net Position Report'}
-              secondary={t('hawala.netPositionReportDescription') || 'View who owes money to whom between hawaladar pairs'}
+          {/* Summary Cards */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ bgcolor: '#e3f2fd' }}>
+                <CardContent>
+                  <Typography color="text.secondary" variant="body2">{t('hawala.totalTransactions')}</Typography>
+                  <Typography variant="h4" fontWeight={700}>{reportSummary?.total_transactions || 0}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ bgcolor: '#fff3e0' }}>
+                <CardContent>
+                  <Typography color="text.secondary" variant="body2">{t('hawala.pending')}</Typography>
+                  <Typography variant="h4" fontWeight={700}>{reportSummary?.pending_count || 0}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ bgcolor: '#e8f5e9' }}>
+                <CardContent>
+                  <Typography color="text.secondary" variant="body2">{t('hawala.completed')}</Typography>
+                  <Typography variant="h4" fontWeight={700}>{reportSummary?.completed_count || 0}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ bgcolor: '#ffebee' }}>
+                <CardContent>
+                  <Typography color="text.secondary" variant="body2">{t('hawala.statuses.cancelled')}</Typography>
+                  <Typography variant="h4" fontWeight={700}>{reportSummary?.cancelled_count || 0}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Agent Reports */}
+          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byAgent')}</Typography>
+          <Box sx={{ mb: 3, overflowX: 'auto', width: '100%' }}>
+            <MaterialReactTable
+              columns={agentReportColumns}
+              data={agentReports}
+              enablePagination
+              enableSorting
+              enableGlobalFilter
+              enableDensityToggle={!isMobile}
+              initialState={{
+                density: isMobile ? 'compact' : 'comfortable',
+                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+              }}
+              muiTableContainerProps={{
+                sx: { maxWidth: '100%' }
+              }}
+              muiTableProps={{
+                sx: {
+                  direction: isRtl ? 'rtl' : 'ltr',
+                  minWidth: isMobile ? 500 : 650
+                }
+              }}
+              muiTableHeadCellProps={{
+                sx: {
+                  py: isMobile ? 1 : 1.5,
+                  px: isMobile ? 1 : 2,
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  fontWeight: 600
+                }
+              }}
+              muiTableBodyCellProps={{
+                sx: {
+                  py: isMobile ? 0.5 : 1,
+                  px: isMobile ? 1 : 2
+                }
+              }}
             />
-            <ChevronRight />
-          </ListItem>
-          <Divider />
-          <ListItem
-            component={Link}
-            to="/hawala/reports/unpaid"
-            sx={{
-              textDecoration: 'none',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon>
-              <Schedule color="warning" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('hawala.unpaidHawalasReport') || 'Unpaid Hawalas Report'}
-              secondary={t('hawala.unpaidHawalasDescription') || 'View all pending and in-transit transactions with aging information'}
+          </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Currency Reports */}
+          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byCurrency')}</Typography>
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+            <MaterialReactTable
+              columns={currencyReportColumns}
+              data={currencyReports}
+              enablePagination
+              enableSorting
+              enableGlobalFilter
+              enableDensityToggle={!isMobile}
+              initialState={{
+                density: isMobile ? 'compact' : 'comfortable',
+                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+              }}
+              muiTableContainerProps={{
+                sx: { maxWidth: '100%' }
+              }}
+              muiTableProps={{
+                sx: {
+                  direction: isRtl ? 'rtl' : 'ltr',
+                  minWidth: isMobile ? 450 : 550
+                }
+              }}
+              muiTableHeadCellProps={{
+                sx: {
+                  py: isMobile ? 1 : 1.5,
+                  px: isMobile ? 1 : 2,
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  fontWeight: 600
+                }
+              }}
+              muiTableBodyCellProps={{
+                sx: {
+                  py: isMobile ? 0.5 : 1,
+                  px: isMobile ? 1 : 2
+                }
+              }}
             />
-            <ChevronRight />
-          </ListItem>
-          <Divider />
-          <ListItem
-            component={Link}
-            to="/hawala/reports/commission"
-            sx={{
-              textDecoration: 'none',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon>
-              <AttachMoney color="success" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('hawala.commissionReport') || 'Commission Report'}
-              secondary={t('hawala.commissionReportDescription') || 'View commission earnings by hawaladar'}
-            />
-            <ChevronRight />
-          </ListItem>
-          <Divider />
-          <ListItem
-            component={Link}
-            to="/hawala/reports/daily-cash-flow"
-            sx={{
-              textDecoration: 'none',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon>
-              <TrendingUp color="info" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('hawala.dailyCashFlowReport') || 'Daily Cash Flow Report'}
-              secondary={t('hawala.dailyCashFlowDescription') || 'View daily cash flow activity for hawaladars'}
-            />
-            <ChevronRight />
-          </ListItem>
-          <Divider />
-          <ListItem
-            component={Link}
-            to="/hawala/reports/transaction-aging"
-            sx={{
-              textDecoration: 'none',
-              color: 'inherit',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon>
-              <CalendarToday color="error" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('hawala.transactionAgingReport') || 'Transaction Aging Report'}
-              secondary={t('hawala.transactionAgingDescription') || 'Analyze pending transactions by age brackets'}
-            />
-            <ChevronRight />
-          </ListItem>
-        </List>
-      </Paper>
+          </Box>
+        </>
+      );
+    }
 
-      <Divider sx={{ my: 3 }} />
-
-      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-        {t('hawala.quickSummary') || 'Quick Summary'}
-      </Typography>
-
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ bgcolor: '#e3f2fd' }}>
-            <CardContent>
-              <Typography color="text.secondary" variant="body2">{t('hawala.totalTransactions')}</Typography>
-              <Typography variant="h4" fontWeight={700}>{reportSummary?.total_transactions || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ bgcolor: '#fff3e0' }}>
-            <CardContent>
-              <Typography color="text.secondary" variant="body2">{t('hawala.pending')}</Typography>
-              <Typography variant="h4" fontWeight={700}>{reportSummary?.pending_count || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ bgcolor: '#e8f5e9' }}>
-            <CardContent>
-              <Typography color="text.secondary" variant="body2">{t('hawala.completed')}</Typography>
-              <Typography variant="h4" fontWeight={700}>{reportSummary?.completed_count || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card sx={{ bgcolor: '#ffebee' }}>
-            <CardContent>
-              <Typography color="text.secondary" variant="body2">{t('hawala.statuses.cancelled')}</Typography>
-              <Typography variant="h4" fontWeight={700}>{reportSummary?.cancelled_count || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* Agent Reports */}
-      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byAgent')}</Typography>
-      <Box sx={{ mb: 3, overflowX: 'auto', width: '100%' }}>
-        <MaterialReactTable
-          columns={agentReportColumns}
-          data={agentReports}
-          enablePagination
-          enableSorting
-          enableGlobalFilter
-          enableDensityToggle={!isMobile}
-          initialState={{
-            density: isMobile ? 'compact' : 'comfortable',
-            pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-          }}
-          muiTableContainerProps={{
-            sx: { maxWidth: '100%' }
-          }}
-          muiTableProps={{
-            sx: {
-              direction: isRtl ? 'rtl' : 'ltr',
-              minWidth: isMobile ? 500 : 650
-            }
-          }}
-          muiTableHeadCellProps={{
-            sx: {
-              py: isMobile ? 1 : 1.5,
-              px: isMobile ? 1 : 2,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              fontWeight: 600
-            }
-          }}
-          muiTableBodyCellProps={{
-            sx: {
-              py: isMobile ? 0.5 : 1,
-              px: isMobile ? 1 : 2
-            }
-          }}
-        />
-      </Box>
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* Currency Reports */}
-      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byCurrency')}</Typography>
-      <Box sx={{ overflowX: 'auto', width: '100%' }}>
-        <MaterialReactTable
-          columns={currencyReportColumns}
-          data={currencyReports}
-          enablePagination
-          enableSorting
-          enableGlobalFilter
-          enableDensityToggle={!isMobile}
-          initialState={{
-            density: isMobile ? 'compact' : 'comfortable',
-            pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-          }}
-          muiTableContainerProps={{
-            sx: { maxWidth: '100%' }
-          }}
-          muiTableProps={{
-            sx: {
-              direction: isRtl ? 'rtl' : 'ltr',
-              minWidth: isMobile ? 450 : 550
-            }
-          }}
-          muiTableHeadCellProps={{
-            sx: {
-              py: isMobile ? 1 : 1.5,
-              px: isMobile ? 1 : 2,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              fontWeight: 600
-            }
-          }}
-          muiTableBodyCellProps={{
-            sx: {
-              py: isMobile ? 0.5 : 1,
-              px: isMobile ? 1 : 2
-            }
-          }}
-        />
-      </Box>
-    </>
-  );
+    // Specific report views
+    return (
+      <>
+        {selectedReport === 'netPosition' && <HawalaNetPositionReport />}
+        {selectedReport === 'unpaid' && <HawalaUnpaidReport />}
+        {selectedReport === 'commission' && <HawalaCommissionReportPage />}
+        {selectedReport === 'cashFlow' && <HawalaDailyCashFlowReportPage />}
+        {selectedReport === 'aging' && <HawalaTransactionAgingReportPage />}
+      </>
+    );
+  };
 
   const customerColumns = useMemo<MRT_ColumnDef<Customer>[]>(
     () => [
@@ -2061,6 +2096,22 @@ export const Hawala = () => {
               </MenuItem>
             </TextField>
           </Box>
+
+          {/* Reference Code Field - Only for Incoming Transactions */}
+          {transactionForm.transaction_direction === 'incoming' && (
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                fullWidth
+                label={t('hawala.referenceCode')}
+                value={transactionForm.reference_code}
+                onChange={(e) => setTransactionForm({ ...transactionForm, reference_code: e.target.value.toUpperCase() })}
+                placeholder={t('common.referencePlaceholder')}
+                required
+                helperText={t('hawala.enterReferenceCodeFromSender')}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+              />
+            </Box>
+          )}
 
           <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1, mb: 1 }}>{t('hawala.senderInfo')}</Typography>
           <Grid container spacing={2}>
@@ -2412,16 +2463,6 @@ export const Hawala = () => {
             sx={{ mb: 2 }}
           />
 
-          <TextField
-            fullWidth
-            required
-            label={t('hawala.secretPin') || 'Secret PIN'}
-            value={payoutForm.secret_pin}
-            onChange={(e) => setPayoutForm({ ...payoutForm, secret_pin: e.target.value })}
-            helperText={t('hawala.secretPinHelp') || 'Enter the 4-digit secret PIN provided by sender'}
-            inputProps={{ maxLength: 4, pattern: '[0-9]*', inputMode: 'numeric' }}
-            type="password"
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPayoutDialog(false)}>{t('common.cancel')}</Button>
@@ -2429,141 +2470,13 @@ export const Hawala = () => {
             variant="contained"
             color="success"
             onClick={handleSavePayout}
-            disabled={!payoutForm.receiver_tazkira_number.trim() || !payoutForm.receiver_phone.trim() || !payoutForm.secret_pin.trim()}
+            disabled={!payoutForm.receiver_tazkira_number.trim() || !payoutForm.receiver_phone.trim()}
           >
             {t('hawala.confirmPayout')}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Secret PIN Success Dialog */}
-      <Dialog
-        open={secretPinDialog}
-        onClose={() => setSecretPinDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        disableEscapeKeyDown
-      >
-        <DialogTitle sx={{ bgcolor: 'success.main', color: 'white' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircle />
-            {t('hawala.transactionCreated') || 'Transaction Created Successfully'}
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          {createdTransaction && (
-            <>
-              <Alert severity="warning" sx={{ mb: 3 }}>
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  ⚠️ IMPORTANT: Save this information immediately!
-                </Typography>
-                <Typography variant="body2">
-                  The Secret PIN will only be shown once and cannot be retrieved later.
-                </Typography>
-              </Alert>
-
-              <Paper sx={{ p: 3, bgcolor: 'primary.light', mb: 2 }}>
-                <Typography variant="h6" align="center" gutterBottom color="primary.contrastText">
-                  Secret PIN
-                </Typography>
-                <Typography
-                  variant="h3"
-                  align="center"
-                  fontWeight={700}
-                  sx={{
-                    letterSpacing: '0.5em',
-                    fontFamily: 'monospace',
-                    color: 'primary.contrastText',
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  {(createdTransaction as any).secret_pin || 'N/A'}
-                </Typography>
-              </Paper>
-
-              <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom color="primary" fontWeight={600}>
-                  {t('hawala.transactionDetails')}
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'grid', gap: 1 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('hawala.referenceCode')}:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {createdTransaction.reference_code}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('hawala.sender')}:
-                    </Typography>
-                    <Typography variant="body2">{createdTransaction.sender_name}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('hawala.receiver')}:
-                    </Typography>
-                    <Typography variant="body2">{createdTransaction.receiver_name}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('hawala.amount')}:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {formatCurrency(createdTransaction.amount)} {createdTransaction.currency_code}
-                    </Typography>
-                  </Box>
-                  {createdTransaction.commission_amount > 0 && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('hawala.commission')}:
-                      </Typography>
-                      <Typography variant="body2">
-                        {formatCurrency(createdTransaction.commission_amount)} {createdTransaction.currency_code}
-                      </Typography>
-                    </Box>
-                  )}
-                  {(createdTransaction as any).expires_at && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Expires At:
-                      </Typography>
-                      <Typography variant="body2" color="warning.main">
-                        {new Date((createdTransaction as any).expires_at).toLocaleString()}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-
-              <Alert severity="info">
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Next Steps:
-                </Typography>
-                <Typography variant="body2" component="div">
-                  1. Write the Secret PIN on the receipt<br />
-                  2. Give receipt to sender<br />
-                  3. Sender must share PIN with receiver verbally (NOT via SMS/WhatsApp)<br />
-                  4. Receiver will need this PIN to collect the money
-                </Typography>
-              </Alert>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setSecretPinDialog(false);
-              setCreatedTransaction(null);
-            }}
-          >
-            {t('common.close') || 'I have saved this information'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Hawaladar Dialog */}
       <Dialog open={hawaladarDialog} onClose={() => setHawaladarDialog(false)} maxWidth="md" fullWidth>

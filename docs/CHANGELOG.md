@@ -1,0 +1,665 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [3.0.0] - 2026-01-30
+
+### Changed
+
+#### Transaction Views Separated
+- **Outgoing and Incoming Tabs** - Improved transaction management
+  - Added tabs in Transaction section: "Outgoing (Sending Out)" and "Incoming (Receiving for Payout)"
+  - Outgoing tab shows transactions where you are the sender
+  - Incoming tab shows transactions where you are the receiver
+  - Each tab filtered by `transaction_direction` field
+  - Tab icons: ArrowUpward for Outgoing, ArrowDownward for Incoming
+  - Clearer separation of sending vs receiving workflows
+
+#### Manual Reference Code Entry
+- **Reference Code Handling** - Enhanced transaction linking
+  - Incoming transactions now require manual reference code entry
+  - Reference code field only appears for incoming transaction direction
+  - Validates and checks for duplicate reference codes
+  - Outgoing transactions auto-generate reference codes (unchanged)
+  - Backend validation prevents duplicate codes for incoming transactions
+  - Better traceability between sender and receiver transactions
+
+### Removed
+
+#### Secret PIN System
+- **Complete PIN Removal** - Simplified payout verification
+  - Removed 4-digit secret PIN generation from createTransaction
+  - Removed secret_pin field from hawala_transactions table
+  - Removed PIN verification from completePayout endpoint
+  - Removed PIN dialog and form fields from frontend
+  - Removed PIN display from transaction creation success
+  - Updated payout to use only Tazkira and phone verification
+  - Simplified security model focusing on ID verification
+  - Updated API to not require secret_pin parameter
+
+### Added
+
+#### Reports Sidebar Navigation
+- **Expandable Reports Menu** - Better report organization
+  - Converted Reports from tabs to sidebar sub-menu with expand/collapse
+  - Added **Summary** as default report view showing:
+    - 4 summary cards (Total, Pending, Completed, Cancelled transactions)
+    - Agent reports table (transactions by hawaladar)
+    - Currency reports table (transactions by currency)
+  - Reports now accessible as sub-items under Reports menu:
+    1. Summary (default) - Quick overview with key metrics
+    2. Net Position - Who owes money to whom
+    3. Unpaid - Pending transactions with aging
+    4. Commission - Earnings by hawaladar
+    5. Cash Flow - Daily activity tracking
+    6. Aging - Transaction age distribution
+  - Each sub-item has dedicated icon (Dashboard, Balance, Schedule, AttachMoney, TrendingUp, CalendarToday)
+  - Sidebar shows expand/collapse icons (ExpandMore/ExpandLess)
+  - Selected sub-item highlighted with different background color
+  - Reports load inline without navigation
+  - Improved UX with single-click access to specific reports
+
+### Fixed
+
+#### Report Component Errors
+- **Array Validation** - Fixed runtime errors in embedded reports
+  - Added Array.isArray() checks in HawalaUnpaidReport useMemo
+  - Added Array.isArray() checks in HawalaCommissionReport useMemo
+  - Added Array.isArray() checks in HawalaTransactionAgingReport useMemo
+  - Added Array.isArray() checks in HawalaDailyCashFlowReport useMemo
+  - Prevents "reduce is not a function" errors
+  - Returns default values when reports data not yet loaded
+  - Improved error handling for undefined data states
+
+### Documentation
+
+- Updated USER_TRAINING_GUIDE.md to version 3.0
+  - Removed all Secret PIN references and instructions
+  - Added manual reference code entry instructions
+  - Updated Reports section with new sidebar navigation
+  - Added Summary report documentation
+  - Updated troubleshooting section
+  - Revised security best practices
+  - Updated key reminders and checklists
+- Updated README.md with new features:
+  - Separated Transaction Views documentation
+  - Manual Reference Code Entry feature
+  - Reports Sidebar Navigation structure
+  - Summary View description
+- Added translation keys for "summary" in all languages (en/fa/ps)
+
+---
+
+## [1.3.2] - 2026-01-17
+
+### Changed
+
+#### Translation System Restructure
+- **Separated Translation Files** - Improved maintainability for multi-language support
+  - Split monolithic `translations.ts` into three separate files:
+    - `frontend/src/i18n/locales/en.ts` - English translations
+    - `frontend/src/i18n/locales/fa.ts` - Farsi (Dari) translations
+    - `frontend/src/i18n/locales/ps.ts` - Pashto translations
+  - Updated `frontend/src/i18n/index.ts` to import from separate locale files
+  - Each language file is now ~670 lines instead of one 2000+ line file
+  - Easier to manage, edit, and maintain translations per language
+  - Better for version control and collaboration
+  - Fixed UTF-8 encoding issues with Farsi and Pashto text
+
+#### Reports Navigation Improvements
+- **List-Based Navigation** - Cleaner and more accessible reports interface
+  - Replaced large card-based layout with compact List component
+  - Each report now displays:
+    - Color-coded icon (Balance/Primary, Schedule/Warning, AttachMoney/Success, etc.)
+    - Primary title with full translation support
+    - Secondary description explaining the report purpose
+    - ChevronRight navigation arrow for better UX
+    - Hover effect for visual feedback
+  - Reports remain accessible under Hawala > Reports tab (not as separate top-level menu)
+  - Improved mobile responsiveness with List layout
+  - Better accessibility with proper semantic HTML structure
+  - 5 reports available:
+    1. Net Position Report - Who owes money to whom between hawaladar pairs
+    2. Unpaid Hawalas Report - Pending and in-transit transactions with aging
+    3. Commission Report - Commission earnings by hawaladar
+    4. Daily Cash Flow Report - Daily cash flow activity tracking
+    5. Transaction Aging Report - Pending transactions grouped by age brackets
+
+### Documentation
+
+- Updated CHANGELOG.md with version 1.3.2 changes
+- Updated README.md with translation system structure
+- Enhanced user guide with reports navigation information
+
+## [1.3.1] - 2026-01-14
+
+### Added
+
+#### Hawaladar Location Details
+- **Floor and Shop Number Fields** - Enhanced location tracking for hawaladar addresses
+  - Added `floor_number` TEXT column to `hawaladars` table
+  - Added `shop_number` TEXT column to `hawaladars` table
+  - Database migration with automatic schema update on startup
+  - Updated TypeScript interfaces (Hawaladar, HawalaTransaction) with new fields
+  - Added to backend validation routes with optional validators
+  - Frontend form fields added in 3-column responsive layout (desktop) / 1-column (mobile)
+  - Display in Material React Table with proper translations
+  - Added to transaction pages showing sender/receiver floor and shop details
+  - Included in transaction receipts for both sender and receiver hawaladars
+  - Multi-language support (English, Dari, Pashto) for "Floor" and "Shop" labels
+  - Proper formatting: "Floor: X, Shop: Y" display format
+
+### Removed
+
+#### Logo Upload System
+- **Complete Logo Feature Removal** - Simplified hawaladar branding system
+  - Removed `logo` column from `hawaladars` table (migration removed from database.ts)
+  - Deleted logo upload endpoint `POST /api/hawala/agents/:id/logo`
+  - Removed `uploadHawaladarLogo` controller function from hawalaController.ts
+  - Removed Multer configuration and file upload middleware for logos
+  - Removed logo fields from all database queries (getTransactions, getTransactionById, getTransactionByCode)
+  - Removed logo upload UI from Hawala.tsx (upload button, preview, file selection)
+  - Removed `logoFile` and `logoPreview` state management
+  - Removed `uploadHawaladarLogo` API function from api.ts
+  - Removed logo from TypeScript interfaces (User, Hawaladar, HawalaTransaction)
+  - Removed logo display from transaction receipts (sender and receiver)
+  - Removed logo from auth controller login queries
+  - Reverted Header.tsx to default Afghan Exchange logo
+  - Removed hawaladar logo conditional display from header and mobile drawer
+  - Application now uses only the default branding logo throughout
+  - Removed `backend/uploads/logos/` directory usage
+  - Deleted documentation: docs/LOGO_UPLOAD.md
+
+#### Receipt Simplification
+- **Removed Duplicate Information** - Cleaner receipt layout
+  - Removed duplicate sender hawaladar details from receipt body
+  - Sender information now only appears in receipt header
+  - Eliminated redundant display of sender name, location, and contact information
+
+### Changed
+
+- **Backend Controllers** - Updated hawalaController.ts
+  - Added floor_number and shop_number to createHawaladar validation and insertion
+  - Added floor_number and shop_number to updateHawaladar logic
+  - Updated all transaction queries to include sender/receiver floor and shop fields
+  - Removed all logo-related imports (multer, path, fs)
+  - Simplified query structure by removing logo field selects
+
+- **Frontend Components** - Enhanced Hawala.tsx
+  - Reorganized Create/Edit modal with responsive Grid layout (3 columns on desktop, 1 on mobile)
+  - Added floor_number and shop_number TextFields to hawaladar form
+  - Updated Material React Table to display floor/shop in location column with translations
+  - Added floor/shop display to sender/receiver cells in transactions table
+  - Removed CloudUpload import and logo upload section (150+ lines)
+  - Simplified form state management by removing logo-related states
+
+- **Frontend Receipts** - Updated HawalaReceipt.tsx
+  - Added floor and shop display for sender hawaladar in header
+  - Added floor and shop display for receiver hawaladar in body
+  - Removed all logo image elements
+  - Removed duplicate sender information section
+
+- **Type Definitions** - Updated across frontend and backend
+  - Added `floor_number?: string` to Hawaladar interface
+  - Added `shop_number?: string` to Hawaladar interface
+  - Added floor/shop fields to HawalaTransaction for sender and receiver
+  - Removed `logo?: string` from Hawaladar interface
+  - Removed logo fields from HawalaTransaction interface
+  - Removed `hawaladar_logo` from User interface
+
+- **API Routes** - Updated hawala.ts
+  - Added floor_number and shop_number to agent creation/update validation
+  - Removed logo upload route definition
+  - Simplified route structure
+
+- **Translations** - Added new keys to i18n
+  - Added "floor" translations: "Floor" (EN), "منزل" (FA/PS)
+  - Added "shop" translations: "Shop" (EN), "دکان" (FA/PS)
+  - Removed all logo-related translation keys
+
+### Documentation
+
+- Updated CHANGELOG.md with version 1.3.1 changes
+- Updated README.md to remove logo references and add floor/shop field information
+- Removed docs/LOGO_UPLOAD.md (feature no longer exists)
+- Updated API endpoint documentation to reflect removed logo upload endpoint
+- Updated hawala system feature description
+
+### Database Schema
+
+**New Columns:**
+- `hawaladars.floor_number` (TEXT, optional)
+- `hawaladars.shop_number` (TEXT, optional)
+
+**Removed Migrations:**
+- Logo field migration removed from database.ts (lines 717-729)
+
+**Migration Behavior:**
+- floor_number and shop_number added automatically on startup for existing databases
+- Existing records will have NULL values for new fields until updated
+
+## [1.3.0] - 2026-01-14
+
+### Added
+
+#### Commission Type Feature
+- **Flexible Commission Handling** - Two commission modes for hawala transactions
+  - **Add Mode**: Sender pays amount + commission (total = amount + commission)
+  - **Deduct Mode**: Commission deducted from amount, receiver gets net balance (total = amount, receiver gets amount - commission)
+  - Added `commission_type` column to `hawala_transactions` table with values ('add', 'deduct')
+  - Database migration with default value 'add' for existing transactions
+  - Frontend UI selector with translated labels for both modes
+  - Backend logic updates for commission calculation based on type
+  - Automatic net amount calculation for receiver payouts when commission is deducted
+
+#### Enhanced Transaction Table
+- **Dedicated Columns** - Improved data visibility with separate columns
+  - Sender Name and Phone column
+  - Sender Agent column with hawaladar name and location
+  - Receiver Name and Phone column
+  - Receiver Agent column with hawaladar name and location
+  - Amount column (separated from commission)
+  - Commission column showing amount, rate, and commission type
+  - Multi-language support for hawaladar locations
+  - Better organization replacing combined sender/receiver displays
+
+#### Multi-Currency Report Improvements
+- **Accurate Commission Reporting** - Fixed misleading total commission aggregation
+  - Removed "Total Commission" summary card (was mixing different currencies)
+  - Replaced with "Cancelled Transactions" count card
+  - Commission totals now only shown per-currency in the "By Currency" table
+  - Each currency shows its own total commission amount
+  - Prevents confusion from adding USD + EUR + AFN commissions together
+
+#### Thermal Printer Receipt Optimization
+- **80mm Printer Support** - Professional receipts for thermal/ATM printers
+  - Page size set to `80mm auto` for continuous thermal paper
+  - Single-column layout (no side-by-side sections)
+  - All hawaladar information displayed vertically
+  - Minimal spacing (2mm margins, compact fonts)
+  - Font sizes optimized: 0.7-0.85rem for body text, 0.6-0.65rem for captions
+  - Transparent backgrounds for clean thermal output
+  - Removed receiver hawaladar logo to save space
+  - Header logo reduced to 35px height
+  - Removed section titles in print mode
+  - Signature sections compacted with 35mm width
+  - Prevents page breaks with proper CSS rules
+  - Complete transaction fits on one continuous receipt
+
+#### Full-Width Page Layouts
+- **Maximized Screen Space** - Better use of wide displays
+  - Changed container `maxWidth` from fixed sizes to `maxWidth={false}`
+  - Updated pages: Hawala, Rates, Gold, Dashboard, ManageUsers, Home
+  - Added horizontal padding (px: 4) for proper spacing
+  - Tables now use full viewport width
+  - Better for displaying multiple columns of data
+  - Maintained centered layouts for Login, Profile, Converter, Receipt pages
+
+### Removed
+
+#### News Feature
+- **Complete Removal** - Simplified application focus
+  - Deleted `frontend/src/pages/News.tsx` (133 lines)
+  - Deleted `backend/src/controllers/newsController.ts` (181 lines)
+  - Deleted `backend/src/routes/news.ts` (48 lines)
+  - Removed News link from header navigation
+  - Removed all News-related API endpoints
+  - Removed News translations from i18n files
+  - Removed News types from type definitions
+  - Updated README and documentation
+
+#### Centralized Admin Panel
+- **Distributed Administration** - Better organization of admin functions
+  - Deleted `frontend/src/pages/Admin.tsx` (1,218 lines)
+  - Removed `/admin` route from App.tsx
+  - Removed "Admin" button from header
+  - **Rates Management** - Full CRUD moved to Rates page with MaterialReactTable
+  - **Gold Management** - Full CRUD moved to Gold page with MaterialReactTable
+  - **User Management** - Moved to new dedicated ManageUsers page
+    - Created `frontend/src/pages/ManageUsers.tsx` (455 lines)
+    - Added `/users` route
+    - Accessible from user menu dropdown
+    - Admin-only access with role checking
+
+### Changed
+
+- **Backend Query Updates** - Include commission type in all responses
+  - Updated `getTransactions()` to return `commission_type` field
+  - Updated `getTransactionById()` to include commission type
+  - Enhanced receiver payout calculation based on commission type
+  - Transaction creation validates and stores commission type
+
+- **Frontend Form Updates** - Commission type selection UI
+  - Added commission type selector with "Add" and "Deduct" options
+  - Real-time calculation of total amount based on selected type
+  - Eligible savings accounts filtered by correct total amount
+  - Translation keys added: `commissionType`, `commissionAdd`, `commissionDeduct`
+
+- **Type Definitions** - Enhanced TypeScript interfaces
+  - Added `commission_type: 'add' | 'deduct'` to HawalaTransaction (frontend and backend)
+  - Updated all transaction-related types for consistency
+
+### Security
+
+- Admin-only access maintained for all management functions
+- CRUD operations properly restricted by role
+- Commission type validation on backend
+
+### Documentation
+
+- Updated README.md with new features and removed News references
+- Updated API documentation to remove News endpoints
+- Enhanced Hawala System section with commission types and thermal printing
+- Updated screenshots section to reflect new UI organization
+
+## [1.2.1] - 2026-01-12
+
+### Added
+
+#### Hawaladar Logo Upload UI
+- **Frontend Logo Management** - Complete UI for uploading and managing hawaladar logos
+  - Logo upload button in hawaladar dialog with CloudUpload icon
+  - Real-time image preview using `URL.createObjectURL()` API
+  - Current logo display when editing existing hawaladars
+  - New file preview with blue border to distinguish from current logo
+  - Remove logo button to cancel file selection
+  - Memory management with proper cleanup of object URLs
+  - File size and type information display (5MB max, JPEG/PNG)
+
+- **Logo Display in Receipts** - Professional branding on hawala receipts
+  - Hawaladar logo displayed at the top of transaction receipts
+  - Automatic logo loading from server via API_BASE_URL
+  - Fallback to hawaladar name when logo not available
+  - Print-friendly layout with logo included
+
+- **Translation Updates** - Multi-language support for logo features
+  - Added `logo`, `uploadLogo`, `changeLogo`, `removeLogo` keys
+  - Added `logoMaxSize`, `currentLogo` translation keys
+  - Translations for English, Dari (دری), and Pashto (پښتو)
+
+### Changed
+
+- **Backend Queries Enhanced** - Logo fields now included in all transaction queries
+  - Updated `getTransactions()` to include `sender_hawaladar_logo`, `sender_hawaladar_phone`, `receiver_hawaladar_logo`
+  - Updated `getTransactionById()` to include all logo and phone fields
+  - Updated `getTransactionByCode()` to include logo information
+  - Ensures logo data is available for receipt generation
+
+- **Type Definitions Updated** - Full type safety for logo features
+  - Added `logo?: string` to `Hawaladar` interface (frontend and backend)
+  - Extended `HawalaTransaction` with `sender_hawaladar_logo?`, `receiver_hawaladar_logo?`, `sender_hawaladar_phone?`
+  - Updated `HawalaTransactionWithDetails` with all translated fields and logo properties
+
+### Fixed
+
+- **Logo Preview Display** - Fixed missing preview when selecting new files
+  - Implemented object URL generation for instant image preview
+  - Added proper cleanup to prevent memory leaks
+  - Fixed state management for logo selection and removal
+
+- **Receipt Logo Display** - Fixed logo not showing in transaction receipts
+  - Backend queries now properly return logo filenames
+  - Frontend correctly constructs logo URLs from API base
+  - Verified logo display in all receipt contexts
+
+### Developer Notes
+
+- Added `logoFile` and `logoPreview` state management in Hawala.tsx
+- Implemented memory-safe object URL handling with `URL.revokeObjectURL()`
+- Logo upload integrated into hawaladar save flow with atomic operations
+- Enhanced TypeScript interfaces for complete type coverage
+
+## [1.2.0] - 2026-01-11
+
+### Added
+
+#### Customer Savings Payment for Hawala Transfers
+- **Payment from Savings** - Customers can now pay for hawala transfers using their savings accounts
+  - Added `customer_savings_account_id` column to `hawala_transactions` table
+  - New endpoint `/api/customers/savings/eligible` to fetch accounts with sufficient balance
+  - Automatic balance validation (checks if account has enough for amount + commission)
+  - Currency matching validation between account and transaction
+  - Automatic deduction from savings account when creating hawala transfer
+  - Transaction history tracking for savings-based hawala payments
+  - Prevents using both saraf account and customer savings simultaneously
+
+- **Frontend UI Integration** - Seamless payment method selection
+  - Customer dropdown in hawala transaction form
+  - Real-time eligible savings accounts lookup based on customer, hawaladar, currency, and amount
+  - Dropdown shows only accounts with sufficient balance
+  - Displays account details (balance, currency, saraf name)
+  - Automatic form validation and user feedback
+
+#### Hawaladar Logo Upload
+- **Logo Management** - Custom branding for each hawaladar
+  - Added `logo` column to `hawaladars` table with database migration
+  - New endpoint `POST /api/hawala/agents/:id/logo` for uploading logos
+  - File validation (JPEG/PNG only, 5MB max size)
+  - Multer-based file upload with automatic filename generation
+  - Automatic cleanup of old logos when uploading new ones
+  - Logos stored in `backend/uploads/logos/` directory
+  - Admin-only access for logo uploads
+
+#### Hawala Receipt Printing
+- **Digital Receipts** - Professional transaction receipts for record keeping
+  - New `HawalaReceipt` component with professional layout
+  - Receipt route: `/hawala/receipt/:id`
+  - Display transaction details: reference code, sender/receiver info, amounts
+  - Shows amount breakdown (base amount, commission, total)
+  - Includes both sender and receiver hawaladar information
+  - Print button in hawala transaction list (receipt icon)
+  - Signature sections for sender and agent
+  - Timestamp display for transaction creation and completion
+
+- **Translations** - Added receipt-specific translation keys
+  - `printReceipt` - Print button label
+  - `hawalaTransferReceipt` - Receipt title
+  - `amountDetails` - Amount breakdown section
+  - `senderSignature` - Sender signature field
+  - `agentSignature` - Agent signature field
+  - `completedAt` - Completion timestamp label
+
+### Changed
+- **Hawala Transaction Flow** - Enhanced payment flexibility
+  - Customers can now choose between cash payment or savings account deduction
+  - Added customer selection dropdown to transaction form
+  - Eligible savings accounts loaded dynamically based on transaction parameters
+
+### Security
+- Logo upload restricted to admin users only
+- File type validation prevents non-image uploads
+- File size limit prevents oversized uploads
+
+### Developer Notes
+- Updated TypeScript interfaces for new database columns
+- Enhanced API service with savings account functions
+- Added Material-UI icons: Receipt (for print button)
+
+## [1.1.0] - 2026-01-06
+
+### Added
+
+#### Customer Savings Account System
+- **Customer Management** - Complete CRUD operations for customer profiles
+  - New `customers` table with Tazkira (National ID), name, and phone
+  - Search functionality across all customer fields
+  - Unique constraint on Tazkira numbers to prevent duplicates
+  - Protection against deleting customers with existing accounts
+
+- **Savings Account Management** - Hawaladar-managed savings accounts
+  - Redesigned `customer_savings` table to use customer profiles instead of user accounts
+  - Support for multiple accounts per customer (different hawaladars or currencies)
+  - Unique constraint on (customer_id, saraf_id, currency_id) combinations
+  - Complete transaction history tracking for all deposits and withdrawals
+
+- **API Endpoints** - New REST APIs for customer and savings management
+  - `/api/customers` - Full CRUD for customer profiles
+  - `/api/customers/search` - Search customers by name, Tazkira, or phone
+  - `/api/customers/savings` - Create and manage savings accounts
+  - `/api/customers/savings/:id/deposit` - Record cash deposits
+  - `/api/customers/savings/:id/withdraw` - Process withdrawals with balance validation
+  - `/api/customers/savings/:id/transactions` - View transaction history
+
+- **Frontend UI** - Complete savings account interface in Hawala page
+  - New "Savings Account" tab in Hawala sidebar (4th option)
+  - Customers table with add/edit/delete functionality
+  - Savings accounts table with real-time balance display
+  - Inline deposit/withdraw actions with icon buttons
+  - Transaction history viewer per account
+  - Material-UI dialogs for all forms
+  - Responsive design for mobile and desktop
+
+### Fixed
+- **Route Definition Error** - Fixed `requireAdmin` to `isAdmin` in customer routes
+- **Frontend Type Error** - Fixed undefined `customerAccount` reference in transaction columns
+- **Authentication** - Changed `req.user?.id` to `req.user?.userId` for consistency
+
+### Changed
+- **Database Schema** - Major restructure of customer savings system
+  - `customer_savings` now uses `customer_id` instead of `user_id`
+  - Customers are no longer linked to user accounts
+  - Added `saraf_id` to track which hawaladar holds the money
+  - Automatic migration of existing data on startup
+
+- **Business Logic** - Separated customer profiles from user authentication
+  - Customers are managed by hawaladars, not self-service users
+  - Reflects real-world Afghan banking practice
+  - Physical cash deposits only, no online transfers
+
+### Documentation
+- Added comprehensive `docs/SAVINGS_ACCOUNT.md` with:
+  - Complete API reference
+  - Database schema documentation
+  - Frontend implementation guide
+  - Testing checklist
+  - Common errors and solutions
+  - Future enhancement roadmap
+- Updated main README.md with savings account overview
+- Added API endpoint tables for customer management
+
+## [Unreleased] - 2026-01-03
+
+### Fixed
+
+#### Critical Bug Fixes
+- **Database Schema Issues** - Fixed table and column name mismatches after migration
+  - Updated `accountController.ts` to use correct table names (`saraf_accounts`, `customer_savings`)
+  - Fixed `account_type` values throughout codebase (`saraf_cash`, `customer_savings`)
+  - Resolved foreign key reference issues
+
+- **Hawala Controller Fixes** - Fixed multiple critical issues in transaction handling
+  - Fixed table references from `hawaladar_accounts` to `saraf_accounts`
+  - Updated column references from `balance` to `cash_balance` for saraf accounts
+  - Fixed account_type values in transaction logging
+
+- **Transaction Update Security** - Prevented account balance inconsistencies
+  - Added validation to prevent transaction updates after funds have been deducted
+  - Returns clear error message instructing users to cancel and create new transaction
+
+- **Cancellation Refund Logic** - Complete transaction reversal
+  - Now properly reverses BOTH sender debit AND receiver credit when cancelling
+  - Prevents money duplication bug where receiver kept funds while sender got refund
+  - Added transaction reversal for completed transactions that are cancelled
+
+- **Reference Code Generation Race Condition** - Made atomic
+  - Fixed race condition where concurrent transactions could get duplicate reference codes
+  - Implemented atomic counter increment using single UPDATE statement
+  - Added verification of successful counter update
+
+- **SQL Injection Prevention** - Security hardening in account transfers
+  - Replaced string interpolation with validation function in `transferBetweenAccounts`
+  - Maps account types to safe table names before SQL execution
+  - Throws error for invalid account types before any database access
+
+- **Duplicate Hawaladars** - Database cleanup and prevention
+  - Removed 36 duplicate hawaladar records (each agent was inserted 3 times)
+  - Added UNIQUE constraint on `hawaladars(name, location)` to prevent future duplicates
+  - Created migration to apply constraint to existing databases
+  - Updated seed script to properly handle duplicates with `INSERT OR IGNORE`
+
+- **Admin Password Reset** - Fixed database persistence
+  - Added missing `saveDatabaseNow()` call after password update
+  - Password changes now properly persist to disk
+  - Backend server auto-loads updated database on restart
+
+### Added
+
+- **Error Display in Status Dialog** - Better user feedback
+  - Status change dialog now displays error messages
+  - Errors are cleared when reopening dialog
+  - Added console logging for debugging status updates
+
+- **Database Migration System** - Automatic schema updates
+  - Added migration for hawaladar → saraf renaming
+  - Migration for customer_accounts → customer_savings with saraf_id
+  - Automatic account_type value updates
+  - UNIQUE constraint migration for hawaladars table
+
+- **Cleanup Script** - Database maintenance tool
+  - Created `clean-duplicates.ts` for removing duplicate records
+  - Automatically updates transaction references when merging duplicates
+  - Preserves data integrity while cleaning
+
+### Changed
+
+- **Database Schema Improvements**
+  - Renamed `hawaladar_accounts` to `saraf_accounts` for consistency
+  - Renamed `customer_accounts` to `customer_savings` to reflect purpose
+  - Changed `balance` to `cash_balance` in saraf_accounts for clarity
+  - Updated all foreign key references and account_type enums
+
+- **Account Transaction Types**
+  - Changed from `'hawaladar'` to `'saraf_cash'`
+  - Changed from `'customer'` to `'customer_savings'`
+  - Updated all queries and controllers to use new values
+
+### Security
+
+- Fixed SQL injection risk in account transfer operations
+- Improved input validation and sanitization
+- Added atomic operations to prevent race conditions
+
+### Documentation
+
+- Updated README with complete API documentation
+- Added CHANGELOG for tracking all changes
+- Documented all database schema changes
+- Added migration documentation
+
+## Database Schema Changes
+
+### Tables Renamed
+- `hawaladar_accounts` → `saraf_accounts`
+- `customer_accounts` → `customer_savings`
+
+### Columns Renamed
+- `saraf_accounts.hawaladar_id` → `saraf_id`
+- `saraf_accounts.balance` → `cash_balance`
+
+### New Columns
+- `customer_savings.saraf_id` (foreign key to hawaladars)
+
+### Constraints Added
+- UNIQUE constraint on `hawaladars(name, location)`
+
+### Account Transaction Types
+- Old: `'hawaladar'` → New: `'saraf_cash'`
+- Old: `'customer'` → New: `'customer_savings'`
+
+## Migration Notes
+
+All migrations run automatically on backend startup. The database will be updated transparently without data loss.
+
+If you encounter issues:
+1. Stop the backend server
+2. Delete `backend/data/exchange.db`
+3. Run `npm run seed` to regenerate with fixed schema
+4. Restart backend server
+
+## Breaking Changes
+
+None for end users. All changes are backward compatible with automatic migrations.
+
+For developers:
+- Update any custom code referencing `hawaladar_accounts` to use `saraf_accounts`
+- Update account_type values from `'hawaladar'`/`'customer'` to `'saraf_cash'`/`'customer_savings'`
