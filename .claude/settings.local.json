@@ -4,7 +4,26 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npm run reset-admin:*)",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(ts-node:*)",
+      "Bash(set ADMIN_PASSWORD=admin123)",
+      "Bash(taskkill:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "Bash(sqlite3:*)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\Samini\\\\Documents\\\\Claude-Projects\\\\afghan-exchange-market\\\\frontend\\\\src\\\\i18n\\\\translations.ts'' | Select-Object -Skip 669 -First 665 | ForEach-Object { $_} | Out-File ''C:\\\\Users\\\\Samini\\\\Documents\\\\Claude-Projects\\\\afghan-exchange-market\\\\frontend\\\\src\\\\i18n\\\\locales\\\\fa_temp.ts'' -Encoding UTF8\")"
     ]
   }
 }

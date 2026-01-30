@@ -1,0 +1,14 @@
+
+> afghan-exchange-market-backend@1.0.0 seed
+> ts-node src/seed.ts
+
+Initializing database...
+Database initialized successfully
+Seeding data...
+
+*** GENERATED ADMIN PASSWORD ***
+Email: admin@afghanexchange.com
+Password: c9fac64d64dd683ed9292d6f4d528f9f
+SAVE THIS PASSWORD - it will not be shown again!
+
+Seed completed successfully!
