@@ -239,6 +239,17 @@ export const UserGuide = () => {
               <Typography variant="body2" paragraph color="text.secondary" sx={{ fontStyle: 'italic', pl: 2, borderLeft: '3px solid', borderColor: 'primary.main' }}>
                 {t('userGuide.hawalaExplainer')}
               </Typography>
+              <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 1, mb: 2, border: '1px solid', borderColor: 'info.200' }}>
+                <Typography variant="body2" fontWeight={600} color="info.dark" gutterBottom>
+                  ✨ {t('userGuide.whatsNewV3')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div">
+                  • <strong>{t('userGuide.v3Feature1')}</strong> - {t('userGuide.v3Feature1Desc')}<br />
+                  • <strong>{t('userGuide.v3Feature2')}</strong> - {t('userGuide.v3Feature2Desc')}<br />
+                  • <strong>{t('userGuide.v3Feature3')}</strong> - {t('userGuide.v3Feature3Desc')}<br />
+                  • <strong>{t('userGuide.v3Feature4')}</strong> - {t('userGuide.v3Feature4Desc')}
+                </Typography>
+              </Box>
               <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 1, mb: 2 }}>
                 <Typography variant="body2" fontWeight={600} color="warning.dark" gutterBottom>
                   ⚠️ {t('userGuide.securityNotes')}
