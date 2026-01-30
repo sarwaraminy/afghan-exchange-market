@@ -1,609 +1,887 @@
-# Hawala System - User Training Guide
-## New Security Features - Version 2.0
+# 📘 Hawala System - User Training Guide
+**Version 3.0** | Last Updated: January 30, 2026
+
+<div style="display: flex; gap: 20px;">
+
+<!-- SIDEBAR -->
+<div style="width: 250px; background: #f8fafc; padding: 20px; border-radius: 8px;">
+
+### 📑 Contents
+
+**Getting Started**
+- [Overview](#overview)
+- [Who This Guide Is For](#audience)
+- [What's New in v3.0](#whats-new)
+
+**Core Features**
+- [Navigation Guide](#navigation)
+- [Transaction Management](#transactions)
+  - [Creating Transactions](#creating-transaction)
+  - [Processing Payouts](#processing-payout)
+  - [Transaction Types](#transaction-types)
+- [Reports System](#reports)
+  - [Summary Dashboard](#reports-summary)
+  - [Net Position](#reports-net-position)
+  - [Unpaid Transactions](#reports-unpaid)
+  - [Commission Tracking](#reports-commission)
+  - [Cash Flow](#reports-cash-flow)
+  - [Transaction Aging](#reports-aging)
+
+**Administration**
+- [Security Best Practices](#security)
+- [Daily Operations](#daily-operations)
+- [Troubleshooting](#troubleshooting)
+
+**Reference**
+- [Quick Reference](#quick-reference)
+- [Glossary](#glossary)
+- [Support](#support)
+
+</div>
+
+<!-- MAIN CONTENT -->
+<div style="flex: 1;">
 
 ---
 
-## 🎯 Who Should Read This Guide
+## <a id="overview"></a>📖 Overview
 
-This guide is for:
-- **Hawaladar Staff**: Users who create and process hawala transactions
-- **Administrators**: Users who manage the system and generate reports
-- **Training Coordinators**: Staff responsible for onboarding new users
+The Afghan Exchange Hawala System is a comprehensive money transfer management platform designed for hawaladar operations in Afghanistan. This guide covers all features, workflows, and best practices for Version 3.0.
 
----
-
-## 📋 TABLE OF CONTENTS
-
-1. [What's New in Version 3.0](#whats-new)
-2. [Creating a Transaction](#creating-transaction)
-3. [Processing Payout](#processing-payout)
-4. [Transaction Expiration](#expiration)
-5. [Using Reports](#reports)
-6. [Security Best Practices](#security)
-7. [Troubleshooting](#troubleshooting)
+### System Purpose
+- Manage hawala money transfers between locations
+- Track transactions with unique reference codes
+- Monitor pending payouts and aging transactions
+- Generate comprehensive financial reports
+- Ensure secure and verified transactions
 
 ---
 
-## <a name="whats-new"></a>1. WHAT'S NEW IN VERSION 3.0 🆕
+## <a id="audience"></a>🎯 Who This Guide Is For
 
-### Major Changes:
+This training guide is designed for:
 
-#### **1.1 Separate Transaction Views**
-- **Outgoing (Sending Out):** View all transactions you're sending to other hawaladars
-- **Incoming (Receiving for Payout):** View all transactions coming to you for payout
-- **Why:** Easier to manage and track different transaction types
-
-#### **1.2 Manual Reference Code Entry** 📝
-- **Incoming transactions:** Enter the reference code provided by the sender
-- **Outgoing transactions:** System generates unique reference code automatically
-- **Format:** `HWL-XXX-YYYY-NNNNNN` (e.g., HWL-KBL-2026-000123)
-
-#### **1.3 Transaction Expiration** ⏰
-- Transactions expire after **7 days**
-- Expired transactions cannot be paid out
-- Receiver must contact sender for new transaction
-
-#### **1.4 New Reports Sidebar** 📊
-- **Summary View:** Quick overview of all hawala activity
-- **Sub-reports:** Access specific reports from sidebar
-  - Net Position Report
-  - Unpaid Transactions Report
-  - Commission Report
-  - Daily Cash Flow Report
-  - Transaction Aging Report
-
-#### **1.5 Enhanced Security** 🛡️
-- Identity verification with Tazkira (ID) and phone number
-- Double payout prevention
-- Complete audit trail
-- Transaction limits to prevent unauthorized large transfers
+| Role | Responsibilities |
+|------|------------------|
+| **Hawaladar Staff** | Create and process hawala transactions daily |
+| **Branch Managers** | Monitor operations and generate reports |
+| **Administrators** | Manage system settings and user access |
+| **Training Coordinators** | Onboard and train new staff members |
 
 ---
 
-## <a name="creating-transaction"></a>2. CREATING A TRANSACTION
+## <a id="whats-new"></a>🆕 What's New in Version 3.0
 
-### Step-by-Step Process:
-
-#### **Step 1: Navigate to Hawala Page**
-- Click on "Hawala" in the main menu
-- Click "New Transaction" button
-
-#### **Step 2: Select Transaction Direction**
-- **Outgoing (Sending Out)**: You are sending money OUT to another hawaladar location
-  - System will generate a unique reference code
-  - Share this code with the receiver
-- **Incoming (Receiving for Payout)**: You are receiving money IN from another hawaladar
-  - You must enter the reference code provided by the sender
-  - This code links the transaction to the original sender's transaction
-
-#### **Step 3: Enter Reference Code (For Incoming Transactions Only)**
-
-**If creating INCOMING transaction:**
-- Enter the reference code given by the sending hawaladar
-- Format: `HWL-XXX-YYYY-NNNNNN`
-- System will validate the code
-- This ensures the transaction is properly linked
-
-**If creating OUTGOING transaction:**
-- Skip this step - system generates code automatically
-
-#### **Step 4: Enter Transaction Details**
-
-**Sender Information:**
-- Full Name (required)
-- Phone Number (optional but recommended)
-- Sender Location (if using account)
-
-**Receiver Information:**
-- Full Name (required)
-- Phone Number (required)
-- Destination Location (required)
-
-**Transaction Amount:**
-- Enter the amount to send
-- Select currency
-- Choose commission type:
-  - **Add**: Sender pays extra commission
-  - **Deduct**: Receiver gets amount minus commission
-
-#### **Step 5: Review and Confirm**
-- Check all details carefully
-- Verify amounts and commission calculation
-- Click "Create Transaction"
-
-#### **Step 6: IMPORTANT - Save the Reference Code** 🔑
-
-**For OUTGOING transactions, the system will show:**
+### 1. **Separated Transaction Views**
 ```
-Transaction Created Successfully!
+✨ New Feature
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+View transactions in dedicated tabs:
+  • Outgoing Tab → Transactions you're sending
+  • Incoming Tab → Transactions you're receiving
 
-Reference Code: HWL-KBL-2026-000123
-Amount: $1,000
-Commission: $20
-Total: $1,020
-Receiver: Ahmed Khan
-Destination: Herat Hawaladar
+Why? Better organization and faster workflow
 ```
 
-**What to do:**
-1. **Write down the reference code** on the printed receipt
-2. **Give receipt to sender**
-3. Sender must share reference code with receiver
-4. Print receipt for your records
-
-#### **Step 7: Contact Receiving Hawaladar**
-- Call the destination hawaladar
-- Share: Reference Code, Amount, Receiver Name, Receiver Phone
-- Confirm they will expect the receiver to come for payout
-- Keep record of the call
-
----
-
-## <a name="processing-payout"></a>3. PROCESSING PAYOUT (RECEIVER SIDE)
-
-### When Receiver Arrives:
-
-#### **Step 1: Search for Transaction**
-- Click "Search by Code"
-- Enter the reference code
-- Transaction details will appear
-
-#### **Step 2: Verify Receiver Identity** 🆔
-
-**Required Documents:**
-- **Tazkira (ID Card)**: Required
-- **Phone Number**: Must match transaction
-
-**Verification Process:**
-1. Ask receiver for their Tazkira
-2. Check the name matches transaction
-3. Enter Tazkira number (6-20 digits)
-4. Verify phone number matches
-
-#### **Step 3: Complete Payout**
-
-**Enter in System:**
-- Tazkira Number: [Required] - Must match receiver's ID
-- Phone Number: [Required] - Must match transaction record
-
-**Click "Complete Payout"**
-
-**System will check:**
-- ✅ Transaction is not expired
-- ✅ Transaction not already paid
-- ✅ Tazkira and phone match records
-- ✅ You are authorized to process this transaction
-
-#### **Step 4: Hand Over Cash**
-- Give cash to receiver
-- Ask receiver to count
-- Get signature on receipt (if using paper records)
-
----
-
-## <a name="expiration"></a>4. TRANSACTION EXPIRATION ⏰
-
-### Default Expiration: 7 Days
-
-Every transaction expires **7 days** after creation.
-
-### Why Expiration?
-
-- Prevents old/stale transactions from being claimed
-- Reduces fraud risk
-- Keeps system clean and organized
-
-### What Happens When Transaction Expires?
-
-**If transaction is pending and expired:**
-- System shows error: "Transaction has expired"
-- Payout cannot be completed
-- Receiver must contact sender
-
-**If transaction is completed before expiration:**
-- No problem! Expiration only affects pending transactions
-
-### Handling Expired Transactions:
-
-**For Receiver:**
-1. Contact sender
-2. Sender creates **new transaction**
-3. Use new reference code and PIN
-
-**For Sender:**
-1. Create new transaction with same details
-2. New PIN will be generated
-3. Share new code and PIN with receiver
-
-### Checking Expiration Date:
-
-When searching for transaction, system shows:
+### 2. **Manual Reference Code Entry**
 ```
-Created: January 15, 2026
-Expires: January 22, 2026 (in 5 days)
-Status: Pending
+📝 Enhanced Feature
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Incoming transactions now require manual code entry
+  • Links directly to sender's transaction
+  • Prevents duplicate entries
+  • Ensures proper tracking
+
+Format: HWL-XXX-YYYY-NNNNNN
+Example: HWL-KBL-2026-000123
 ```
 
-**Alert Colors:**
-- 🟢 Green (>3 days remaining): OK
-- 🟡 Yellow (1-3 days remaining): Process soon
-- 🔴 Red (Expired): Cannot process
+### 3. **Reports Sidebar Navigation**
+```
+📊 New UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Access all reports from expandable sidebar:
+  📈 Summary (Default)
+  ⚖️ Net Position
+  ⏰ Unpaid Transactions
+  💰 Commission Report
+  💵 Daily Cash Flow
+  📅 Transaction Aging
+
+Click Reports → Select report type
+```
+
+### 4. **Simplified Security**
+```
+🔐 Updated
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Removed: Secret PIN system
+Now Using: Tazkira + Phone verification
+
+Simpler, faster, and equally secure
+```
 
 ---
 
-## <a name="reports"></a>5. USING REPORTS 📊
+## <a id="navigation"></a>🧭 Navigation Guide
 
-### How to Access Reports
+### Main Menu Structure
 
-**Navigation:**
-1. Go to Hawala page
-2. Click on **"Reports"** in the left sidebar
-3. Sidebar expands to show report options
+```
+┌─────────────────────────────────────┐
+│  AFGHAN EXCHANGE                    │
+├─────────────────────────────────────┤
+│  📊 Dashboard                       │
+│  💱 Rates                           │
+│  🔄 Converter                       │
+│  📈 Gold                            │
+│  💸 Hawala                          │ ← You are here
+│     ├─ Transactions                 │
+│     │   ├─ Outgoing                 │
+│     │   └─ Incoming                 │
+│     ├─ Hawaladars                   │
+│     ├─ Reports                      │ ← Expandable
+│     │   ├─ Summary                  │
+│     │   ├─ Net Position             │
+│     │   ├─ Unpaid                   │
+│     │   ├─ Commission               │
+│     │   ├─ Cash Flow                │
+│     │   └─ Aging                    │
+│     └─ Savings Accounts             │
+└─────────────────────────────────────┘
+```
 
-### 5.1 Summary (Default View)
-
-**What it shows:** Overall hawala system overview
-
-**Includes:**
-- Total Transactions count
-- Pending Transactions count
-- Completed Transactions count
-- Cancelled Transactions count
-- Reports by Agent (hawaladar)
-- Reports by Currency
-
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Summary" (selected by default)
-
-**Use case:** Quick overview of system health and activity
+### Quick Actions Bar
+Located at the top of each section:
+- **🔍 Search by Code** - Find transaction by reference code
+- **➕ New Transaction** - Create new hawala transfer
+- **📄 Print Receipt** - Generate transaction receipt
 
 ---
 
-### 5.2 Net Position Report
+## <a id="transactions"></a>💸 Transaction Management
 
-**What it shows:** Who owes money to whom between hawaladars
+### <a id="transaction-types"></a>Understanding Transaction Types
 
-**Use case:** Monthly reconciliation between hawaladars
+#### Outgoing Transactions (Sending)
+```
+You → Other Hawaladar
+━━━━━━━━━━━━━━━━━━━━━━
+When to use:
+  ✓ Customer wants to send money to another location
+  ✓ You are the sending hawaladar
 
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Net Position"
-3. Select currency filter (optional)
+What happens:
+  1. System generates reference code
+  2. You share code with receiver
+  3. Receiver can claim at destination
+```
+
+#### Incoming Transactions (Receiving)
+```
+Other Hawaladar → You
+━━━━━━━━━━━━━━━━━━━━━━
+When to use:
+  ✓ Another hawaladar sent money to your location
+  ✓ Customer will receive money from you
+
+What happens:
+  1. You enter reference code from sender
+  2. System validates and links transaction
+  3. You process payout to receiver
+```
+
+---
+
+## <a id="creating-transaction"></a>📝 Creating a Transaction
+
+### Step-by-Step Workflow
+
+#### Step 1: Access Transaction Form
+```
+Navigation:
+  Hawala → Transactions → New Transaction button
+```
+
+#### Step 2: Select Transaction Direction
+
+<table>
+<tr>
+<td width="50%">
+
+**Outgoing (Sending)**
+```
+┌─────────────────────────┐
+│ ⬆️ OUTGOING            │
+│ (Sending Out)           │
+├─────────────────────────┤
+│ You send money to       │
+│ another hawaladar       │
+│                         │
+│ System will generate    │
+│ reference code          │
+└─────────────────────────┘
+```
+
+</td>
+<td width="50%">
+
+**Incoming (Receiving)**
+```
+┌─────────────────────────┐
+│ ⬇️ INCOMING            │
+│ (Receiving for Payout)  │
+├─────────────────────────┤
+│ You receive money from  │
+│ another hawaladar       │
+│                         │
+│ Enter reference code    │
+│ from sender             │
+└─────────────────────────┘
+```
+
+</td>
+</tr>
+</table>
+
+#### Step 3: Enter Transaction Details
+
+**For INCOMING transactions:**
+```
+┌────────────────────────────────────────┐
+│ Reference Code *                       │
+│ ┌────────────────────────────────────┐ │
+│ │ HWL-XXX-YYYY-NNNNNN               │ │
+│ └────────────────────────────────────┘ │
+│ Enter code provided by sender          │
+└────────────────────────────────────────┘
+```
+
+**Transaction Information:**
+```
+┌─────────────────────────────────────────────┐
+│ SENDER INFORMATION                          │
+├─────────────────────────────────────────────┤
+│ Full Name:        [Ahmad Khan            ] │
+│ Phone Number:     [+93 700 123 456      ] │
+│ Sender Hawaladar: [Select...             ] │
+├─────────────────────────────────────────────┤
+│ RECEIVER INFORMATION                        │
+├─────────────────────────────────────────────┤
+│ Full Name:        [Hassan Ali           ] │
+│ Phone Number:     [+93 777 654 321      ] │
+│ Receiver Hawaladar: [Select...           ] │
+├─────────────────────────────────────────────┤
+│ AMOUNT & COMMISSION                         │
+├─────────────────────────────────────────────┤
+│ Amount:           [1,000                 ] │
+│ Currency:         [USD ▼                 ] │
+│ Commission Type:  [Add ▼                 ] │
+│ Commission Rate:  [2.0%                  ] │
+│                                             │
+│ Commission:       $20.00                    │
+│ Total:            $1,020.00                 │
+└─────────────────────────────────────────────┘
+```
+
+#### Step 4: Review and Confirm
+
+**Pre-Submission Checklist:**
+- [ ] Verify sender name spelling
+- [ ] Confirm phone numbers are correct
+- [ ] Check amount and currency
+- [ ] Review commission calculation
+- [ ] Verify hawaladar selection
+
+```
+┌──────────────────────────────────────┐
+│     [Cancel]    [Create Transaction] │
+└──────────────────────────────────────┘
+```
+
+#### Step 5: Save Reference Code (Outgoing Only)
+
+**Success Message:**
+```
+╔════════════════════════════════════════╗
+║  ✅ Transaction Created Successfully! ║
+╠════════════════════════════════════════╣
+║                                        ║
+║  Reference Code:  HWL-KBL-2026-000123  ║
+║  Amount:          $1,000.00            ║
+║  Commission:      $20.00               ║
+║  Total:           $1,020.00            ║
+║                                        ║
+║  Receiver:        Hassan Ali           ║
+║  Destination:     Herat Hawaladar      ║
+║                                        ║
+║  ⚠️  IMPORTANT:                        ║
+║  Write reference code on receipt       ║
+║  Share code with receiver              ║
+║                                        ║
+║     [Print Receipt]     [Close]        ║
+╚════════════════════════════════════════╝
+```
+
+#### Step 6: Contact Receiving Hawaladar
+
+**Communication Checklist:**
+```
+Call Checklist
+━━━━━━━━━━━━━━━━━━━━━━━━
+☐ Reference Code: HWL-KBL-2026-000123
+☐ Amount: $1,000.00
+☐ Receiver Name: Hassan Ali
+☐ Receiver Phone: +93 777 654 321
+☐ Expected arrival: [Date/Time]
+☐ Record call date/time
+```
+
+---
+
+## <a id="processing-payout"></a>💰 Processing Payout
+
+### When Receiver Arrives
+
+#### Step 1: Search for Transaction
+
+```
+┌─────────────────────────────────────┐
+│  🔍 Search by Reference Code        │
+├─────────────────────────────────────┤
+│  [HWL-KBL-2026-000123          ] 🔎 │
+└─────────────────────────────────────┘
+```
+
+**Transaction Display:**
+```
+╔════════════════════════════════════════╗
+║  Transaction Details                   ║
+╠════════════════════════════════════════╣
+║  Reference Code:  HWL-KBL-2026-000123  ║
+║  Status:          ⏳ Pending           ║
+║  Created:         Jan 25, 2026 10:30AM ║
+║  Expires:         Feb 01, 2026 10:30AM ║
+║  Days Pending:    5 days               ║
+║                                        ║
+║  Amount:          $1,000.00            ║
+║  Commission:      $20.00               ║
+║  Total:           $1,020.00            ║
+║                                        ║
+║  Receiver:        Hassan Ali           ║
+║  Phone:           +93 777 654 321      ║
+╚════════════════════════════════════════╝
+```
+
+#### Step 2: Verify Receiver Identity
+
+```
+Identity Verification
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Required Documents:
+  ✓ Tazkira (National ID Card)
+  ✓ Phone number verification
+
+Verification Process:
+  1. Check Tazkira photo matches person
+  2. Verify name matches transaction
+  3. Confirm Tazkira number
+  4. Verify phone number
+```
+
+**Payout Form:**
+```
+┌─────────────────────────────────────────┐
+│  Complete Payout                        │
+├─────────────────────────────────────────┤
+│  Tazkira Number: *                      │
+│  ┌────────────────────────────────────┐ │
+│  │ [Enter 6-20 digits             ]  │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│  Phone Number: *                        │
+│  ┌────────────────────────────────────┐ │
+│  │ [Must match: +93 777 654 321   ]  │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│  Receiver Name Verification:            │
+│  ┌────────────────────────────────────┐ │
+│  │ [Type: Hassan Ali              ]  │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│     [Cancel]    [Complete Payout]       │
+└─────────────────────────────────────────┘
+```
+
+#### Step 3: System Validation
+
+**Automatic Checks:**
+```
+System Verification
+━━━━━━━━━━━━━━━━━━━━━━
+✅ Transaction is not expired
+✅ Transaction not already paid
+✅ Tazkira number matches record
+✅ Phone number matches record
+✅ You are authorized hawaladar
+✅ All validations passed
+
+Status: Ready for payout
+```
+
+#### Step 4: Hand Over Cash
+
+**Final Steps:**
+```
+Cash Handover Protocol
+━━━━━━━━━━━━━━━━━━━━━━━━
+1. Count cash: $1,000.00
+2. Hand to receiver
+3. Ask receiver to count
+4. Get signature (optional)
+5. Mark transaction complete
+6. Print receipt for receiver
+```
+
+---
+
+## <a id="reports"></a>📊 Reports System
+
+### Accessing Reports
+
+```
+Navigation:
+  Hawala → Reports (sidebar) → Click to expand
+
+Reports Menu:
+  📈 Summary              ← Default view
+  ⚖️ Net Position
+  ⏰ Unpaid
+  💰 Commission
+  💵 Cash Flow
+  📅 Aging
+```
+
+---
+
+### <a id="reports-summary"></a>📈 Summary Dashboard (Default View)
+
+**What It Shows:**
+Overall system health and activity metrics
+
+**Key Metrics:**
+```
+┌────────────────┬────────────────┬────────────────┬────────────────┐
+│ Total Trans.   │ Pending        │ Completed      │ Cancelled      │
+│      245       │      18        │      220       │       7        │
+│                │                │                │                │
+│ All time       │ Need action    │ Successful     │ Voided         │
+└────────────────┴────────────────┴────────────────┴────────────────┘
+```
+
+**Reports by Agent:**
+```
+╔══════════════════════════════════════════════════════════╗
+║ Hawaladar          │ Sent    │ Received │ Commission    ║
+╠══════════════════════════════════════════════════════════╣
+║ Kabul Branch       │  45     │  38      │ $1,245.50     ║
+║ Herat Branch       │  38     │  42      │ $1,180.00     ║
+║ Kandahar Branch    │  29     │  31      │   $890.25     ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+**Use Case:** Daily overview and quick health check
+
+---
+
+### <a id="reports-net-position"></a>⚖️ Net Position Report
+
+**What It Shows:**
+Who owes money to whom between hawaladar pairs
+
+**Report Format:**
+```
+╔═════════════════════════════════════════════════════════════╗
+║ Pair                     │ Net Balance    │ Status          ║
+╠═════════════════════════════════════════════════════════════╣
+║ Kabul ↔ Herat           │ +$2,500.00     │ Kabul Creditor  ║
+║ Herat ↔ Kandahar        │ -$1,800.00     │ Herat Debtor    ║
+║ Kabul ↔ Kandahar        │     $0.00      │ Balanced        ║
+╚═════════════════════════════════════════════════════════════╝
+```
 
 **Example:**
 ```
-Kabul ↔ Herat
-Kabul sent to Herat: $10,000
-Herat sent to Kabul: $5,000
-Net: Herat owes Kabul $5,000
-Status: Herat is Debtor
+Kabul ↔ Herat Breakdown
+━━━━━━━━━━━━━━━━━━━━━━━━
+Kabul sent to Herat:   $10,000.00
+Herat sent to Kabul:   $ 7,500.00
+─────────────────────────────────
+Net Position:          $ 2,500.00
+Status: Herat owes Kabul
 ```
 
-**Key Metrics:**
-- Total Pairs: Number of hawaladar pairs with transactions
-- Creditor Positions: Hawaladars owed money
-- Debtor Positions: Hawaladars owing money
-- Balanced Positions: Even transactions both ways
+**Use Case:** Monthly reconciliation and settlement
 
 ---
 
-### 5.3 Unpaid Transactions Report
+### <a id="reports-unpaid"></a>⏰ Unpaid Transactions Report
 
-**What it shows:** All transactions waiting for payout
+**What It Shows:**
+All pending transactions with aging information
 
-**Use case:** Track pending transactions, follow up with receivers
+**Alert Levels:**
+```
+🟢 0-3 days    Normal - Recently created
+🟡 3-5 days    Warning - Follow up soon
+🔴 5-7 days    Urgent - Will expire soon!
+⚠️ 7+ days     Critical - Expired!
+```
 
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Unpaid"
-3. View all unpaid transactions
+**Report View:**
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║ Code              │ Receiver    │ Amount     │ Age    │ Alert     ║
+╠═══════════════════════════════════════════════════════════════════╣
+║ HWL-KBL-2026-001  │ Ahmad K.    │ $1,000.00  │ 2 days │ 🟢       ║
+║ HWL-HRT-2026-045  │ Hassan A.   │ $2,500.00  │ 4 days │ 🟡       ║
+║ HWL-KBL-2026-003  │ Fahim R.    │   $800.00  │ 6 days │ 🔴       ║
+║ HWL-KDH-2026-021  │ Rashid M.   │ $1,200.00  │ 8 days │ ⚠️       ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
 
-**Information shown:**
-- Reference Code
-- Sender and Receiver details
-- Amount and Currency
-- Days Pending
-- Expiration status
-
-**Alerts:**
-- 🟢 0-3 days: Normal
-- 🟡 3-5 days: Follow up soon
-- 🔴 5-7 days: Urgent - will expire!
-- ⚠️ 7+ days: Expired
-
-**Use case:** Daily monitoring, identify stuck transactions
-
----
-
-### 5.4 Commission Report
-
-**What it shows:** Commission earned by each hawaladar
-
-**Use case:** Financial reporting, performance tracking
-
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Commission"
-3. Select date range (optional)
-4. Select hawaladar filter (optional)
-
-**Metrics:**
-- Total Transactions per hawaladar
-- Total Commission earned
-- Currency breakdown
-- Average commission per transaction
-- Top earning hawaladar
-
-**Use for:**
-- Monthly financial reporting
-- Performance evaluation
-- Commission reconciliation
+**Use Case:** Daily monitoring and follow-ups
 
 ---
 
-### 5.5 Daily Cash Flow Report
+### <a id="reports-commission"></a>💰 Commission Report
 
-**What it shows:** Daily financial activity for hawaladars
+**What It Shows:**
+Commission earned by each hawaladar
 
-**Use case:** End-of-day reconciliation
+**Report Structure:**
+```
+╔════════════════════════════════════════════════════════════════╗
+║ Hawaladar          │ Transactions │ Commission  │ Avg/Trans   ║
+╠════════════════════════════════════════════════════════════════╣
+║ Kabul Branch       │     45       │ $1,245.50   │  $27.68     ║
+║ Herat Branch       │     42       │ $1,180.00   │  $28.10     ║
+║ Kandahar Branch    │     31       │   $890.25   │  $28.72     ║
+╠════════════════════════════════════════════════════════════════╣
+║ 🏆 Top Earner:     │ Kabul Branch │ $1,245.50   │             ║
+╚════════════════════════════════════════════════════════════════╝
+```
 
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Cash Flow"
-3. Select date
-4. Select hawaladar (or view all)
+**Filters Available:**
+- Date Range: Last 7/30/90 days or custom
+- Hawaladar: All or specific branch
+- Currency: All or specific currency
 
-**Shows:**
-- Opening Balance (start of day)
-- Cash In (received transactions)
-- Cash Out (sent transactions)
-- Net Flow (difference)
-- Closing Balance (end of day)
-- Transaction counts
-
-**Use for:**
-- Daily cash reconciliation
-- Identifying cash shortages/surpluses
-- End-of-day reporting
+**Use Case:** Financial reporting and performance tracking
 
 ---
 
-### 5.6 Transaction Aging Report
+### <a id="reports-cash-flow"></a>💵 Daily Cash Flow Report
 
-**What it shows:** Age distribution of pending transactions
+**What It Shows:**
+Daily financial activity for hawaladars
 
-**Use case:** Identify stuck or delayed transactions
+**Report Layout:**
+```
+╔════════════════════════════════════════════════════════════════════╗
+║ Hawaladar     │ Opening  │ Cash In  │ Cash Out │ Net    │ Closing ║
+╠════════════════════════════════════════════════════════════════════╣
+║ Kabul Branch  │ $5,000   │ $3,200   │ $2,800   │ +$400  │ $5,400  ║
+║               │          │ (12 txn) │ (10 txn) │        │         ║
+╠════════════════════════════════════════════════════════════════════╣
+║ Herat Branch  │ $4,200   │ $2,800   │ $3,500   │ -$700  │ $3,500  ║
+║               │          │ (10 txn) │ (14 txn) │        │         ║
+╚════════════════════════════════════════════════════════════════════╝
+```
 
-**How to access:**
-1. Click "Reports" in sidebar
-2. Click "Aging"
-3. View age bracket breakdown
+**Use Case:** End-of-day reconciliation
+
+---
+
+### <a id="reports-aging"></a>📅 Transaction Aging Report
+
+**What It Shows:**
+Age distribution of pending transactions
 
 **Age Brackets:**
-- **0-24 hours** (Fresh): Recently created, normal
-- **1-3 days** (Recent): Monitor, usually normal
-- **3-7 days** (Aging): Follow up needed
-- **7+ days** (Critical): Will expire, urgent action required
+```
+┌───────────────────────────────────────────────────────┐
+│  0-24 hours (Fresh)      │ 15 transactions │  35%    │
+│  🟢 Recently created     │ $45,000         │         │
+├───────────────────────────────────────────────────────┤
+│  1-3 days (Recent)       │ 18 transactions │  42%    │
+│  🔵 Monitor              │ $54,000         │         │
+├───────────────────────────────────────────────────────┤
+│  3-7 days (Aging)        │  7 transactions │  16%    │
+│  🟡 Follow up needed     │ $21,000         │         │
+├───────────────────────────────────────────────────────┤
+│  7+ days (Critical)      │  3 transactions │   7%    │
+│  🔴 URGENT!              │  $9,000         │         │
+└───────────────────────────────────────────────────────┘
+```
 
-**Metrics:**
-- Total Pending Transactions
-- Total Amount pending
-- Count per age bracket
-- Percentage distribution
+**Alert Message:**
+```
+⚠️  ACTION REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3 transactions are 7+ days old and will
+expire soon. Please follow up immediately!
+```
 
-**Alerts:**
-- Warning for 3-7 day old transactions
-- Error alert for 7+ day old transactions
-
-**Use for:**
-- Identifying problem transactions
-- Following up with receivers
-- Preventing expirations
-
----
-
-## <a name="security"></a>6. SECURITY BEST PRACTICES 🛡️
-
-### For Creating Transactions:
-
-1. **Always verify sender identity**
-   - Check Tazkira (National ID)
-   - Confirm phone number
-   - Record sender information accurately
-
-2. **Write reference code clearly**
-   - Print receipt immediately
-   - Ensure reference code is readable
-   - Give receipt to sender
-
-3. **Protect transaction information**
-   - Hand receipt to sender privately
-   - Don't display sensitive details where others can see
-   - Keep computer screen private
-
-4. **Double-check amounts**
-   - Confirm with sender before creating
-   - Review commission calculation
-   - Verify currency is correct
-
-5. **For incoming transactions**
-   - Enter reference code exactly as provided
-   - Verify code format is correct
-   - Confirm with sending hawaladar if unsure
-
-### For Processing Payouts:
-
-1. **Verify identity carefully**
-   - Check Tazkira photo matches person
-   - Confirm Tazkira number matches transaction
-   - Verify name matches exactly
-
-2. **Check phone number**
-   - Should match transaction record
-   - If different, call sender to verify
-   - Don't proceed if phone doesn't match
-
-3. **Confirm transaction details**
-   - Review amount and currency
-   - Check transaction hasn't expired
-   - Verify transaction status is "pending"
-
-4. **Don't rush**
-   - Take time to verify all details
-   - Better safe than sorry
-   - If suspicious, contact sender
-
-### General Security:
-
-1. **Log out when leaving computer**
-   - Don't leave system accessible
-   - Protect your account
-
-2. **Don't share your password**
-   - Each user has own account
-   - Accountability is important
-
-3. **Report suspicious activity**
-   - Multiple failed PIN attempts
-   - Unusual transaction patterns
-   - Contact administrator
-
-4. **Keep receipts organized**
-   - Filed by date
-   - Easy to reference if issues arise
+**Use Case:** Identify stuck transactions and prevent expirations
 
 ---
 
-## <a name="troubleshooting"></a>7. TROUBLESHOOTING ❓
+## <a id="security"></a>🔐 Security Best Practices
 
-### Issue 1: "Reference code already exists" Error (Incoming Transaction)
+### Creating Transactions
 
-**Cause:** The reference code you entered has already been used
+```
+Security Checklist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Verify sender Tazkira (ID)
+✅ Confirm phone number
+✅ Record information accurately
+✅ Print receipt immediately
+✅ Keep computer screen private
+✅ Double-check all amounts
+✅ Verify currency selection
+```
 
-**Solution:**
-1. Verify the reference code with sending hawaladar
-2. Check if transaction was already created
-3. If duplicate, use the existing transaction
-4. If code is wrong, get correct code from sender
+### Processing Payouts
 
-### Issue 2: "Transaction Expired" Error
+```
+Payout Security Protocol
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Check Tazkira photo matches person
+✅ Verify Tazkira number
+✅ Confirm phone matches record
+✅ Verify name matches exactly
+✅ Check transaction not expired
+✅ Review amount before handing cash
+✅ Don't rush - verify all details
+```
 
-**Cause:** More than 7 days since transaction creation
+### General Security
 
-**Solution:**
-1. Explain to receiver transaction expired
-2. Receiver should contact sender
-3. Sender creates new transaction
-4. Use new reference code and PIN
-
-### Issue 3: "Transaction Already Completed" Error
-
-**Cause:** Transaction was already paid out
-
-**Solution:**
-1. Check transaction history
-2. Verify who completed payout and when
-3. Possible duplicate claim - investigate
-
-### Issue 4: "Insufficient Balance" Error
-
-**Cause:** Not enough funds in hawaladar account
-
-**Solution:**
-1. Check current account balance
-2. Make deposit if needed
-3. Or process as cash transaction (no account deduction)
-
-### Issue 5: "Daily Limit Exceeded" Error
-
-**Cause:** Total transactions today exceed daily limit
-
-**Solution:**
-1. Wait until tomorrow
-2. Or contact administrator to increase limit
-3. Review if legitimate business need
-
-### Issue 6: Can't Find Transaction by Code
-
-**Cause:** Wrong code, or transaction not created yet
-
-**Solution:**
-1. Verify reference code format: HWL-XXX-YYYY-NNNNNN
-2. Check if all characters correct (O vs 0, I vs 1)
-3. Contact sending hawaladar to verify code
+```
+Workspace Security
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Log out when leaving desk
+✅ Don't share your password
+✅ Keep receipts organized
+✅ Report suspicious activity
+✅ Protect customer privacy
+✅ Secure reference codes
+```
 
 ---
 
-## 📞 SUPPORT & TRAINING
+## <a id="daily-operations"></a>📅 Daily Operations
 
-### Getting Help:
+### Morning Routine
+
+```
+☐ Log into system
+☐ Check dashboard for pending transactions
+☐ Review unpaid report for aging transactions
+☐ Check email/messages for updates
+☐ Prepare cash drawer
+```
+
+### During Day
+
+```
+☐ Verify Tazkira for every payout
+☐ Check phone number matches
+☐ Write reference codes clearly
+☐ Keep workspace secure
+☐ Monitor Reports > Unpaid regularly
+☐ Respond to hawaladar calls promptly
+```
+
+### Evening Routine
+
+```
+☐ Generate daily cash flow report
+☐ Reconcile cash drawer
+☐ Follow up on old pending transactions
+☐ Print end-of-day summary
+☐ Log out of system
+```
+
+---
+
+## <a id="troubleshooting"></a>🔧 Troubleshooting
+
+### Common Issues
+
+#### Issue: "Reference code already exists"
+
+```
+Problem: Duplicate reference code entry
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Solution:
+  1. Verify code with sending hawaladar
+  2. Check if transaction already created
+  3. Use existing transaction if duplicate
+  4. Get correct code from sender if wrong
+```
+
+#### Issue: "Transaction Expired"
+
+```
+Problem: More than 7 days since creation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Solution:
+  1. Explain to receiver transaction expired
+  2. Receiver contacts sender
+  3. Sender creates NEW transaction
+  4. Use new reference code
+```
+
+#### Issue: "Transaction Already Completed"
+
+```
+Problem: Attempting duplicate payout
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Solution:
+  1. Check transaction history
+  2. Verify who completed payout
+  3. Check date/time of completion
+  4. Investigate if suspicious
+```
+
+#### Issue: Can't Find Transaction
+
+```
+Problem: Invalid or incorrect reference code
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Solution:
+  1. Verify format: HWL-XXX-YYYY-NNNNNN
+  2. Check for typos (O vs 0, I vs 1)
+  3. Contact sending hawaladar
+  4. Confirm transaction was created
+```
+
+---
+
+## <a id="quick-reference"></a>📋 Quick Reference
+
+### Key Points to Remember
+
+```
+✓ Separate views: Outgoing vs Incoming
+✓ Manual code entry for incoming transactions
+✓ Transactions expire after 7 days
+✓ Verify Tazkira + Phone for payouts
+✓ Use Reports sidebar for all reports
+✓ Check Summary daily
+✓ Monitor Unpaid for aging transactions
+✓ Security is everyone's responsibility
+```
+
+### Transaction Statuses
+
+| Status | Icon | Meaning |
+|--------|------|---------|
+| Pending | ⏳ | Awaiting payout |
+| In Transit | 🚚 | Being processed |
+| Completed | ✅ | Successfully paid out |
+| Cancelled | ❌ | Voided transaction |
+| Expired | ⚠️ | Passed 7-day limit |
+
+### Reference Code Format
+
+```
+Format: HWL-LOC-YEAR-NUMBER
+Example: HWL-KBL-2026-000123
+
+Parts:
+  HWL = Hawala prefix
+  KBL = Location code (Kabul)
+  2026 = Year
+  000123 = Sequential number
+```
+
+---
+
+## <a id="glossary"></a>📚 Glossary
+
+| Term | Definition |
+|------|------------|
+| **Hawaladar** | Agent who processes money transfers |
+| **Tazkira** | Afghan National ID card |
+| **Reference Code** | Unique identifier for each transaction |
+| **Outgoing** | Transaction where you send money |
+| **Incoming** | Transaction where you receive money |
+| **Net Position** | Balance between hawaladar pairs |
+| **Aging** | Time elapsed since transaction creation |
+| **Payout** | Giving cash to receiver |
+
+---
+
+## <a id="support"></a>📞 Support & Training
+
+### Getting Help
 
 **For System Issues:**
 - Contact: IT Support / System Administrator
-- Email: support@example.com
+- Email: support@afghanexchange.com
 - Phone: [Support Number]
 
 **For Training:**
 - Review this guide regularly
-- Ask supervisor for help
+- Ask supervisor for assistance
 - Practice with test transactions
+- Attend training sessions
 
-### Additional Resources:
+### Additional Resources
 
-- **Quick Reference Card**: Printed guide for daily use
-- **Video Tutorials**: Available on training portal
-- **FAQ Document**: Common questions and answers
-
----
-
-## ✅ DAILY CHECKLIST
-
-**Morning:**
-- [ ] Log into system
-- [ ] Check pending transactions from yesterday
-- [ ] Review daily cash flow report
-
-**During Day:**
-- [ ] Verify Tazkira for every payout
-- [ ] Check phone number matches for payouts
-- [ ] Write reference codes clearly on receipts
-- [ ] Keep workspace secure
-- [ ] Monitor Reports > Unpaid for aging transactions
-
-**Evening:**
-- [ ] Generate end-of-day report
-- [ ] Reconcile cash
-- [ ] Follow up on old pending transactions
-- [ ] Log out of system
+- 📄 Quick Reference Card (Print version)
+- 🎥 Video Tutorials (Coming soon)
+- ❓ FAQ Document
+- 📊 Report Templates
 
 ---
 
-## 📝 KEY REMINDERS
+## 📝 Training Certification
 
-1. **Separate transaction views:** Outgoing (sending) and Incoming (receiving)
-2. **Manual reference code entry** for incoming transactions
-3. **Transactions expire after 7 days**
-4. **Always verify receiver identity** with Tazkira and phone
-5. **Use Reports sidebar** for quick access to all reports
-6. **Check Summary** daily for system overview
-7. **Monitor Unpaid report** for aging transactions
-8. **Security is everyone's responsibility**
+```
+╔═══════════════════════════════════════════════════╗
+║                                                   ║
+║  🎓 TRAINING CERTIFICATION                       ║
+║                                                   ║
+║  I have read and understood the Hawala System    ║
+║  Version 3.0 User Training Guide.               ║
+║                                                   ║
+║  Trainee Name: _____________________________     ║
+║                                                   ║
+║  Signature: ________________________________     ║
+║                                                   ║
+║  Date: _____________________________________     ║
+║                                                   ║
+║  Hawaladar Location: _______________________     ║
+║                                                   ║
+║  Supervisor Name: ___________________________    ║
+║                                                   ║
+║  Supervisor Signature: ______________________    ║
+║                                                   ║
+╚═══════════════════════════════════════════════════╝
+```
 
 ---
 
-**Training Version:** 3.0
-**Last Updated:** January 30, 2026
-**For Questions:** Contact your supervisor or system administrator
+**Document Information**
+- **Version:** 3.0
+- **Last Updated:** January 30, 2026
+- **Next Review:** April 30, 2026
+- **Maintained By:** Afghan Exchange Development Team
 
----
-
-**🎓 TRAINING CERTIFICATION**
-
-I have read and understood the Hawala System Version 3.0 User Training Guide.
-
-Name: _______________________
-Signature: ___________________
-Date: _______________________
-Hawaladar Location: _____________
-Supervisor Signature: _______________
+</div>
+</div>
