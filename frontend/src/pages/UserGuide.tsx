@@ -5,17 +5,18 @@ import {
   Paper,
   Typography,
   Box,
-  Tabs,
-  Tab,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
+  ListItemButton,
   Card,
   CardContent,
   Grid,
-  Chip
+  Chip,
+  Drawer,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   Home,
@@ -32,82 +33,95 @@ import {
   HelpOutline,
   Build,
   Security,
-  NewReleases
+  NewReleases,
+  Menu as MenuIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`user-guide-tabpanel-${index}`}
-      aria-labelledby={`user-guide-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
-    </div>
-  );
-};
 
 export const UserGuide = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState(0);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [selectedSection, setSelectedSection] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
-  return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Paper elevation={3}>
-        {/* Header */}
-        <Box sx={{ px: 4, pt: 4, pb: 2, borderBottom: 1, borderColor: 'divider', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-          <Typography variant="h3" fontWeight={700} gutterBottom>
-            {t('nav.userGuide')}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2, opacity: 0.95 }}>
-            {t('userGuide.subtitle')}
-          </Typography>
-          <Chip
-            label="Version 3.0"
-            sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
-          />
-        </Box>
+  const sections = [
+    { id: 0, label: t('userGuide.gettingStarted') || 'Getting Started', icon: <Home /> },
+    { id: 1, label: t('userGuide.coreFeatures') || 'Core Features', icon: <Dashboard /> },
+    { id: 2, label: t('nav.hawala'), icon: <SwapHoriz /> },
+    { id: 3, label: t('userGuide.faq'), icon: <HelpOutline /> },
+    { id: 4, label: t('userGuide.troubleshooting'), icon: <Build /> },
+    ...(user?.role === 'admin' ? [{ id: 5, label: t('admin.role'), icon: <Security /> }] : [])
+  ];
 
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{ px: 2 }}
-          >
-            <Tab icon={<Home />} iconPosition="start" label={t('userGuide.gettingStarted') || 'Getting Started'} />
-            <Tab icon={<Dashboard />} iconPosition="start" label={t('userGuide.coreFeatures') || 'Core Features'} />
-            <Tab icon={<SwapHoriz />} iconPosition="start" label={t('nav.hawala')} />
-            <Tab icon={<HelpOutline />} iconPosition="start" label={t('userGuide.faq')} />
-            <Tab icon={<Build />} iconPosition="start" label={t('userGuide.troubleshooting')} />
-            {user?.role === 'admin' && (
-              <Tab icon={<Security />} iconPosition="start" label={t('admin.role')} />
-            )}
-          </Tabs>
-        </Box>
+  const drawerContent = (
+    <Box sx={{ width: 280, height: '100%', bgcolor: 'background.paper' }}>
+      {/* Sidebar Header */}
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <Typography variant="h6" fontWeight={700} gutterBottom>
+          {t('nav.userGuide')}
+        </Typography>
+        <Chip
+          label="Version 3.0"
+          size="small"
+          sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+        />
+      </Box>
 
-        {/* Tab Content */}
-        <Box sx={{ px: 4, pb: 4 }}>
-          {/* Tab 0: Getting Started */}
-          <TabPanel value={selectedTab} index={0}>
+      {/* Navigation Menu */}
+      <List sx={{ py: 2 }}>
+        {sections.map((section) => (
+          <ListItem key={section.id} disablePadding>
+            <ListItemButton
+              selected={selectedSection === section.id}
+              onClick={() => {
+                setSelectedSection(section.id);
+                if (isMobile) setMobileOpen(false);
+              }}
+              sx={{
+                mx: 1,
+                borderRadius: 1,
+                mb: 0.5,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark'
+                  },
+                  '& .MuiListItemIcon-root': {
+                    color: 'white'
+                  }
+                }
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {section.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={section.label}
+                primaryTypographyProps={{ fontWeight: selectedSection === section.id ? 600 : 400 }}
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
+
+  const renderContent = () => {
+    switch (selectedSection) {
+      case 0:
+        return (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+              {t('userGuide.gettingStarted') || 'Getting Started'}
+            </Typography>
+
             <Box sx={{ mb: 4, p: 3, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.200' }}>
               <Typography variant="h6" fontWeight={600} gutterBottom color="info.dark">
                 {t('userGuide.welcomeTitle')}
@@ -120,73 +134,69 @@ export const UserGuide = () => {
               </Typography>
             </Box>
 
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" fontWeight={600} gutterBottom color="primary">
-                {t('userGuide.quickStart')}
-              </Typography>
-              <Typography variant="body1" paragraph>
-                {t('userGuide.quickStartDesc')}
-              </Typography>
+            <Typography variant="h5" fontWeight={600} gutterBottom sx={{ mt: 4 }}>
+              {t('userGuide.quickStart')}
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {t('userGuide.quickStartDesc')}
+            </Typography>
 
-              <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Dashboard sx={{ mr: 1, color: 'primary.main', fontSize: 36 }} />
-                        <Typography variant="h6" fontWeight={600}>{t('nav.dashboard')}</Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('userGuide.dashboardDesc')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <CurrencyExchange sx={{ mr: 1, color: 'primary.main', fontSize: 36 }} />
-                        <Typography variant="h6" fontWeight={600}>{t('nav.rates')}</Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('userGuide.ratesDesc')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <SwapHoriz sx={{ mr: 1, color: 'primary.main', fontSize: 36 }} />
-                        <Typography variant="h6" fontWeight={600}>{t('nav.hawala')}</Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('userGuide.hawalaDesc')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Calculate sx={{ mr: 1, color: 'primary.main', fontSize: 36 }} />
-                        <Typography variant="h6" fontWeight={600}>{t('nav.converter')}</Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('userGuide.converterDesc')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+            <Grid container spacing={3} sx={{ mt: 2 }}>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Dashboard sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
+                      <Typography variant="h6" fontWeight={600}>{t('nav.dashboard')}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('userGuide.dashboardDesc')}
+                    </Typography>
+                  </CardContent>
+                </Card>
               </Grid>
-            </Box>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <CurrencyExchange sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
+                      <Typography variant="h6" fontWeight={600}>{t('nav.rates')}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('userGuide.ratesDesc')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <SwapHoriz sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
+                      <Typography variant="h6" fontWeight={600}>{t('nav.hawala')}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('userGuide.hawalaDesc')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Calculate sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
+                      <Typography variant="h6" fontWeight={600}>{t('nav.converter')}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('userGuide.converterDesc')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
 
-            <Divider sx={{ my: 4 }} />
-
-            <Box sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+            <Box sx={{ mt: 4, p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
                 {t('userGuide.sysReq')}
               </Typography>
@@ -215,11 +225,16 @@ export const UserGuide = () => {
                 </Grid>
               </Grid>
             </Box>
-          </TabPanel>
+          </Box>
+        );
 
-          {/* Tab 1: Core Features */}
-          <TabPanel value={selectedTab} index={1}>
-            <Typography variant="h5" fontWeight={600} gutterBottom color="primary" sx={{ mb: 3 }}>
+      case 1:
+        return (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+              {t('userGuide.coreFeatures') || 'Core Features'}
+            </Typography>
+            <Typography variant="body1" paragraph color="text.secondary" sx={{ mb: 4 }}>
               {t('userGuide.detailedGuides')}
             </Typography>
 
@@ -385,9 +400,7 @@ export const UserGuide = () => {
               </CardContent>
             </Card>
 
-            <Divider sx={{ my: 4 }} />
-
-            <Typography variant="h5" fontWeight={600} gutterBottom color="primary">
+            <Typography variant="h5" fontWeight={600} gutterBottom color="primary" sx={{ mt: 4 }}>
               {t('userGuide.tips')}
             </Typography>
             <Grid container spacing={2}>
@@ -452,18 +465,18 @@ export const UserGuide = () => {
                 </Card>
               </Grid>
             </Grid>
-          </TabPanel>
+          </Box>
+        );
 
-          {/* Tab 2: Hawala */}
-          <TabPanel value={selectedTab} index={2}>
+      case 2:
+        return (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+              {t('nav.hawala')}
+            </Typography>
+
             <Card variant="outlined" sx={{ mb: 3, border: '2px solid', borderColor: 'primary.main' }}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <SwapHoriz sx={{ mr: 2, color: 'primary.main', fontSize: 32 }} />
-                  <Typography variant="h5" fontWeight={600}>
-                    {t('nav.hawala')}
-                  </Typography>
-                </Box>
                 <Typography variant="body1" paragraph>
                   {t('userGuide.hawalaGuide')}
                 </Typography>
@@ -521,7 +534,7 @@ export const UserGuide = () => {
               </Typography>
             </Box>
 
-            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mt: 3 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
               {t('userGuide.createTransfer')}
             </Typography>
             <List>
@@ -595,283 +608,245 @@ export const UserGuide = () => {
                 />
               </ListItem>
             </List>
-          </TabPanel>
+          </Box>
+        );
 
-          {/* Tab 3: FAQ */}
-          <TabPanel value={selectedTab} index={3}>
-            <Typography variant="h5" fontWeight={600} gutterBottom color="primary">
+      case 3:
+        return (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
               {t('userGuide.faq')}
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ1')}
-                    </Typography>
-                    <Typography variant="body2" paragraph style={{ whiteSpace: 'pre-line' }}>
-                      {t('userGuide.faqA1')}
-                    </Typography>
-                    <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 600 }}>
-                      {t('userGuide.faqA1Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ2')}
-                    </Typography>
-                    <Typography variant="body2" paragraph>
-                      {t('userGuide.faqA2Title')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      • {t('userGuide.faqA2Point1')}<br />
-                      • {t('userGuide.faqA2Point2')}<br />
-                      • {t('userGuide.faqA2Point3')}<br /><br />
-                      {t('userGuide.faqA2Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ3')}
-                    </Typography>
-                    <Typography variant="body2">
-                      {t('userGuide.faqA3Intro')}<br />
-                      • {t('userGuide.faqA3Point1')}<br />
-                      • {t('userGuide.faqA3Point2')}<br />
-                      • {t('userGuide.faqA3Point3')}<br />
-                      • {t('userGuide.faqA3Point4')}<br /><br />
-                      {t('userGuide.faqA3Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ4')}
-                    </Typography>
-                    <Typography variant="body2">
-                      {t('userGuide.faqA4Intro')}<br />
-                      {t('userGuide.faqA4Step1')}<br />
-                      {t('userGuide.faqA4Step2')}<br />
-                      {t('userGuide.faqA4Step3')}<br />
-                      {t('userGuide.faqA4Step4')}<br /><br />
-                      {t('userGuide.faqA4Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ5')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      • {t('userGuide.faqA5Pending')}<br />
-                      • {t('userGuide.faqA5InTransit')}<br />
-                      • {t('userGuide.faqA5Completed')}<br />
-                      • {t('userGuide.faqA5Cancelled')}<br /><br />
-                      {t('userGuide.faqA5Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
-                      {t('userGuide.faqQ6')}
-                    </Typography>
-                    <Typography variant="body2">
-                      {t('userGuide.faqA6Intro')}<br /><br />
-                      • {t('userGuide.faqA6Example1')}<br />
-                      • {t('userGuide.faqA6Example2')}<br />
-                      • {t('userGuide.faqA6Example3')}<br /><br />
-                      {t('userGuide.faqA6Note')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
+              {[1, 2, 3, 4, 5, 6].map((num) => (
+                <Grid item xs={12} key={num}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="subtitle1" fontWeight={600} gutterBottom color="primary">
+                        {t(`userGuide.faqQ${num}`)}
+                      </Typography>
+                      <Typography variant="body2" style={{ whiteSpace: 'pre-line' }}>
+                        {num === 1 && (
+                          <>
+                            {t('userGuide.faqA1')}
+                            <br /><br />
+                            <Typography component="span" color="warning.dark" sx={{ fontWeight: 600 }}>
+                              {t('userGuide.faqA1Note')}
+                            </Typography>
+                          </>
+                        )}
+                        {num === 2 && (
+                          <>
+                            {t('userGuide.faqA2Title')}<br />
+                            • {t('userGuide.faqA2Point1')}<br />
+                            • {t('userGuide.faqA2Point2')}<br />
+                            • {t('userGuide.faqA2Point3')}<br /><br />
+                            {t('userGuide.faqA2Note')}
+                          </>
+                        )}
+                        {num === 3 && (
+                          <>
+                            {t('userGuide.faqA3Intro')}<br />
+                            • {t('userGuide.faqA3Point1')}<br />
+                            • {t('userGuide.faqA3Point2')}<br />
+                            • {t('userGuide.faqA3Point3')}<br />
+                            • {t('userGuide.faqA3Point4')}<br /><br />
+                            {t('userGuide.faqA3Note')}
+                          </>
+                        )}
+                        {num === 4 && (
+                          <>
+                            {t('userGuide.faqA4Intro')}<br />
+                            {t('userGuide.faqA4Step1')}<br />
+                            {t('userGuide.faqA4Step2')}<br />
+                            {t('userGuide.faqA4Step3')}<br />
+                            {t('userGuide.faqA4Step4')}<br /><br />
+                            {t('userGuide.faqA4Note')}
+                          </>
+                        )}
+                        {num === 5 && (
+                          <>
+                            • {t('userGuide.faqA5Pending')}<br />
+                            • {t('userGuide.faqA5InTransit')}<br />
+                            • {t('userGuide.faqA5Completed')}<br />
+                            • {t('userGuide.faqA5Cancelled')}<br /><br />
+                            {t('userGuide.faqA5Note')}
+                          </>
+                        )}
+                        {num === 6 && (
+                          <>
+                            {t('userGuide.faqA6Intro')}<br /><br />
+                            • {t('userGuide.faqA6Example1')}<br />
+                            • {t('userGuide.faqA6Example2')}<br />
+                            • {t('userGuide.faqA6Example3')}<br /><br />
+                            {t('userGuide.faqA6Note')}
+                          </>
+                        )}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
             </Grid>
-          </TabPanel>
+          </Box>
+        );
 
-          {/* Tab 4: Troubleshooting */}
-          <TabPanel value={selectedTab} index={4}>
-            <Typography variant="h5" fontWeight={600} gutterBottom color="primary">
+      case 4:
+        return (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
               {t('userGuide.troubleshooting')}
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
-                      {t('userGuide.troubleLogin')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      <strong>{t('userGuide.troubleLoginSolution')}</strong><br />
-                      {t('userGuide.troubleLoginPoint1')}<br />
-                      {t('userGuide.troubleLoginPoint2')}<br />
-                      {t('userGuide.troubleLoginPoint3')}<br />
-                      {t('userGuide.troubleLoginPoint4')}<br />
-                      {t('userGuide.troubleLoginPoint5')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
-                      {t('userGuide.troublePrint')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      <strong>{t('userGuide.troublePrintSolution')}</strong><br />
-                      {t('userGuide.troublePrintPoint1')}<br />
-                      {t('userGuide.troublePrintPoint2')}<br />
-                      {t('userGuide.troublePrintPoint3')}<br />
-                      {t('userGuide.troublePrintPoint4')}<br />
-                      {t('userGuide.troublePrintPoint5')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
-                      {t('userGuide.troubleHawaladar')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      <strong>{t('userGuide.troubleHawaladarSolution')}</strong><br />
-                      {t('userGuide.troubleHawaladarPoint1')}<br />
-                      {t('userGuide.troubleHawaladarPoint2')}<br />
-                      {t('userGuide.troubleHawaladarPoint3')}<br />
-                      {t('userGuide.troubleHawaladarPoint4')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
-                      {t('userGuide.troubleRates')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      <strong>{t('userGuide.troubleRatesSolution')}</strong><br />
-                      {t('userGuide.troubleRatesPoint1')}<br />
-                      {t('userGuide.troubleRatesPoint2')}<br />
-                      {t('userGuide.troubleRatesPoint3')}<br />
-                      {t('userGuide.troubleRatesPoint4')}<br />
-                      {t('userGuide.troubleRatesPoint5')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
-                      {t('userGuide.troubleLanguage')}
-                    </Typography>
-                    <Typography variant="body2" component="div">
-                      <strong>{t('userGuide.troubleLanguageSolution')}</strong><br />
-                      {t('userGuide.troubleLanguagePoint1')}<br />
-                      {t('userGuide.troubleLanguagePoint2')}<br />
-                      {t('userGuide.troubleLanguagePoint3')}<br />
-                      {t('userGuide.troubleLanguagePoint4')}<br />
-                      {t('userGuide.troubleLanguagePoint5')}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
+              {['Login', 'Print', 'Hawaladar', 'Rates', 'Language'].map((type) => (
+                <Grid item xs={12} md={6} key={type}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" fontWeight={600} gutterBottom color="error.main">
+                        {t(`userGuide.trouble${type}`)}
+                      </Typography>
+                      <Typography variant="body2" component="div">
+                        <strong>{t(`userGuide.trouble${type}Solution`)}</strong><br />
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          t(`userGuide.trouble${type}Point${num}`) && (
+                            <span key={num}>
+                              {t(`userGuide.trouble${type}Point${num}`)}<br />
+                            </span>
+                          )
+                        ))}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
             </Grid>
-          </TabPanel>
+          </Box>
+        );
 
-          {/* Tab 5: Admin (Conditional) */}
-          {user?.role === 'admin' && (
-            <TabPanel value={selectedTab} index={5}>
-              <Card variant="outlined" sx={{ border: '2px solid', borderColor: 'secondary.main' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <People sx={{ mr: 2, color: 'secondary.main', fontSize: 32 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {t('admin.manageUsers')} ({t('admin.role')})
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" paragraph>
+      case 5:
+        return user?.role === 'admin' ? (
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+              {t('admin.manageUsers')} ({t('admin.role')})
+            </Typography>
+
+            <Card variant="outlined" sx={{ border: '2px solid', borderColor: 'secondary.main' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <People sx={{ mr: 2, color: 'secondary.main', fontSize: 32 }} />
+                  <Typography variant="h5" fontWeight={600}>
                     {t('userGuide.adminGuide')}
                   </Typography>
-                  <List>
-                    <ListItem>
+                </Box>
+                <List>
+                  {[1, 2, 3, 4].map((num) => (
+                    <ListItem key={num}>
                       <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
                       <ListItemText
-                        primary={t('userGuide.adminStep1')}
-                        secondary={t('userGuide.adminStep1Desc')}
+                        primary={t(`userGuide.adminStep${num}`)}
+                        secondary={t(`userGuide.adminStep${num}Desc`)}
                       />
                     </ListItem>
-                    <ListItem>
-                      <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
-                      <ListItemText
-                        primary={t('userGuide.adminStep2')}
-                        secondary={t('userGuide.adminStep2Desc')}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
-                      <ListItemText
-                        primary={t('userGuide.adminStep3')}
-                        secondary={t('userGuide.adminStep3Desc')}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
-                      <ListItemText
-                        primary={t('userGuide.adminStep4')}
-                        secondary={t('userGuide.adminStep4Desc')}
-                      />
-                    </ListItem>
-                  </List>
-                </CardContent>
-              </Card>
-            </TabPanel>
-          )}
-        </Box>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
+        ) : null;
 
-        {/* Footer */}
-        <Box sx={{ textAlign: 'center', mt: 2, p: 3, bgcolor: 'primary.50', borderTop: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight={600} color="primary" gutterBottom>
-            {t('userGuide.needHelpTitle')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {t('userGuide.needHelp')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('userGuide.needHelpDesc')}
-          </Typography>
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 70,
+            left: 16,
+            zIndex: 1300,
+            bgcolor: 'primary.main',
+            color: 'white',
+            borderRadius: '50%',
+            width: 48,
+            height: 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: 3
+          }}
+          onClick={handleDrawerToggle}
+        >
+          <MenuIcon />
         </Box>
-      </Paper>
-    </Container>
+      )}
+
+      {/* Sidebar Drawer */}
+      {isMobile ? (
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': { width: 280, boxSizing: 'border-box' }
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+      ) : (
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: 280,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: 280,
+              boxSizing: 'border-box',
+              position: 'relative',
+              height: '100%'
+            }
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+      )}
+
+      {/* Main Content */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          bgcolor: 'background.default',
+          p: 3,
+          overflow: 'auto',
+          height: '100%'
+        }}
+      >
+        <Container maxWidth="lg">
+          {renderContent()}
+
+          {/* Footer */}
+          <Paper sx={{ mt: 6, p: 3, textAlign: 'center', bgcolor: 'primary.50', borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight={600} color="primary" gutterBottom>
+              {t('userGuide.needHelpTitle')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              {t('userGuide.needHelp')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('userGuide.needHelpDesc')}
+            </Typography>
+          </Paper>
+        </Container>
+      </Box>
+    </Box>
   );
 };
