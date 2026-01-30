@@ -212,6 +212,7 @@ export interface HawalaTransaction {
   receiver_hawaladar_location_ps?: string;
   receiver_hawaladar_floor_number?: string;
   receiver_hawaladar_shop_number?: string;
+  receiver_hawaladar_phone?: string;
   amount: number;
   currency_id: number;
   currency_code: string;

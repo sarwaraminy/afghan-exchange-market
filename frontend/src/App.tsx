@@ -42,18 +42,21 @@ const ltrCache = createCache({
 });
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null; // Wait for auth to load
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null; // Wait for auth to load
   if (!isAuthenticated) return <Navigate to="/login" />;
   return <>{children}</>;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null; // Wait for auth to load
   return isAuthenticated ? <Navigate to="/dashboard" /> : <>{children}</>;
 };
 

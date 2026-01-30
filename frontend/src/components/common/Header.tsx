@@ -409,6 +409,7 @@ export const Header = () => {
                 PaperProps={{
                   sx: { minWidth: 220 }
                 }}
+                disableAutoFocusItem
               >
                 {/* User Profile Header */}
                 <MenuItem
@@ -441,7 +442,13 @@ export const Header = () => {
                     <People sx={{ mr: 1 }} /> {t('admin.manageUsers')}
                   </MenuItem>
                 )}
-                <MenuItem component={Link} to="/user-guide" onClick={() => setAnchorEl(null)}>
+                <MenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.open('/user-guide', '_blank', 'noopener,noreferrer');
+                    setAnchorEl(null);
+                  }}
+                >
                   <HelpOutline sx={{ mr: 1 }} /> {t('nav.userGuide') || 'User Guide'}
                 </MenuItem>
                 <Divider />

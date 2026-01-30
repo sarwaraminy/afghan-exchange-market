@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getDb } from '../config/database';
 import type { Customer, CustomerSavings, CustomerSavingsWithDetails } from '../types';
+import { sendSuccess, ErrorResponses } from '../utils/errorHandler';
 
 // Get all customers
 export const getCustomers = async (req: Request, res: Response) => {
@@ -11,10 +12,10 @@ export const getCustomers = async (req: Request, res: Response) => {
       ORDER BY created_at DESC
     `).all() as Customer[];
 
-    res.json({ success: true, data: customers });
+    sendSuccess(res, customers);
   } catch (error) {
     console.error('Error fetching customers:', error);
-    res.status(500).json({ error: 'Failed to fetch customers' });
+    ErrorResponses.DATABASE_ERROR(res, 'fetch customers');
   }
 };
 
@@ -29,13 +30,13 @@ export const getCustomerById = async (req: Request, res: Response) => {
     `).get(parseInt(id)) as Customer | undefined;
 
     if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return ErrorResponses.NOT_FOUND(res, 'Customer');
     }
 
-    res.json({ success: true, data: customer });
+    sendSuccess(res, customer);
   } catch (error) {
     console.error('Error fetching customer:', error);
-    res.status(500).json({ error: 'Failed to fetch customer' });
+    ErrorResponses.DATABASE_ERROR(res, 'fetch customer');
   }
 };
 
@@ -46,7 +47,7 @@ export const searchCustomers = async (req: Request, res: Response) => {
     const db = getDb();
 
     if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query required' });
+      return ErrorResponses.BAD_REQUEST(res, 'Search query required');
     }
 
     const searchTerm = `%${q}%`;
@@ -59,10 +60,10 @@ export const searchCustomers = async (req: Request, res: Response) => {
       ORDER BY created_at DESC
     `).all(searchTerm, searchTerm, searchTerm, searchTerm) as Customer[];
 
-    res.json({ success: true, data: customers });
+    sendSuccess(res, customers);
   } catch (error) {
     console.error('Error searching customers:', error);
-    res.status(500).json({ error: 'Failed to search customers' });
+    ErrorResponses.DATABASE_ERROR(res, 'search customers');
   }
 };
 

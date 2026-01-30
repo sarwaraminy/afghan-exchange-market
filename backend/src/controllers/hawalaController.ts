@@ -10,6 +10,11 @@ import {
   calculateExpirationDate,
   validateImmutableFields
 } from '../utils/hawalaHelpers';
+import {
+  isValidStatusTransition,
+  getInvalidTransitionMessage,
+  TransactionStatus
+} from '../utils/statusValidation';
 
 // ==================== HAWALADARS (AGENTS) ====================
 
@@ -233,6 +238,7 @@ export const getTransactions = (req: Request, res: Response): void => {
         rh.location_ps as receiver_hawaladar_location_ps,
         rh.floor_number as receiver_hawaladar_floor_number,
         rh.shop_number as receiver_hawaladar_shop_number,
+        rh.phone as receiver_hawaladar_phone,
         rh.province_id as receiver_province_id,
         rh.district_id as receiver_district_id,
         rp.name as receiver_province_name,
@@ -362,6 +368,7 @@ export const getTransactionById = (req: Request, res: Response): void => {
         rh.location_ps as receiver_hawaladar_location_ps,
         rh.floor_number as receiver_hawaladar_floor_number,
         rh.shop_number as receiver_hawaladar_shop_number,
+        rh.phone as receiver_hawaladar_phone,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -411,6 +418,7 @@ export const getTransactionByCode = (req: Request, res: Response): void => {
         rh.location_ps as receiver_hawaladar_location_ps,
         rh.floor_number as receiver_hawaladar_floor_number,
         rh.shop_number as receiver_hawaladar_shop_number,
+        rh.phone as receiver_hawaladar_phone,
         c.code as currency_code,
         c.name as currency_name,
         u.username as created_by_name,
@@ -865,18 +873,11 @@ export const updateTransactionStatus = (req: Request, res: Response): void => {
       return;
     }
 
-    // Validate status transition
-    const validTransitions: Record<string, string[]> = {
-      'pending': ['in_transit', 'cancelled'],
-      'in_transit': ['completed', 'cancelled'],
-      'completed': [],
-      'cancelled': []
-    };
-
-    if (!validTransitions[existing.status].includes(status)) {
+    // Validate status transition using state machine
+    if (!isValidStatusTransition(existing.status as TransactionStatus, status as TransactionStatus)) {
       res.status(400).json({
         success: false,
-        error: `Cannot change status from ${existing.status} to ${status}`
+        error: getInvalidTransitionMessage(existing.status as TransactionStatus, status as TransactionStatus)
       });
       return;
     }

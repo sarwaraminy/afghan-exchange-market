@@ -35,8 +35,27 @@ app.use('/uploads', (req, res, next) => {
 app.use(helmet());
 
 // CORS configuration - restrict to specific origins
+// Support comma-separated list of origins in CORS_ORIGIN env variable
+const getAllowedOrigins = (): string[] => {
+  const originsString = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  return originsString.split(',').map(origin => origin.trim());
+};
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    const allowedOrigins = getAllowedOrigins();
+
+    // Allow requests with no origin (like mobile apps or curl requests) in development
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -85,7 +104,21 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, error: 'Internal server error' });
+
+  // In development, send detailed error info; in production, send generic message
+  const errorResponse: { success: boolean; error: string; details?: string; stack?: string } = {
+    success: false,
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err.message || 'Internal server error'
+  };
+
+  // Include stack trace only in development
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.stack = err.stack;
+  }
+
+  res.status(500).json(errorResponse);
 });
 
 // Check if admin user exists

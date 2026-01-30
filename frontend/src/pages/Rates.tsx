@@ -86,9 +86,15 @@ export const Rates = () => {
         getMarkets(),
         getCurrencies()
       ]);
-      const uniqueMarkets = marketsData.filter(
-        (market, index, self) => index === self.findIndex((m) => m.id === market.id)
-      );
+      // Remove duplicates by id (keep first occurrence)
+      const seenIds = new Set<number>();
+      const uniqueMarkets = marketsData.filter(market => {
+        if (seenIds.has(market.id)) {
+          return false;
+        }
+        seenIds.add(market.id);
+        return true;
+      });
       setMarkets(uniqueMarkets);
       setCurrencies(currenciesData);
       if (uniqueMarkets.length > 0 && selectedMarket === null) {

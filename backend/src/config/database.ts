@@ -101,7 +101,7 @@ class StatementWrapper {
 }
 
 // Database wrapper
-class DatabaseWrapper {
+export class DatabaseWrapper {
   private db: SqlJsDatabase;
 
   constructor(database: SqlJsDatabase) {
@@ -164,7 +164,7 @@ export const initializeDatabase = async (): Promise<void> => {
 
     CREATE TABLE IF NOT EXISTS markets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
+      name TEXT NOT NULL UNIQUE,
       name_fa TEXT,
       name_ps TEXT,
       location TEXT,
@@ -951,6 +951,27 @@ export const initializeDatabase = async (): Promise<void> => {
     `);
   } catch (e) {
     // Indexes might already exist
+  }
+
+  // Migration: Create composite indexes for foreign keys (performance optimization)
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_sender_status ON hawala_transactions(sender_hawaladar_id, status);
+      CREATE INDEX IF NOT EXISTS idx_hawala_transactions_receiver_status ON hawala_transactions(receiver_hawaladar_id, status);
+      CREATE INDEX IF NOT EXISTS idx_customer_savings_customer_currency ON customer_savings(customer_id, currency_id);
+      CREATE INDEX IF NOT EXISTS idx_customer_savings_saraf_currency ON customer_savings(saraf_id, currency_id);
+      CREATE INDEX IF NOT EXISTS idx_account_transactions_account ON account_transactions(account_type, account_id);
+      CREATE INDEX IF NOT EXISTS idx_account_transactions_type_date ON account_transactions(transaction_type, created_at);
+      CREATE INDEX IF NOT EXISTS idx_hawaladars_province ON hawaladars(province_id, is_active);
+      CREATE INDEX IF NOT EXISTS idx_hawaladars_district ON hawaladars(district_id, is_active);
+      CREATE INDEX IF NOT EXISTS idx_districts_province ON districts(province_id);
+      CREATE INDEX IF NOT EXISTS idx_exchange_rates_market_currency ON exchange_rates(market_id, currency_id);
+      CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_price_alerts_user_active ON price_alerts(user_id, is_active);
+    `);
+    console.log('Created performance indexes for foreign keys');
+  } catch (e) {
+    console.error('Error creating performance indexes:', e);
   }
 
   // Save initial state

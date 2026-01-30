@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,11 +12,11 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Grid,
-  Chip,
   Card,
   CardContent,
-  Stack
+  Stack,
+  Chip,
+  Grid
 } from '@mui/material';
 import {
   Print,
@@ -35,15 +35,28 @@ import {
   AttachMoney
 } from '@mui/icons-material';
 import { getHawalaTransactionById } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import type { HawalaTransaction } from '../types';
+import { getLocalizedField } from '../utils/i18nHelpers';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// UI Constants
+const PRINT_WIDTH = '80mm';
+const HEADER_ICON_SIZE = 48;
+const HEADER_ICON_SIZE_PRINT = 32;
+const BODY_ICON_SIZE = 24;
+const BODY_ICON_SIZE_PRINT = 18;
+const SMALL_ICON_SIZE = 18;
+const TINY_ICON_SIZE = 14;
 
 export const HawalaReceipt = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
 
-  const [transaction, setTransaction] = useState<any | null>(null);
+  const [transaction, setTransaction] = useState<HawalaTransaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -105,6 +118,64 @@ export const HawalaReceipt = () => {
     }
   };
 
+  // Determine if this is an incoming or outgoing transaction
+  const isIncoming = useMemo(
+    () => transaction && user && transaction.receiver_hawaladar_id === user.hawaladar_id,
+    [transaction, user]
+  );
+
+  // Get the current hawaladar info for header
+  const currentHawaladar = useMemo(
+    () => isIncoming ? {
+      name: transaction?.receiver_hawaladar_name,
+      name_fa: transaction?.receiver_hawaladar_name_fa,
+      name_ps: transaction?.receiver_hawaladar_name_ps,
+      location: transaction?.receiver_hawaladar_location,
+      location_fa: transaction?.receiver_hawaladar_location_fa,
+      location_ps: transaction?.receiver_hawaladar_location_ps,
+      floor_number: transaction?.receiver_hawaladar_floor_number,
+      shop_number: transaction?.receiver_hawaladar_shop_number,
+      phone: transaction?.receiver_hawaladar_phone
+    } : {
+      name: transaction?.sender_hawaladar_name,
+      name_fa: transaction?.sender_hawaladar_name_fa,
+      name_ps: transaction?.sender_hawaladar_name_ps,
+      location: transaction?.sender_hawaladar_location,
+      location_fa: transaction?.sender_hawaladar_location_fa,
+      location_ps: transaction?.sender_hawaladar_location_ps,
+      floor_number: transaction?.sender_hawaladar_floor_number,
+      shop_number: transaction?.sender_hawaladar_shop_number,
+      phone: transaction?.sender_hawaladar_phone
+    },
+    [isIncoming, transaction]
+  );
+
+  // Get the other hawaladar info for body
+  const otherHawaladar = useMemo(
+    () => isIncoming ? {
+      name: transaction?.sender_hawaladar_name,
+      name_fa: transaction?.sender_hawaladar_name_fa,
+      name_ps: transaction?.sender_hawaladar_name_ps,
+      location: transaction?.sender_hawaladar_location,
+      location_fa: transaction?.sender_hawaladar_location_fa,
+      location_ps: transaction?.sender_hawaladar_location_ps,
+      floor_number: transaction?.sender_hawaladar_floor_number,
+      shop_number: transaction?.sender_hawaladar_shop_number,
+      phone: transaction?.sender_hawaladar_phone
+    } : {
+      name: transaction?.receiver_hawaladar_name,
+      name_fa: transaction?.receiver_hawaladar_name_fa,
+      name_ps: transaction?.receiver_hawaladar_name_ps,
+      location: transaction?.receiver_hawaladar_location,
+      location_fa: transaction?.receiver_hawaladar_location_fa,
+      location_ps: transaction?.receiver_hawaladar_location_ps,
+      floor_number: transaction?.receiver_hawaladar_floor_number,
+      shop_number: transaction?.receiver_hawaladar_shop_number,
+      phone: transaction?.receiver_hawaladar_phone
+    },
+    [isIncoming, transaction]
+  );
+
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
@@ -163,7 +234,7 @@ export const HawalaReceipt = () => {
         maxWidth="sm"
         sx={{
           py: 4,
-          '@media print': { py: 0, px: 0, maxWidth: '80mm' }
+          '@media print': { py: 0, px: 0, maxWidth: PRINT_WIDTH }
         }}
       >
         <Paper
@@ -181,18 +252,21 @@ export const HawalaReceipt = () => {
           {/* Modern Header with Gradient */}
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: isIncoming
+                ? 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)' // Green for incoming
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Purple for outgoing
               color: 'white',
               p: 4,
               textAlign: 'center',
               position: 'relative',
               '@media print': {
-                background: '#667eea',
+                background: isIncoming ? '#4caf50' : '#667eea',
                 p: 1.5
               }
             }}
           >
-            <ReceiptIcon sx={{ fontSize: 48, mb: 1, '@media print': { fontSize: 32, mb: 0.5 } }} />
+            <ReceiptIcon sx={{ fontSize: HEADER_ICON_SIZE, mb: 1, '@media print': { fontSize: HEADER_ICON_SIZE_PRINT, mb: 0.5 } }} />
+
             <Typography
               variant="h4"
               fontWeight={700}
@@ -200,43 +274,33 @@ export const HawalaReceipt = () => {
               sx={{ '@media print': { fontSize: '1.2rem', mb: 0.5 } }}
             >
               {
-                transaction.sender_hawaladar_name
-                  ? (i18n.language === 'fa'
-                      ? transaction.sender_hawaladar_name_fa || transaction.sender_hawaladar_name
-                      : i18n.language === 'ps'
-                      ? transaction.sender_hawaladar_name_ps || transaction.sender_hawaladar_name
-                      : transaction.sender_hawaladar_name)
+                currentHawaladar.name
+                  ? getLocalizedField(currentHawaladar, 'name', i18n.language)
                   : t('hawala.receipt')
               }
             </Typography>
             <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" flexWrap="wrap">
-              <LocationOn sx={{ fontSize: 18 }} />
+              <LocationOn sx={{ fontSize: SMALL_ICON_SIZE }} />
               <Typography variant="body2" sx={{ '@media print': { fontSize: '0.75rem' } }}>
-                {
-                  i18n.language === 'fa'
-                    ? transaction.sender_hawaladar_location_fa || transaction.sender_hawaladar_location
-                    : i18n.language === 'ps'
-                    ? transaction.sender_hawaladar_location_ps || transaction.sender_hawaladar_location
-                    : transaction.sender_hawaladar_location
-                }
+                {getLocalizedField(currentHawaladar, 'location', i18n.language)}
               </Typography>
             </Stack>
-            {(transaction.sender_hawaladar_floor_number || transaction.sender_hawaladar_shop_number) && (
+            {(currentHawaladar.floor_number || currentHawaladar.shop_number) && (
               <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" flexWrap="wrap" sx={{ mt: 0.5 }}>
-                <Store sx={{ fontSize: 18 }} />
+                <Store sx={{ fontSize: SMALL_ICON_SIZE }} />
                 <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
                   {[
-                    transaction.sender_hawaladar_floor_number && `${t('hawala.floor')}: ${transaction.sender_hawaladar_floor_number}`,
-                    transaction.sender_hawaladar_shop_number && `${t('hawala.shop')}: ${transaction.sender_hawaladar_shop_number}`
+                    currentHawaladar.floor_number && `${t('hawala.floor')}: ${currentHawaladar.floor_number}`,
+                    currentHawaladar.shop_number && `${t('hawala.shop')}: ${currentHawaladar.shop_number}`
                   ].filter(Boolean).join(', ')}
                 </Typography>
               </Stack>
             )}
-            {transaction.sender_hawaladar_phone && (
+            {currentHawaladar.phone && (
               <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" sx={{ mt: 0.5 }}>
-                <Phone sx={{ fontSize: 18 }} />
+                <Phone sx={{ fontSize: SMALL_ICON_SIZE }} />
                 <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
-                  {transaction.sender_hawaladar_phone}
+                  {currentHawaladar.phone}
                 </Typography>
               </Stack>
             )}
@@ -249,8 +313,8 @@ export const HawalaReceipt = () => {
               sx={{
                 mb: 3,
                 border: '2px solid',
-                borderColor: 'primary.light',
-                bgcolor: 'primary.50',
+                borderColor: isIncoming ? 'success.light' : 'primary.light',
+                bgcolor: isIncoming ? 'success.50' : 'primary.50',
                 '@media print': {
                   mb: 1,
                   bgcolor: 'transparent',
@@ -310,7 +374,7 @@ export const HawalaReceipt = () => {
                 >
                   <CardContent sx={{ '@media print': { p: 1 } }}>
                     <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
-                      <Person sx={{ color: 'success.main', fontSize: 24, '@media print': { fontSize: 18 } }} />
+                      <Person sx={{ color: 'success.main', fontSize: BODY_ICON_SIZE, '@media print': { fontSize: BODY_ICON_SIZE_PRINT } }} />
                       <Typography variant="subtitle1" fontWeight={700} sx={{ '@media print': { fontSize: '0.8rem' } }}>
                         {t('hawala.senderInfo')}
                       </Typography>
@@ -321,7 +385,7 @@ export const HawalaReceipt = () => {
                       </Typography>
                       {transaction.sender_phone && (
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Phone sx={{ fontSize: 14 }} />
+                          <Phone sx={{ fontSize: TINY_ICON_SIZE }} />
                           <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
                             {transaction.sender_phone}
                           </Typography>
@@ -348,7 +412,7 @@ export const HawalaReceipt = () => {
                 >
                   <CardContent sx={{ '@media print': { p: 1 } }}>
                     <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
-                      <Person sx={{ color: 'info.main', fontSize: 24, '@media print': { fontSize: 18 } }} />
+                      <Person sx={{ color: 'info.main', fontSize: BODY_ICON_SIZE, '@media print': { fontSize: BODY_ICON_SIZE_PRINT } }} />
                       <Typography variant="subtitle1" fontWeight={700} sx={{ '@media print': { fontSize: '0.8rem' } }}>
                         {t('hawala.receiverInfo')}
                       </Typography>
@@ -359,7 +423,7 @@ export const HawalaReceipt = () => {
                       </Typography>
                       {transaction.receiver_phone && (
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Phone sx={{ fontSize: 14 }} />
+                          <Phone sx={{ fontSize: TINY_ICON_SIZE }} />
                           <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
                             {transaction.receiver_phone}
                           </Typography>
@@ -371,8 +435,8 @@ export const HawalaReceipt = () => {
               </Grid>
             </Grid>
 
-            {/* Receiver Hawaladar */}
-            {transaction.receiver_hawaladar_name && (
+            {/* Other Hawaladar (Sender if incoming, Receiver if outgoing) */}
+            {otherHawaladar.name && (
               <Card
                 variant="outlined"
                 sx={{
@@ -387,43 +451,39 @@ export const HawalaReceipt = () => {
               >
                 <CardContent sx={{ '@media print': { p: 1 } }}>
                   <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                    <AccountBalance sx={{ color: 'primary.main', fontSize: 24, '@media print': { fontSize: 18 } }} />
+                    <AccountBalance sx={{ color: 'primary.main', fontSize: BODY_ICON_SIZE, '@media print': { fontSize: BODY_ICON_SIZE_PRINT } }} />
                     <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ '@media print': { fontSize: '0.8rem' } }}>
-                      {t('hawala.receiverAgent')}
+                      {isIncoming ? t('hawala.senderAgent') : t('hawala.receiverAgent')}
                     </Typography>
                   </Stack>
                   <Stack spacing={0.5}>
                     <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
-                      <strong>{t('hawala.name')}:</strong> {
-                        i18n.language === 'fa'
-                          ? transaction.receiver_hawaladar_name_fa || transaction.receiver_hawaladar_name
-                          : i18n.language === 'ps'
-                          ? transaction.receiver_hawaladar_name_ps || transaction.receiver_hawaladar_name
-                          : transaction.receiver_hawaladar_name
-                      }
+                      <strong>{t('hawala.name')}:</strong> {getLocalizedField(otherHawaladar, 'name', i18n.language)}
                     </Typography>
-                    {transaction.receiver_hawaladar_location && (
+                    {otherHawaladar.location && (
                       <Stack direction="row" spacing={0.5} alignItems="center">
-                        <LocationOn sx={{ fontSize: 14 }} />
+                        <LocationOn sx={{ fontSize: TINY_ICON_SIZE }} />
                         <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
-                          {
-                            i18n.language === 'fa'
-                              ? transaction.receiver_hawaladar_location_fa || transaction.receiver_hawaladar_location
-                              : i18n.language === 'ps'
-                              ? transaction.receiver_hawaladar_location_ps || transaction.receiver_hawaladar_location
-                              : transaction.receiver_hawaladar_location
-                          }
+                          {getLocalizedField(otherHawaladar, 'location', i18n.language)}
                         </Typography>
                       </Stack>
                     )}
-                    {(transaction.receiver_hawaladar_floor_number || transaction.receiver_hawaladar_shop_number) && (
+                    {(otherHawaladar.floor_number || otherHawaladar.shop_number) && (
                       <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Store sx={{ fontSize: 14 }} />
+                        <Store sx={{ fontSize: TINY_ICON_SIZE }} />
                         <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
                           {[
-                            transaction.receiver_hawaladar_floor_number && `${t('hawala.floor')}: ${transaction.receiver_hawaladar_floor_number}`,
-                            transaction.receiver_hawaladar_shop_number && `${t('hawala.shop')}: ${transaction.receiver_hawaladar_shop_number}`
+                            otherHawaladar.floor_number && `${t('hawala.floor')}: ${otherHawaladar.floor_number}`,
+                            otherHawaladar.shop_number && `${t('hawala.shop')}: ${otherHawaladar.shop_number}`
                           ].filter(Boolean).join(', ')}
+                        </Typography>
+                      </Stack>
+                    )}
+                    {otherHawaladar.phone && (
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Phone sx={{ fontSize: TINY_ICON_SIZE }} />
+                        <Typography variant="body2" sx={{ '@media print': { fontSize: '0.7rem' } }}>
+                          {otherHawaladar.phone}
                         </Typography>
                       </Stack>
                     )}

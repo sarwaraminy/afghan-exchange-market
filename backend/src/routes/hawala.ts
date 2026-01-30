@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
+import rateLimit from 'express-rate-limit';
 import {
   // Hawaladars
   getHawaladars,
@@ -30,6 +31,15 @@ import {
 import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
 
 const router = Router();
+
+// Strict rate limiting for reference code lookup to prevent brute force attacks
+const referenceLookupLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 requests per minute
+  message: { success: false, error: 'Too many lookup attempts. Please wait a minute and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // ==================== HAWALADARS (AGENTS) ====================
 
@@ -82,8 +92,8 @@ router.get('/transactions', authenticate, getTransactions);
 // Get transaction by ID
 router.get('/transactions/:id', authenticate, getTransactionById);
 
-// Get transaction by reference code
-router.get('/transactions/code/:code', authenticate, getTransactionByCode);
+// Get transaction by reference code (rate limited to prevent brute force)
+router.get('/transactions/code/:code', authenticate, referenceLookupLimiter, getTransactionByCode);
 
 // Create transaction (admin only)
 router.post(

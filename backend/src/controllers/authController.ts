@@ -175,23 +175,32 @@ export const uploadProfilePictureHandler = async (req: Request, res: Response): 
       return;
     }
 
-    // Get current profile picture to delete it
+    // Get current profile picture BEFORE saving new one
     const currentUser = db.prepare('SELECT profile_picture FROM users WHERE id = ?').get(userId) as { profile_picture: string | null } | undefined;
-    if (currentUser?.profile_picture) {
-      deleteProfilePicture(currentUser.profile_picture);
-    }
+    const oldPicture = currentUser?.profile_picture;
 
-    // Save validated image to disk with correct extension
+    // Save validated image to disk with correct extension FIRST
     const filename = saveProfilePicture(req.file.buffer, validation.format);
 
-    // Update user with new profile picture filename
-    db.prepare('UPDATE users SET profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(filename, userId);
+    try {
+      // Update user with new profile picture filename
+      db.prepare('UPDATE users SET profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(filename, userId);
 
-    const updatedUser = db.prepare(`
-      SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture FROM users WHERE id = ?
-    `).get(userId);
+      // Only delete old picture AFTER new one is successfully saved and DB updated
+      if (oldPicture) {
+        deleteProfilePicture(oldPicture);
+      }
 
-    res.json({ success: true, data: updatedUser });
+      const updatedUser = db.prepare(`
+        SELECT id, username, email, full_name, role, language, preferred_market_id, preferred_currency_id, profile_picture FROM users WHERE id = ?
+      `).get(userId);
+
+      res.json({ success: true, data: updatedUser });
+    } catch (dbError) {
+      // If database update fails, delete the newly uploaded file to avoid orphaned files
+      deleteProfilePicture(filename);
+      throw dbError;
+    }
   } catch (error) {
     console.error('Upload profile picture error:', error);
     res.status(500).json({ success: false, error: 'Failed to upload profile picture' });

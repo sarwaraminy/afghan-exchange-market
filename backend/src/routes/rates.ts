@@ -16,6 +16,11 @@ import {
   convert
 } from '../controllers/ratesController';
 import { authenticate, isAdmin, validateRequest } from '../middleware/auth';
+import {
+  validateUniqueMarketName,
+  validateUniqueCurrencyCode,
+  validateUniqueExchangeRate
+} from '../middleware/uniquenessValidation';
 
 const router = Router();
 
@@ -38,6 +43,7 @@ router.post(
     body('sell_rate').isFloat({ gt: 0 }).withMessage('Sell rate must be positive')
   ],
   validateRequest,
+  validateUniqueExchangeRate,
   createExchangeRate
 );
 
@@ -88,6 +94,7 @@ router.post(
   isAdmin,
   [body('name').trim().notEmpty().withMessage('Market name required')],
   validateRequest,
+  validateUniqueMarketName,
   createMarket
 );
 
@@ -100,6 +107,7 @@ router.post(
     body('name').trim().notEmpty().withMessage('Currency name required')
   ],
   validateRequest,
+  validateUniqueCurrencyCode,
   createCurrency
 );
 
