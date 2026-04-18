@@ -2,9 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
-  Container,
   Typography,
-  Paper,
   Box,
   MenuItem,
   TextField,
@@ -25,8 +23,6 @@ export const HawalaDailyCashFlowReportPage = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   useEffect(() => {
     fetchData();
@@ -207,24 +203,15 @@ export const HawalaDailyCashFlowReportPage = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('hawala.dailyCashFlowReport') || 'Daily Cash Flow Report'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('hawala.dailyCashFlowDescription') || 'View daily cash flow activity for hawaladars'}
-        </Typography>
-      </Box>
-
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'success.light' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CardContent sx={{ py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <TrendingUp fontSize="small" />
                 <Typography color="success.dark" variant="body2" fontWeight={600}>
                   {t('hawala.totalCashIn') || 'Total Cash In'}
@@ -239,10 +226,10 @@ export const HawalaDailyCashFlowReportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'error.light' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CardContent sx={{ py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <TrendingDown fontSize="small" />
                 <Typography color="error.dark" variant="body2" fontWeight={600}>
                   {t('hawala.totalCashOut') || 'Total Cash Out'}
@@ -257,9 +244,9 @@ export const HawalaDailyCashFlowReportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: summary.netFlow >= 0 ? 'success.light' : 'error.light' }}>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography
                 color={summary.netFlow >= 0 ? 'success.dark' : 'error.dark'}
                 gutterBottom
@@ -274,9 +261,9 @@ export const HawalaDailyCashFlowReportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.activeHawaladars') || 'Active Hawaladars'}
               </Typography>
@@ -288,26 +275,40 @@ export const HawalaDailyCashFlowReportPage = () => {
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+      {/* Table */}
+      <MaterialReactTable
+        columns={columns}
+        data={reports}
+        enableColumnActions={false}
+        enableColumnFilters={false}
+        enablePagination={true}
+        enableSorting={true}
+        enableBottomToolbar={true}
+        enableTopToolbar={true}
+        muiTableBodyRowProps={{ hover: true }}
+        state={{ isLoading: loading }}
+        initialState={{
+          density: 'compact',
+          sorting: [{ id: 'closing_balance', desc: true }]
+        }}
+        renderTopToolbarCustomActions={() => (
+          <Box sx={{ p: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <TextField
-              fullWidth
+              size="small"
               type="date"
               label={t('common.date') || 'Date'}
               value={selectedDate}
               onChange={(e) => handleFilterChange(e.target.value, selectedHawaladar)}
               InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 150 }}
             />
-          </Grid>
-          <Grid item xs={12} sm={6}>
             <TextField
               select
-              fullWidth
+              size="small"
               label={t('hawala.hawaladar') || 'Hawaladar'}
               value={selectedHawaladar}
               onChange={(e) => handleFilterChange(selectedDate, Number(e.target.value))}
+              sx={{ minWidth: 180 }}
             >
               <MenuItem value={0}>{t('common.all') || 'All Hawaladars'}</MenuItem>
               {hawaladars.map((hawaladar) => (
@@ -316,29 +317,9 @@ export const HawalaDailyCashFlowReportPage = () => {
                 </MenuItem>
               ))}
             </TextField>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Table */}
-      <Paper>
-        <MaterialReactTable
-          columns={columns}
-          data={reports}
-          enableColumnActions={false}
-          enableColumnFilters={false}
-          enablePagination={true}
-          enableSorting={true}
-          enableBottomToolbar={true}
-          enableTopToolbar={true}
-          muiTableBodyRowProps={{ hover: true }}
-          state={{ isLoading: loading }}
-          initialState={{
-            density: 'compact',
-            sorting: [{ id: 'closing_balance', desc: true }]
-          }}
-        />
-      </Paper>
-    </Container>
+          </Box>
+        )}
+      />
+    </Box>
   );
 };

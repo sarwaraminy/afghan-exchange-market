@@ -13,8 +13,6 @@ import {
   Box,
   Paper,
   Button,
-  Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
@@ -56,10 +54,11 @@ import {
   TrendingUp,
   AttachMoney,
   CalendarToday,
-  ChevronRight,
   ExpandMore,
   ExpandLess,
-  Dashboard
+  Dashboard,
+  ChevronLeft,
+  ChevronRight
 } from '@mui/icons-material';
 import {
   getHawaladars,
@@ -92,20 +91,27 @@ import {
 } from '../services/api';
 import type { Hawaladar, HawalaTransaction, HawalaReportSummary, HawalaAgentReport, HawalaCurrencyReport, Currency, Province, District, Customer, CustomerAccount, AccountTransaction } from '../types';
 import { Loading } from '../components/common/Loading';
+import { DraggableDialog } from '../components/common/DraggableDialog';
+import { DraggableDialogTitle } from '../components/common/DraggableDialogTitle';
 import { useAuth } from '../context/AuthContext';
+import { useCollapsibleSidebar, useMobileNav } from '../hooks';
+import { StatCard } from '../components/common/StatCard';
+import { DialogFooter } from '../components/common/DialogFooter';
+import { CollapsibleSidebar, type SidebarMenuItem } from '../components/common/CollapsibleSidebar';
 
 export const Hawala = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isMobile } = useMobileNav();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useCollapsibleSidebar('hawalaSidebarOpen');
 
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   const [selectedSection, setSelectedSection] = useState(0);
   const [transactionTab, setTransactionTab] = useState(0); // 0 = Sending, 1 = Receiving
+  const [savingsTab, setSavingsTab] = useState(0); // 0 = Customers, 1 = Savings Accounts
   const [selectedReport, setSelectedReport] = useState<string | null>(null); // null = summary view, or specific report name
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -211,22 +217,61 @@ export const Hawala = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [transactionNotes, setTransactionNotes] = useState('');
 
-  const menuItems = [
-    { label: t('hawala.transactions'), icon: <Receipt /> },
-    { label: t('hawala.agents'), icon: <People /> },
+  const sidebarItems: SidebarMenuItem[] = [
     {
+      id: 0,
+      label: t('hawala.transactions'),
+      icon: <Receipt />,
+      onClick: () => {
+        setSelectedSection(0);
+        setReportsExpanded(false);
+      },
+      selected: selectedSection === 0
+    },
+    {
+      id: 1,
+      label: t('hawala.agents'),
+      icon: <People />,
+      onClick: () => {
+        setSelectedSection(1);
+        setReportsExpanded(false);
+      },
+      selected: selectedSection === 1
+    },
+    {
+      id: 2,
       label: t('hawala.reports'),
       icon: <Assessment />,
+      onClick: () => {
+        if (selectedSection === 2) {
+          setReportsExpanded(!reportsExpanded);
+        } else {
+          setSelectedSection(2);
+          setReportsExpanded(true);
+          setSelectedReport(null);
+        }
+      },
+      selected: selectedSection === 2,
+      expanded: reportsExpanded,
       subItems: [
-        { label: t('hawala.summary') || 'Summary', value: null },
-        { label: t('hawala.netPosition'), icon: <Balance fontSize="small" />, value: 'netPosition' },
-        { label: t('hawala.unpaid'), icon: <Schedule fontSize="small" />, value: 'unpaid' },
-        { label: t('hawala.commission'), icon: <AttachMoney fontSize="small" />, value: 'commission' },
-        { label: t('hawala.cashFlow'), icon: <TrendingUp fontSize="small" />, value: 'cashFlow' },
-        { label: t('hawala.aging'), icon: <CalendarToday fontSize="small" />, value: 'aging' }
+        { id: 'summary', label: t('hawala.summary') || 'Summary', icon: <Dashboard fontSize="small" />, onClick: () => setSelectedReport(null), selected: selectedReport === null },
+        { id: 'netPosition', label: t('hawala.netPosition'), icon: <Balance fontSize="small" />, onClick: () => setSelectedReport('netPosition'), selected: selectedReport === 'netPosition' },
+        { id: 'unpaid', label: t('hawala.unpaid'), icon: <Schedule fontSize="small" />, onClick: () => setSelectedReport('unpaid'), selected: selectedReport === 'unpaid' },
+        { id: 'commission', label: t('hawala.commission'), icon: <AttachMoney fontSize="small" />, onClick: () => setSelectedReport('commission'), selected: selectedReport === 'commission' },
+        { id: 'cashFlow', label: t('hawala.cashFlow'), icon: <TrendingUp fontSize="small" />, onClick: () => setSelectedReport('cashFlow'), selected: selectedReport === 'cashFlow' },
+        { id: 'aging', label: t('hawala.aging'), icon: <CalendarToday fontSize="small" />, onClick: () => setSelectedReport('aging'), selected: selectedReport === 'aging' }
       ]
     },
-    { label: t('hawala.savingsAccount'), icon: <AccountBalance /> }
+    {
+      id: 3,
+      label: t('hawala.savingsAccount'),
+      icon: <AccountBalance />,
+      onClick: () => {
+        setSelectedSection(3);
+        setReportsExpanded(false);
+      },
+      selected: selectedSection === 3
+    }
   ];
 
   const fetchData = async () => {
@@ -727,13 +772,10 @@ export const Hawala = () => {
         is_active: hawaladarForm.is_active
       };
 
-      let hawaladarId: number;
       if (selectedHawaladar) {
-        const updatedHawaladar = await updateHawaladar(selectedHawaladar.id, data);
-        hawaladarId = updatedHawaladar.id;
+        await updateHawaladar(selectedHawaladar.id, data);
       } else {
-        const newHawaladar = await createHawaladar(data);
-        hawaladarId = newHawaladar.id;
+        await createHawaladar(data);
       }
 
       setHawaladarDialog(false);
@@ -1318,135 +1360,49 @@ export const Hawala = () => {
     [t, i18n.language]
   );
 
-  const sidebar = (
-    <Paper
-      elevation={2}
-      sx={{
-        width: isMobile ? '100%' : 250,
-        flexShrink: 0,
-        borderRadius: 2,
-        overflow: 'hidden'
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: '#1e3a5f',
-          color: 'white',
-          p: 2
-        }}
-      >
-        <Typography variant="subtitle1" fontWeight={600}>
-          {t('hawala.title')}
-        </Typography>
-      </Box>
-      <List disablePadding>
-        {menuItems.map((item, index) => (
-          <Box key={index}>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={selectedSection === index && !item.subItems}
-                onClick={() => {
-                  if (item.subItems) {
-                    if (selectedSection === index) {
-                      setReportsExpanded(!reportsExpanded);
-                    } else {
-                      setSelectedSection(index);
-                      setReportsExpanded(true);
-                      setSelectedReport(null); // Show summary by default
-                    }
-                  } else {
-                    setSelectedSection(index);
-                    setReportsExpanded(false);
-                  }
-                }}
-                sx={{
-                  py: 1.5,
-                  '&.Mui-selected': {
-                    bgcolor: '#e3f2fd',
-                    borderRight: '3px solid #1e3a5f',
-                    '&:hover': {
-                      bgcolor: '#bbdefb',
-                    },
-                  },
-                  '&:hover': {
-                    bgcolor: '#f5f5f5',
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 40,
-                    color: selectedSection === index ? '#1e3a5f' : 'text.secondary',
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: selectedSection === index ? 600 : 400,
-                    color: selectedSection === index ? '#1e3a5f' : 'text.primary',
-                  }}
-                />
-                {item.subItems && (
-                  <Box sx={{ color: selectedSection === index ? '#1e3a5f' : 'text.secondary' }}>
-                    {selectedSection === index && reportsExpanded ? <ExpandLess /> : <ExpandMore />}
-                  </Box>
-                )}
-              </ListItemButton>
-            </ListItem>
+  // Custom renderer for the Reports submenu
+  const renderReportsSubmenu = (item: SidebarMenuItem) => {
+    if (!item.expanded || !item.subItems) return null;
 
-            {/* Sub-items for Reports */}
-            {item.subItems && selectedSection === index && reportsExpanded && (
-              <List disablePadding sx={{ bgcolor: '#f5f5f5' }}>
-                {item.subItems.map((subItem: any) => (
-                  <ListItem key={subItem.value || 'summary'} disablePadding>
-                    <ListItemButton
-                      selected={selectedReport === subItem.value}
-                      onClick={() => setSelectedReport(subItem.value)}
-                      sx={{
-                        pl: 6,
-                        py: 1,
-                        '&.Mui-selected': {
-                          bgcolor: '#bbdefb',
-                          borderRight: '3px solid #1976d2',
-                          '&:hover': {
-                            bgcolor: '#90caf9',
-                          },
-                        },
-                        '&:hover': {
-                          bgcolor: '#e3f2fd',
-                        },
-                      }}
-                    >
-                      {subItem.icon && (
-                        <ListItemIcon sx={{ minWidth: 32, color: selectedReport === subItem.value ? '#1976d2' : 'text.secondary' }}>
-                          {subItem.icon}
-                        </ListItemIcon>
-                      )}
-                      {!subItem.icon && (
-                        <ListItemIcon sx={{ minWidth: 32, color: selectedReport === subItem.value ? '#1976d2' : 'text.secondary' }}>
-                          <Dashboard fontSize="small" />
-                        </ListItemIcon>
-                      )}
-                      <ListItemText
-                        primary={subItem.label}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontWeight: selectedReport === subItem.value ? 600 : 400,
-                          color: selectedReport === subItem.value ? '#1976d2' : 'text.primary',
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
+    return (
+      <List disablePadding sx={{ bgcolor: '#f5f5f5' }}>
+        {item.subItems.map((subItem) => (
+          <ListItem key={subItem.id} disablePadding>
+            <ListItemButton
+              selected={subItem.selected}
+              onClick={subItem.onClick}
+              sx={{
+                pl: 6,
+                py: 1,
+                '&.Mui-selected': {
+                  bgcolor: '#bbdefb',
+                  borderRight: '3px solid #1976d2',
+                  '&:hover': {
+                    bgcolor: '#90caf9',
+                  },
+                },
+                '&:hover': {
+                  bgcolor: '#e3f2fd',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32, color: subItem.selected ? '#1976d2' : 'text.secondary' }}>
+                {subItem.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={subItem.label}
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  fontWeight: subItem.selected ? 600 : 400,
+                  color: subItem.selected ? '#1976d2' : 'text.primary',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
         ))}
       </List>
-    </Paper>
-  );
+    );
+  };
 
   const renderTransactions = () => {
     // Filter transactions based on selected tab
@@ -1459,123 +1415,10 @@ export const Hawala = () => {
     });
 
     return (
-      <>
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600}>{t('hawala.transactions')}</Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              startIcon={!isMobile ? <Search /> : undefined}
-              onClick={() => setSearchDialog(true)}
-              size={isMobile ? 'small' : 'medium'}
-            >
-              {isMobile ? <Search /> : t('hawala.searchByCode')}
-            </Button>
-            {isAdmin && (
-              <Button
-                variant="contained"
-                startIcon={!isMobile ? <Add /> : undefined}
-                onClick={handleNewTransaction}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                {isMobile ? <Add /> : t('hawala.newTransaction')}
-              </Button>
-            )}
-          </Box>
-        </Box>
-
-        {/* Transaction Type Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs
-            value={transactionTab}
-            onChange={(_event, newValue) => setTransactionTab(newValue)}
-            sx={{
-              '& .MuiTab-root': {
-                minHeight: 48,
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-              },
-            }}
-          >
-            <Tab
-              icon={<ArrowUpward fontSize="small" />}
-              iconPosition="start"
-              label={t('hawala.outgoing')}
-              sx={{ gap: 1 }}
-            />
-            <Tab
-              icon={<ArrowDownward fontSize="small" />}
-              iconPosition="start"
-              label={t('hawala.incoming')}
-              sx={{ gap: 1 }}
-            />
-          </Tabs>
-        </Box>
-
-        <Box sx={{ overflowX: 'auto', width: '100%' }}>
-          <MaterialReactTable
-            columns={transactionColumns}
-            data={filteredTransactions}
-            enablePagination
-            enableSorting
-            enableGlobalFilter
-            enableDensityToggle
-            initialState={{
-              density: isMobile ? 'compact' : 'comfortable',
-              pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-            }}
-            muiTableContainerProps={{
-              sx: { maxWidth: '100%' }
-            }}
-            muiTableProps={{
-              sx: {
-                direction: isRtl ? 'rtl' : 'ltr',
-                minWidth: isMobile ? 600 : 800
-              }
-            }}
-            muiTableHeadCellProps={{
-              sx: {
-                py: isMobile ? 1 : 1.5,
-                px: isMobile ? 1 : 2,
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
-                fontWeight: 600
-              }
-            }}
-            muiTableBodyCellProps={{
-              sx: {
-                py: isMobile ? 0.5 : 1,
-                px: isMobile ? 1 : 2
-              }
-            }}
-            muiTopToolbarProps={{
-              sx: { flexWrap: 'wrap', gap: 1 }
-            }}
-          />
-        </Box>
-      </>
-    );
-  };
-
-  const renderHawaladars = () => (
-    <>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600}>{t('hawala.agents')}</Typography>
-        {isAdmin && (
-          <Button
-            variant="contained"
-            startIcon={!isMobile ? <Add /> : undefined}
-            onClick={handleNewHawaladar}
-            size={isMobile ? 'small' : 'medium'}
-          >
-            {isMobile ? <Add /> : t('hawala.addAgent')}
-          </Button>
-        )}
-      </Box>
-      <Box sx={{ overflowX: 'auto', width: '100%' }}>
+      <Box>
         <MaterialReactTable
-          columns={hawaladarColumns}
-          data={hawaladars}
+          columns={transactionColumns}
+          data={filteredTransactions}
           enablePagination
           enableSorting
           enableGlobalFilter
@@ -1590,7 +1433,7 @@ export const Hawala = () => {
           muiTableProps={{
             sx: {
               direction: isRtl ? 'rtl' : 'ltr',
-              minWidth: isMobile ? 450 : 650
+              minWidth: isMobile ? 600 : 800
             }
           }}
           muiTableHeadCellProps={{
@@ -1607,9 +1450,137 @@ export const Hawala = () => {
               px: isMobile ? 1 : 2
             }
           }}
+          muiTopToolbarProps={{
+            sx: { flexWrap: 'wrap', gap: 1 }
+          }}
+          renderTopToolbarCustomActions={() => (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: isMobile ? 'stretch' : 'center',
+              width: '100%',
+              gap: 2,
+              p: 1
+            }}>
+              {/* Transaction Type Tabs */}
+              <Tabs
+                value={transactionTab}
+                onChange={(_event, newValue) => setTransactionTab(newValue)}
+                sx={{
+                  '& .MuiTab-root': {
+                    minHeight: 42,
+                    textTransform: 'none',
+                    fontSize: isMobile ? '0.85rem' : '0.95rem',
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                <Tab
+                  icon={<ArrowUpward fontSize="small" />}
+                  iconPosition="start"
+                  label={t('hawala.outgoing')}
+                  sx={{ gap: 0.5 }}
+                />
+                <Tab
+                  icon={<ArrowDownward fontSize="small" />}
+                  iconPosition="start"
+                  label={t('hawala.incoming')}
+                  sx={{ gap: 0.5 }}
+                />
+              </Tabs>
+
+              {/* Action Buttons */}
+              <Box sx={{
+                display: 'flex',
+                gap: 1,
+                flexWrap: 'wrap',
+                justifyContent: isMobile ? 'stretch' : 'flex-end'
+              }}>
+                <Button
+                  variant="outlined"
+                  startIcon={!isMobile ? <Search /> : undefined}
+                  onClick={() => setSearchDialog(true)}
+                  size={isMobile ? 'small' : 'medium'}
+                  fullWidth={isMobile}
+                >
+                  {isMobile ? <Search /> : t('hawala.searchByCode')}
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="contained"
+                    startIcon={!isMobile ? <Add /> : undefined}
+                    onClick={handleNewTransaction}
+                    size={isMobile ? 'small' : 'medium'}
+                    fullWidth={isMobile}
+                  >
+                    {isMobile ? <Add /> : t('hawala.newTransaction')}
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          )}
         />
       </Box>
-    </>
+    );
+  };
+
+  const renderHawaladars = () => (
+    <Box>
+      <MaterialReactTable
+        columns={hawaladarColumns}
+        data={hawaladars}
+        enablePagination
+        enableSorting
+        enableGlobalFilter
+        enableDensityToggle
+        initialState={{
+          density: isMobile ? 'compact' : 'comfortable',
+          pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+        }}
+        muiTableContainerProps={{
+          sx: { maxWidth: '100%' }
+        }}
+        muiTableProps={{
+          sx: {
+            direction: isRtl ? 'rtl' : 'ltr',
+            minWidth: isMobile ? 450 : 650
+          }
+        }}
+        muiTableHeadCellProps={{
+          sx: {
+            py: isMobile ? 1 : 1.5,
+            px: isMobile ? 1 : 2,
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            fontWeight: 600
+          }
+        }}
+        muiTableBodyCellProps={{
+          sx: {
+            py: isMobile ? 0.5 : 1,
+            px: isMobile ? 1 : 2
+          }
+        }}
+        muiTopToolbarProps={{
+          sx: { flexWrap: 'wrap', gap: 1 }
+        }}
+        renderTopToolbarCustomActions={() => (
+          isAdmin ? (
+            <Box sx={{ p: 1 }}>
+              <Button
+                variant="contained"
+                startIcon={!isMobile ? <Add /> : undefined}
+                onClick={handleNewHawaladar}
+                size={isMobile ? 'small' : 'medium'}
+                fullWidth={isMobile}
+              >
+                {isMobile ? <Add /> : t('hawala.addAgent')}
+              </Button>
+            </Box>
+          ) : null
+        )}
+      />
+    </Box>
   );
 
   const renderReports = () => {
@@ -1617,51 +1588,46 @@ export const Hawala = () => {
     if (selectedReport === null) {
       return (
         <>
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>
-            {t('hawala.summary') || 'Hawala Summary'}
-          </Typography>
-
           {/* Summary Cards */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid container spacing={isMobile ? 1.5 : 2} sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ bgcolor: '#e3f2fd' }}>
-                <CardContent>
-                  <Typography color="text.secondary" variant="body2">{t('hawala.totalTransactions')}</Typography>
-                  <Typography variant="h4" fontWeight={700}>{reportSummary?.total_transactions || 0}</Typography>
-                </CardContent>
-              </Card>
+              <StatCard
+                label={t('hawala.totalTransactions')}
+                value={reportSummary?.total_transactions || 0}
+                bgColor="#e3f2fd"
+                isMobile={isMobile}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ bgcolor: '#fff3e0' }}>
-                <CardContent>
-                  <Typography color="text.secondary" variant="body2">{t('hawala.pending')}</Typography>
-                  <Typography variant="h4" fontWeight={700}>{reportSummary?.pending_count || 0}</Typography>
-                </CardContent>
-              </Card>
+              <StatCard
+                label={t('hawala.pending')}
+                value={reportSummary?.pending_count || 0}
+                bgColor="#fff3e0"
+                isMobile={isMobile}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ bgcolor: '#e8f5e9' }}>
-                <CardContent>
-                  <Typography color="text.secondary" variant="body2">{t('hawala.completed')}</Typography>
-                  <Typography variant="h4" fontWeight={700}>{reportSummary?.completed_count || 0}</Typography>
-                </CardContent>
-              </Card>
+              <StatCard
+                label={t('hawala.completed')}
+                value={reportSummary?.completed_count || 0}
+                bgColor="#e8f5e9"
+                isMobile={isMobile}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card sx={{ bgcolor: '#ffebee' }}>
-                <CardContent>
-                  <Typography color="text.secondary" variant="body2">{t('hawala.statuses.cancelled')}</Typography>
-                  <Typography variant="h4" fontWeight={700}>{reportSummary?.cancelled_count || 0}</Typography>
-                </CardContent>
-              </Card>
+              <StatCard
+                label={t('hawala.statuses.cancelled')}
+                value={reportSummary?.cancelled_count || 0}
+                bgColor="#ffebee"
+                isMobile={isMobile}
+              />
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 2 }} />
 
           {/* Agent Reports */}
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byAgent')}</Typography>
-          <Box sx={{ mb: 3, overflowX: 'auto', width: '100%' }}>
+          <Box sx={{ mb: 2 }}>
             <MaterialReactTable
               columns={agentReportColumns}
               data={agentReports}
@@ -1696,14 +1662,18 @@ export const Hawala = () => {
                   px: isMobile ? 1 : 2
                 }
               }}
+              renderTopToolbarCustomActions={() => (
+                <Box sx={{ p: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={600}>{t('hawala.byAgent')}</Typography>
+                </Box>
+              )}
             />
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 2 }} />
 
           {/* Currency Reports */}
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>{t('hawala.byCurrency')}</Typography>
-          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+          <Box>
             <MaterialReactTable
               columns={currencyReportColumns}
               data={currencyReports}
@@ -1738,6 +1708,11 @@ export const Hawala = () => {
                   px: isMobile ? 1 : 2
                 }
               }}
+              renderTopToolbarCustomActions={() => (
+                <Box sx={{ p: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={600}>{t('hawala.byCurrency')}</Typography>
+                </Box>
+              )}
             />
           </Box>
         </>
@@ -1901,12 +1876,64 @@ export const Hawala = () => {
   );
 
   const renderSavingsAccount = () => {
-    return (
-      <>
-        <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={600} gutterBottom>
-          {t('hawala.savingsAccount')}
-        </Typography>
+    const renderTopToolbar = () => (
+      <Box sx={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'stretch' : 'center',
+        width: '100%',
+        gap: 2,
+        p: 1
+      }}>
+        {/* Savings Tabs */}
+        <Tabs
+          value={savingsTab}
+          onChange={(_event, newValue) => setSavingsTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              minHeight: 42,
+              textTransform: 'none',
+              fontSize: isMobile ? '0.85rem' : '0.95rem',
+              fontWeight: 500,
+            },
+          }}
+        >
+          <Tab
+            icon={<People fontSize="small" />}
+            iconPosition="start"
+            label={t('hawala.customers')}
+            sx={{ gap: 0.5 }}
+          />
+          <Tab
+            icon={<AccountBalance fontSize="small" />}
+            iconPosition="start"
+            label={t('hawala.savingsAccounts')}
+            sx={{ gap: 0.5 }}
+          />
+        </Tabs>
 
+        {/* Action Button */}
+        <Box sx={{
+          display: 'flex',
+          gap: 1,
+          justifyContent: isMobile ? 'stretch' : 'flex-end'
+        }}>
+          <Button
+            variant="contained"
+            startIcon={!isMobile ? <Add /> : undefined}
+            onClick={savingsTab === 0 ? handleNewCustomer : handleNewAccount}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isMobile}
+          >
+            {isMobile ? <Add /> : (savingsTab === 0 ? t('hawala.addCustomer') : t('hawala.createAccount'))}
+          </Button>
+        </Box>
+      </Box>
+    );
+
+    return (
+      <Box>
         {/* Error Alert */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -1914,112 +1941,88 @@ export const Hawala = () => {
           </Alert>
         )}
 
-        {/* Customers Section */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={600}>{t('hawala.customers')}</Typography>
-            <Button
-              variant="contained"
-              startIcon={!isMobile ? <Add /> : undefined}
-              onClick={handleNewCustomer}
-              size={isMobile ? 'small' : 'medium'}
-            >
-              {isMobile ? <Add /> : t('hawala.addCustomer')}
-            </Button>
-          </Box>
-          <Box sx={{ overflowX: 'auto', width: '100%' }}>
-            <MaterialReactTable
-              columns={customerColumns}
-              data={customers || []}
-              enablePagination
-              enableSorting
-              enableGlobalFilter
-              enableDensityToggle={!isMobile}
-              initialState={{
-                density: isMobile ? 'compact' : 'comfortable',
-                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-              }}
-              muiTableContainerProps={{
-                sx: { maxWidth: '100%' }
-              }}
-              muiTableProps={{
-                sx: {
-                  direction: isRtl ? 'rtl' : 'ltr',
-                  minWidth: isMobile ? 400 : 550
-                }
-              }}
-              muiTableHeadCellProps={{
-                sx: {
-                  py: isMobile ? 1 : 1.5,
-                  px: isMobile ? 1 : 2,
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  fontWeight: 600
-                }
-              }}
-              muiTableBodyCellProps={{
-                sx: {
-                  py: isMobile ? 0.5 : 1,
-                  px: isMobile ? 1 : 2
-                }
-              }}
-            />
-          </Box>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Savings Accounts Section */}
-        <Box>
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={600}>{t('hawala.savingsAccounts')}</Typography>
-            <Button
-              variant="contained"
-              startIcon={!isMobile ? <Add /> : undefined}
-              onClick={handleNewAccount}
-              size={isMobile ? 'small' : 'medium'}
-            >
-              {isMobile ? <Add /> : t('hawala.createAccount')}
-            </Button>
-          </Box>
-          <Box sx={{ overflowX: 'auto', width: '100%' }}>
-            <MaterialReactTable
-              columns={savingsAccountColumns}
-              data={savingsAccounts || []}
-              enablePagination
-              enableSorting
-              enableGlobalFilter
-              enableDensityToggle={!isMobile}
-              initialState={{
-                density: isMobile ? 'compact' : 'comfortable',
-                pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
-              }}
-              muiTableContainerProps={{
-                sx: { maxWidth: '100%' }
-              }}
-              muiTableProps={{
-                sx: {
-                  direction: isRtl ? 'rtl' : 'ltr',
-                  minWidth: isMobile ? 500 : 700
-                }
-              }}
-              muiTableHeadCellProps={{
-                sx: {
-                  py: isMobile ? 1 : 1.5,
-                  px: isMobile ? 1 : 2,
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  fontWeight: 600
-                }
-              }}
-              muiTableBodyCellProps={{
-                sx: {
-                  py: isMobile ? 0.5 : 1,
-                  px: isMobile ? 1 : 2
-                }
-              }}
-            />
-          </Box>
-        </Box>
-      </>
+        {savingsTab === 0 ? (
+          <MaterialReactTable
+            columns={customerColumns}
+            data={customers || []}
+            enablePagination
+            enableSorting
+            enableGlobalFilter
+            enableDensityToggle={!isMobile}
+            initialState={{
+              density: isMobile ? 'compact' : 'comfortable',
+              pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+            }}
+            muiTableContainerProps={{
+              sx: { maxWidth: '100%' }
+            }}
+            muiTableProps={{
+              sx: {
+                direction: isRtl ? 'rtl' : 'ltr',
+                minWidth: isMobile ? 400 : 550
+              }
+            }}
+            muiTableHeadCellProps={{
+              sx: {
+                py: isMobile ? 1 : 1.5,
+                px: isMobile ? 1 : 2,
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                fontWeight: 600
+              }
+            }}
+            muiTableBodyCellProps={{
+              sx: {
+                py: isMobile ? 0.5 : 1,
+                px: isMobile ? 1 : 2
+              }
+            }}
+            muiTopToolbarProps={{
+              sx: { flexWrap: 'wrap', gap: 1 }
+            }}
+            renderTopToolbarCustomActions={renderTopToolbar}
+          />
+        ) : (
+          <MaterialReactTable
+            columns={savingsAccountColumns}
+            data={savingsAccounts || []}
+            enablePagination
+            enableSorting
+            enableGlobalFilter
+            enableDensityToggle={!isMobile}
+            initialState={{
+              density: isMobile ? 'compact' : 'comfortable',
+              pagination: { pageSize: isMobile ? 5 : 10, pageIndex: 0 }
+            }}
+            muiTableContainerProps={{
+              sx: { maxWidth: '100%' }
+            }}
+            muiTableProps={{
+              sx: {
+                direction: isRtl ? 'rtl' : 'ltr',
+                minWidth: isMobile ? 500 : 700
+              }
+            }}
+            muiTableHeadCellProps={{
+              sx: {
+                py: isMobile ? 1 : 1.5,
+                px: isMobile ? 1 : 2,
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                fontWeight: 600
+              }
+            }}
+            muiTableBodyCellProps={{
+              sx: {
+                py: isMobile ? 0.5 : 1,
+                px: isMobile ? 1 : 2
+              }
+            }}
+            muiTopToolbarProps={{
+              sx: { flexWrap: 'wrap', gap: 1 }
+            }}
+            renderTopToolbarCustomActions={renderTopToolbar}
+          />
+        )}
+      </Box>
     );
   };
 
@@ -2041,28 +2044,30 @@ export const Hawala = () => {
   if (loading) return <Loading />;
 
   return (
-    <Container maxWidth={false} sx={{ py: isMobile ? 2 : 4, px: isMobile ? 2 : 4 }}>
-      <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight={700} gutterBottom>
-        {t('hawala.title')}
-      </Typography>
-
+    <Container maxWidth={false} sx={{ py: isMobile ? 1.5 : 3, px: isMobile ? 1.5 : 3 }}>
       <Box
         sx={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? 2 : 3,
+          gap: isMobile ? 1.5 : 2,
         }}
       >
-        {sidebar}
+        <CollapsibleSidebar
+          title={t('hawala.title')}
+          items={sidebarItems}
+          isOpen={sidebarOpen}
+          onToggle={toggleSidebar}
+          renderSubItems={renderReportsSubmenu}
+        />
 
-        <Paper sx={{ flex: 1, p: isMobile ? 1.5 : 3, borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ flex: 1, p: isMobile ? 1.5 : 2.5, borderRadius: 2, overflow: 'hidden' }}>
           {renderContent()}
         </Paper>
       </Box>
 
       {/* Transaction Dialog */}
-      <Dialog open={transactionDialog} onClose={() => setTransactionDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{selectedTransaction ? t('hawala.editTransaction') : t('hawala.newTransaction')}</DialogTitle>
+      <DraggableDialog open={transactionDialog} onClose={() => setTransactionDialog(false)} maxWidth="md" fullWidth>
+        <DraggableDialogTitle>{selectedTransaction ? t('hawala.editTransaction') : t('hawala.newTransaction')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -2315,11 +2320,11 @@ export const Hawala = () => {
           <Button onClick={() => setTransactionDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveTransaction}>{t('common.save')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Status Update Dialog */}
-      <Dialog open={statusDialog} onClose={() => setStatusDialog(false)}>
-        <DialogTitle>{t('hawala.changeStatus')}</DialogTitle>
+      <DraggableDialog open={statusDialog} onClose={() => setStatusDialog(false)}>
+        <DraggableDialogTitle>{t('hawala.changeStatus')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Typography variant="body2" sx={{ mb: 2 }}>
@@ -2343,11 +2348,11 @@ export const Hawala = () => {
           <Button onClick={() => setStatusDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveStatus}>{t('common.save')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Search Dialog */}
-      <Dialog open={searchDialog} onClose={() => { setSearchDialog(false); setSearchResult(null); setSearchError(''); setSearchCode(''); }}>
-        <DialogTitle>{t('hawala.searchByCode')}</DialogTitle>
+      <DraggableDialog open={searchDialog} onClose={() => { setSearchDialog(false); setSearchResult(null); setSearchError(''); setSearchCode(''); }}>
+        <DraggableDialogTitle>{t('hawala.searchByCode')}</DraggableDialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
             <TextField
@@ -2379,11 +2384,11 @@ export const Hawala = () => {
         <DialogActions>
           <Button onClick={() => { setSearchDialog(false); setSearchResult(null); setSearchError(''); setSearchCode(''); }}>{t('common.close')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Payout Dialog */}
-      <Dialog open={payoutDialog} onClose={() => setPayoutDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('hawala.completePayout')}</DialogTitle>
+      <DraggableDialog open={payoutDialog} onClose={() => setPayoutDialog(false)} maxWidth="sm" fullWidth>
+        <DraggableDialogTitle>{t('hawala.completePayout')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -2475,12 +2480,12 @@ export const Hawala = () => {
             {t('hawala.confirmPayout')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
 
       {/* Hawaladar Dialog */}
-      <Dialog open={hawaladarDialog} onClose={() => setHawaladarDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{selectedHawaladar ? t('hawala.editAgent') : t('hawala.addAgent')}</DialogTitle>
+      <DraggableDialog open={hawaladarDialog} onClose={() => setHawaladarDialog(false)} maxWidth="md" fullWidth>
+        <DraggableDialogTitle>{selectedHawaladar ? t('hawala.editAgent') : t('hawala.addAgent')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -2625,11 +2630,11 @@ export const Hawala = () => {
           <Button onClick={() => setHawaladarDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveHawaladar}>{t('common.save')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Customer Dialog */}
-      <Dialog open={customerDialog} onClose={() => setCustomerDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedCustomer ? t('hawala.editCustomer') : t('hawala.addCustomer')}</DialogTitle>
+      <DraggableDialog open={customerDialog} onClose={() => setCustomerDialog(false)} maxWidth="sm" fullWidth>
+        <DraggableDialogTitle>{selectedCustomer ? t('hawala.editCustomer') : t('hawala.addCustomer')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -2675,11 +2680,11 @@ export const Hawala = () => {
           <Button onClick={() => setCustomerDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveCustomer}>{t('common.save')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Create Savings Account Dialog */}
-      <Dialog open={accountDialog} onClose={() => setAccountDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('hawala.createAccount')}</DialogTitle>
+      <DraggableDialog open={accountDialog} onClose={() => setAccountDialog(false)} maxWidth="sm" fullWidth>
+        <DraggableDialogTitle>{t('hawala.createAccount')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -2741,11 +2746,11 @@ export const Hawala = () => {
           <Button onClick={() => setAccountDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSaveAccount}>{t('common.create')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Deposit Dialog */}
-      <Dialog open={depositDialog} onClose={() => setDepositDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>{t('hawala.deposit')}</DialogTitle>
+      <DraggableDialog open={depositDialog} onClose={() => setDepositDialog(false)} maxWidth="xs" fullWidth>
+        <DraggableDialogTitle>{t('hawala.deposit')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {selectedAccount && (
@@ -2778,11 +2783,11 @@ export const Hawala = () => {
           <Button onClick={() => setDepositDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" color="success" onClick={handleDeposit}>{t('hawala.deposit')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Withdraw Dialog */}
-      <Dialog open={withdrawDialog} onClose={() => setWithdrawDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>{t('hawala.withdraw')}</DialogTitle>
+      <DraggableDialog open={withdrawDialog} onClose={() => setWithdrawDialog(false)} maxWidth="xs" fullWidth>
+        <DraggableDialogTitle>{t('hawala.withdraw')}</DraggableDialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {selectedAccount && (
@@ -2820,11 +2825,11 @@ export const Hawala = () => {
           <Button onClick={() => setWithdrawDialog(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" color="warning" onClick={handleWithdraw}>{t('hawala.withdraw')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Transaction History Dialog */}
-      <Dialog open={transactionsHistoryDialog} onClose={() => setTransactionsHistoryDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{t('hawala.transactionHistory')}</DialogTitle>
+      <DraggableDialog open={transactionsHistoryDialog} onClose={() => setTransactionsHistoryDialog(false)} maxWidth="md" fullWidth>
+        <DraggableDialogTitle>{t('hawala.transactionHistory')}</DraggableDialogTitle>
         <DialogContent>
           {selectedAccount && (
             <Box sx={{ mb: 2 }}>
@@ -2893,7 +2898,7 @@ export const Hawala = () => {
         <DialogActions>
           <Button onClick={() => setTransactionsHistoryDialog(false)}>{t('common.close')}</Button>
         </DialogActions>
-      </Dialog>
+      </DraggableDialog>
     </Container>
   );
 };

@@ -15,8 +15,8 @@ import {
   Grid,
   Chip,
   Drawer,
-  useTheme,
-  useMediaQuery
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   Home,
@@ -34,21 +34,20 @@ import {
   Build,
   Security,
   NewReleases,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  ChevronLeft,
+  ChevronRight
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useCollapsibleSidebar, useMobileNav } from '../hooks';
+import { HoverCard } from '../components/common/HoverCard';
 
 export const UserGuide = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isMobile, mobileOpen, handleDrawerToggle, closeMobileDrawer } = useMobileNav();
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useCollapsibleSidebar('userGuideSidebarOpen');
   const [selectedSection, setSelectedSection] = useState(0);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
 
   const sections = [
     { id: 0, label: t('userGuide.gettingStarted') || 'Getting Started', icon: <Home /> },
@@ -59,54 +58,89 @@ export const UserGuide = () => {
     ...(user?.role === 'admin' ? [{ id: 5, label: t('admin.role'), icon: <Security /> }] : [])
   ];
 
+  const drawerWidth = !isMobile && !sidebarOpen ? 70 : 280;
+
   const drawerContent = (
-    <Box sx={{ width: 280, height: '100%', bgcolor: 'background.paper' }}>
+    <Box sx={{ width: drawerWidth, height: '100%', bgcolor: 'background.paper', transition: 'width 0.2s ease' }}>
       {/* Sidebar Header */}
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          {t('nav.userGuide')}
-        </Typography>
-        <Chip
-          label="Version 3.0"
-          size="small"
-          sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
-        />
+      <Box sx={{
+        p: 3,
+        borderBottom: 1,
+        borderColor: 'divider',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: !isMobile && !sidebarOpen ? 'center' : 'flex-start'
+      }}>
+        {(sidebarOpen || isMobile) ? (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Typography variant="h6" fontWeight={700}>
+                {t('nav.userGuide')}
+              </Typography>
+              {!isMobile && (
+                <Tooltip title={t('common.collapseSidebar') || 'Collapse sidebar'} arrow>
+                  <IconButton onClick={toggleSidebar} size="small" sx={{ color: 'white' }}>
+                    <ChevronLeft />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+            <Chip
+              label="Version 3.0"
+              size="small"
+              sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', mt: 1 }}
+            />
+          </>
+        ) : (
+          <Tooltip title={t('common.expandSidebar') || 'Expand sidebar'} arrow>
+            <IconButton onClick={toggleSidebar} size="small" sx={{ color: 'white' }}>
+              <ChevronRight />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Navigation Menu */}
       <List sx={{ py: 2 }}>
         {sections.map((section) => (
           <ListItem key={section.id} disablePadding>
-            <ListItemButton
-              selected={selectedSection === section.id}
-              onClick={() => {
-                setSelectedSection(section.id);
-                if (isMobile) setMobileOpen(false);
-              }}
-              sx={{
-                mx: 1,
-                borderRadius: 1,
-                mb: 0.5,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark'
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: 'white'
+            <Tooltip title={!isMobile && !sidebarOpen ? section.label : ''} placement="right" arrow>
+              <ListItemButton
+                selected={selectedSection === section.id}
+                onClick={() => {
+                  setSelectedSection(section.id);
+                  if (isMobile) closeMobileDrawer();
+                }}
+                sx={{
+                  mx: 1,
+                  borderRadius: 1,
+                  mb: 0.5,
+                  justifyContent: !isMobile && !sidebarOpen ? 'center' : 'initial',
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark'
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'white'
+                    }
                   }
-                }
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {section.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={section.label}
-                primaryTypographyProps={{ fontWeight: selectedSection === section.id ? 600 : 400 }}
-              />
-            </ListItemButton>
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: !isMobile && !sidebarOpen ? 'auto' : 40, justifyContent: 'center' }}>
+                  {section.icon}
+                </ListItemIcon>
+                {(sidebarOpen || isMobile) && (
+                  <ListItemText
+                    primary={section.label}
+                    primaryTypographyProps={{ fontWeight: selectedSection === section.id ? 600 : 400 }}
+                  />
+                )}
+              </ListItemButton>
+            </Tooltip>
           </ListItem>
         ))}
       </List>
@@ -143,56 +177,32 @@ export const UserGuide = () => {
 
             <Grid container spacing={3} sx={{ mt: 2 }}>
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Dashboard sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
-                      <Typography variant="h6" fontWeight={600}>{t('nav.dashboard')}</Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('userGuide.dashboardDesc')}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <HoverCard
+                  icon={<Dashboard />}
+                  title={t('nav.dashboard')}
+                  description={t('userGuide.dashboardDesc')}
+                />
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <CurrencyExchange sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
-                      <Typography variant="h6" fontWeight={600}>{t('nav.rates')}</Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('userGuide.ratesDesc')}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <HoverCard
+                  icon={<CurrencyExchange />}
+                  title={t('nav.rates')}
+                  description={t('userGuide.ratesDesc')}
+                />
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <SwapHoriz sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
-                      <Typography variant="h6" fontWeight={600}>{t('nav.hawala')}</Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('userGuide.hawalaDesc')}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <HoverCard
+                  icon={<SwapHoriz />}
+                  title={t('nav.hawala')}
+                  description={t('userGuide.hawalaDesc')}
+                />
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', transition: '0.3s', '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Calculate sx={{ mr: 2, color: 'primary.main', fontSize: 36 }} />
-                      <Typography variant="h6" fontWeight={600}>{t('nav.converter')}</Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('userGuide.converterDesc')}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <HoverCard
+                  icon={<Calculate />}
+                  title={t('nav.converter')}
+                  description={t('userGuide.converterDesc')}
+                />
               </Grid>
             </Grid>
 
@@ -805,13 +815,16 @@ export const UserGuide = () => {
         <Drawer
           variant="permanent"
           sx={{
-            width: 280,
+            width: drawerWidth,
             flexShrink: 0,
+            transition: 'width 0.2s ease',
             '& .MuiDrawer-paper': {
-              width: 280,
+              width: drawerWidth,
               boxSizing: 'border-box',
               position: 'relative',
-              height: '100%'
+              height: '100%',
+              transition: 'width 0.2s ease',
+              overflowX: 'hidden'
             }
           }}
         >

@@ -60,6 +60,12 @@ export const Header = () => {
     return null;
   }
 
+  // Hide header on user guide page (standalone documentation)
+  const isUserGuidePage = location.pathname === '/user-guide';
+  if (isUserGuidePage && isAuthenticated) {
+    return null;
+  }
+
   const changeLanguage = (event: SelectChangeEvent) => {
     const lang = event.target.value;
     if (lang) {

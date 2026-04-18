@@ -9,7 +9,6 @@ import createCache from '@emotion/cache';
 import { prefixer } from 'stylis';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/common/Header';
-import { Footer } from './components/common/Footer';
 
 import { Rates } from './pages/Rates';
 import { Converter } from './pages/Converter';
@@ -120,7 +119,6 @@ function App() {
               <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
                 <Header />
                 <Box component="main" sx={{ flex: 1 }}><AppRoutes /></Box>
-                <Footer />
               </Box>
             </BrowserRouter>
           </AuthProvider>

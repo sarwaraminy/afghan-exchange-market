@@ -2,9 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
-  Container,
   Typography,
-  Paper,
   Box,
   MenuItem,
   TextField,
@@ -25,8 +23,6 @@ export const HawalaNetPositionReport = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   useEffect(() => {
     fetchData();
@@ -185,39 +181,30 @@ export const HawalaNetPositionReport = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('hawala.netPositionReport') || 'Net Position Report'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('hawala.netPositionReportDescription') || 'View who owes money to whom between hawaladar pairs'}
-        </Typography>
-      </Box>
-
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalPairs') || 'Total Pairs'}
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5">
                 {summary.total}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.creditorPositions') || 'Creditor Positions'}
               </Typography>
-              <Typography variant="h4" color="success.main">
+              <Typography variant="h5" color="success.main">
                 {formatCurrency(summary.totalPositive)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -226,13 +213,13 @@ export const HawalaNetPositionReport = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.debtorPositions') || 'Debtor Positions'}
               </Typography>
-              <Typography variant="h4" color="error.main">
+              <Typography variant="h5" color="error.main">
                 {formatCurrency(summary.totalNegative)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -241,13 +228,13 @@ export const HawalaNetPositionReport = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.balanced') || 'Balanced'}
               </Typography>
-              <Typography variant="h4" color="text.secondary">
+              <Typography variant="h5" color="text.secondary">
                 {summary.balanced}
               </Typography>
             </CardContent>
@@ -255,43 +242,42 @@ export const HawalaNetPositionReport = () => {
         </Grid>
       </Grid>
 
-      {/* Filter */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          select
-          fullWidth
-          label={t('rates.currency') || 'Currency'}
-          value={selectedCurrency}
-          onChange={(e) => handleCurrencyChange(Number(e.target.value))}
-        >
-          <MenuItem value={0}>{t('common.all') || 'All Currencies'}</MenuItem>
-          {currencies.map((currency) => (
-            <MenuItem key={currency.id} value={currency.id}>
-              {currency.code} - {currency.name}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Paper>
-
       {/* Table */}
-      <Paper>
-        <MaterialReactTable
-          columns={columns}
-          data={positions}
-          enableColumnActions={false}
-          enableColumnFilters={false}
-          enablePagination={true}
-          enableSorting={true}
-          enableBottomToolbar={true}
-          enableTopToolbar={true}
-          muiTableBodyRowProps={{ hover: true }}
-          state={{ isLoading: loading }}
-          initialState={{
-            density: 'compact',
-            sorting: [{ id: 'net_position', desc: true }]
-          }}
-        />
-      </Paper>
-    </Container>
+      <MaterialReactTable
+        columns={columns}
+        data={positions}
+        enableColumnActions={false}
+        enableColumnFilters={false}
+        enablePagination={true}
+        enableSorting={true}
+        enableBottomToolbar={true}
+        enableTopToolbar={true}
+        muiTableBodyRowProps={{ hover: true }}
+        state={{ isLoading: loading }}
+        initialState={{
+          density: 'compact',
+          sorting: [{ id: 'net_position', desc: true }]
+        }}
+        renderTopToolbarCustomActions={() => (
+          <Box sx={{ p: 1, minWidth: 250 }}>
+            <TextField
+              select
+              size="small"
+              fullWidth
+              label={t('rates.currency') || 'Currency'}
+              value={selectedCurrency}
+              onChange={(e) => handleCurrencyChange(Number(e.target.value))}
+            >
+              <MenuItem value={0}>{t('common.all') || 'All Currencies'}</MenuItem>
+              {currencies.map((currency) => (
+                <MenuItem key={currency.id} value={currency.id}>
+                  {currency.code} - {currency.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        )}
+      />
+    </Box>
   );
 };

@@ -6,21 +6,12 @@ import {
   Typography,
   Paper,
   Box,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  useTheme,
-  useMediaQuery,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
   Alert,
-  IconButton,
   Fab
 } from '@mui/material';
 import { Store, Add, Edit, Delete } from '@mui/icons-material';
@@ -35,50 +26,48 @@ import {
 import type { ExchangeRate, Market, Currency } from '../types';
 import { RatesTable } from '../components/rates/RatesTable';
 import { useAuth } from '../context/AuthContext';
+import { useCollapsibleSidebar, useMobileNav, useCrudState } from '../hooks';
+import { CollapsibleSidebar, type SidebarMenuItem } from '../components/common/CollapsibleSidebar';
+import { DialogFooter } from '../components/common/DialogFooter';
+import { getMarketName as getLocalizedMarketName, getCurrencyName, getTranslatedMarketName } from '../utils/i18nHelpers';
 
 export const Rates = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isMobile } = useMobileNav();
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useCollapsibleSidebar('ratesSidebarOpen');
+
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Admin CRUD states
-  const [editRateDialog, setEditRateDialog] = useState(false);
-  const [createRateDialog, setCreateRateDialog] = useState(false);
-  const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
-  const [buyRate, setBuyRate] = useState('');
-  const [sellRate, setSellRate] = useState('');
-  const [newRateForm, setNewRateForm] = useState({
-    market_id: '',
-    currency_id: '',
-    buy_rate: '',
-    sell_rate: ''
+  // CRUD state management
+  const {
+    editDialog,
+    createDialog,
+    selectedItem: selectedRate,
+    error,
+    formData,
+    openEdit,
+    openCreate,
+    closeEdit,
+    closeCreate,
+    setError,
+    updateFormData
+  } = useCrudState<ExchangeRate>({
+    market_id: 0,
+    currency_id: 0,
+    buy_rate: 0,
+    sell_rate: 0
   });
-  const [error, setError] = useState('');
 
   const isAdmin = user?.role === 'admin';
   const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
-  const getMarketName = (market: Market) => {
-    if (i18n.language === 'fa' && market.name_fa) return market.name_fa;
-    if (i18n.language === 'ps' && market.name_ps) return market.name_ps;
-    return market.name;
-  };
-
-  const getCurrencyName = (code: string) => {
-    const translated = t(`currencies.${code}`, { defaultValue: '' });
-    return translated || code;
-  };
-
-  const getTranslatedMarketName = (name: string) => {
-    const translated = t(`rates.markets.${name}`, { defaultValue: '' });
-    return translated || name;
-  };
+  // Helper functions using i18nHelpers
+  const getMarketName = (market: Market) => getLocalizedMarketName(market, i18n.language);
 
   const fetchData = async () => {
     try {
@@ -127,18 +116,14 @@ export const Rates = () => {
 
   // Admin CRUD handlers
   const handleEditRate = (rate: ExchangeRate) => {
-    setSelectedRate(rate);
-    setBuyRate(rate.buy_rate.toString());
-    setSellRate(rate.sell_rate.toString());
-    setError('');
-    setEditRateDialog(true);
+    openEdit(rate);
   };
 
   const handleSaveRate = async () => {
     if (!selectedRate) return;
     try {
-      await updateExchangeRate(selectedRate.id, parseFloat(buyRate), parseFloat(sellRate));
-      setEditRateDialog(false);
+      await updateExchangeRate(selectedRate.id, formData.buy_rate || 0, formData.sell_rate || 0);
+      closeEdit();
       const data = await getExchangeRates(selectedMarket!);
       setRates(data);
     } catch (err: any) {
@@ -147,25 +132,24 @@ export const Rates = () => {
   };
 
   const handleNewRate = () => {
-    setNewRateForm({
-      market_id: selectedMarket?.toString() || '',
-      currency_id: '',
-      buy_rate: '',
-      sell_rate: ''
+    updateFormData({
+      market_id: selectedMarket || 0,
+      currency_id: 0,
+      buy_rate: 0,
+      sell_rate: 0
     });
-    setError('');
-    setCreateRateDialog(true);
+    openCreate();
   };
 
   const handleCreateRate = async () => {
     try {
       await createExchangeRate(
-        parseInt(newRateForm.market_id),
-        parseInt(newRateForm.currency_id),
-        parseFloat(newRateForm.buy_rate),
-        parseFloat(newRateForm.sell_rate)
+        formData.market_id || 0,
+        formData.currency_id || 0,
+        formData.buy_rate || 0,
+        formData.sell_rate || 0
       );
-      setCreateRateDialog(false);
+      closeCreate();
       const data = await getExchangeRates(selectedMarket!);
       setRates(data);
     } catch (err: any) {
@@ -217,63 +201,14 @@ export const Rates = () => {
     [t, i18n.language]
   );
 
-  const sidebar = (
-    <Paper
-      elevation={2}
-      sx={{
-        width: isMobile ? '100%' : 250,
-        flexShrink: 0,
-        borderRadius: 2,
-        overflow: 'hidden'
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: '#1e3a5f',
-          color: 'white',
-          p: 2
-        }}
-      >
-        <Typography variant="subtitle1" fontWeight={600}>
-          {t('rates.market')}
-        </Typography>
-      </Box>
-      <List disablePadding>
-        {markets.map((market) => (
-          <ListItem key={market.id} disablePadding>
-            <ListItemButton
-              selected={selectedMarket === market.id}
-              onClick={() => setSelectedMarket(market.id)}
-              sx={{
-                py: 1.5,
-                '&.Mui-selected': {
-                  bgcolor: '#e3f2fd',
-                  borderRight: '3px solid #1e3a5f',
-                  '&:hover': {
-                    bgcolor: '#bbdefb',
-                  },
-                },
-                '&:hover': {
-                  bgcolor: '#f5f5f5',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                <Store sx={{ color: selectedMarket === market.id ? '#1e3a5f' : 'text.secondary' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary={getMarketName(market)}
-                primaryTypographyProps={{
-                  fontWeight: selectedMarket === market.id ? 600 : 400,
-                  color: selectedMarket === market.id ? '#1e3a5f' : 'text.primary',
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Paper>
-  );
+  // Sidebar menu items
+  const sidebarItems: SidebarMenuItem[] = markets.map((market) => ({
+    id: market.id,
+    label: getMarketName(market),
+    icon: <Store />,
+    onClick: () => setSelectedMarket(market.id),
+    selected: selectedMarket === market.id
+  }));
 
   return (
     <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
@@ -288,7 +223,12 @@ export const Rates = () => {
           gap: 3,
         }}
       >
-        {sidebar}
+        <CollapsibleSidebar
+          title={t('rates.market')}
+          items={sidebarItems}
+          isOpen={sidebarOpen}
+          onToggle={toggleSidebar}
+        />
 
         <Paper sx={{ flex: 1, p: 2, borderRadius: 2 }}>
           {isAdmin ? (
@@ -324,7 +264,7 @@ export const Rates = () => {
       </Box>
 
       {/* Edit Rate Dialog */}
-      <Dialog open={editRateDialog} onClose={() => setEditRateDialog(false)}>
+      <Dialog open={editDialog} onClose={closeEdit}>
         <DialogTitle>{t('admin.editRate')} - {selectedRate?.currency_code}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -332,27 +272,24 @@ export const Rates = () => {
             fullWidth
             type="number"
             label={t('rates.buy')}
-            value={buyRate}
-            onChange={(e) => setBuyRate(e.target.value)}
+            value={formData.buy_rate || ''}
+            onChange={(e) => updateFormData({ buy_rate: parseFloat(e.target.value) })}
             sx={{ mt: 1 }}
           />
           <TextField
             fullWidth
             type="number"
             label={t('rates.sell')}
-            value={sellRate}
-            onChange={(e) => setSellRate(e.target.value)}
+            value={formData.sell_rate || ''}
+            onChange={(e) => updateFormData({ sell_rate: parseFloat(e.target.value) })}
             sx={{ mt: 2 }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditRateDialog(false)}>{t('common.cancel')}</Button>
-          <Button variant="contained" onClick={handleSaveRate}>{t('common.save')}</Button>
-        </DialogActions>
+        <DialogFooter onCancel={closeEdit} onConfirm={handleSaveRate} />
       </Dialog>
 
       {/* Create Rate Dialog */}
-      <Dialog open={createRateDialog} onClose={() => setCreateRateDialog(false)}>
+      <Dialog open={createDialog} onClose={closeCreate}>
         <DialogTitle>{t('admin.createRate')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -360,15 +297,15 @@ export const Rates = () => {
             fullWidth
             select
             label={t('rates.market')}
-            value={newRateForm.market_id}
-            onChange={(e) => setNewRateForm({ ...newRateForm, market_id: e.target.value })}
+            value={formData.market_id || ''}
+            onChange={(e) => updateFormData({ market_id: parseInt(e.target.value) })}
             sx={{ mt: 1 }}
             SelectProps={{ native: true }}
           >
             <option value="">{t('admin.selectMarket')}</option>
             {markets.map((market) => (
               <option key={market.id} value={market.id}>
-                {getTranslatedMarketName(market.name)}
+                {getTranslatedMarketName(market.name, t)}
               </option>
             ))}
           </TextField>
@@ -376,15 +313,15 @@ export const Rates = () => {
             fullWidth
             select
             label={t('rates.currency')}
-            value={newRateForm.currency_id}
-            onChange={(e) => setNewRateForm({ ...newRateForm, currency_id: e.target.value })}
+            value={formData.currency_id || ''}
+            onChange={(e) => updateFormData({ currency_id: parseInt(e.target.value) })}
             sx={{ mt: 2 }}
             SelectProps={{ native: true }}
           >
             <option value="">{t('admin.selectCurrency')}</option>
             {currencies.map((currency) => (
               <option key={currency.id} value={currency.id}>
-                {currency.code} - {getCurrencyName(currency.code)}
+                {currency.code} - {getCurrencyName(currency.code, t)}
               </option>
             ))}
           </TextField>
@@ -392,23 +329,20 @@ export const Rates = () => {
             fullWidth
             type="number"
             label={t('rates.buy')}
-            value={newRateForm.buy_rate}
-            onChange={(e) => setNewRateForm({ ...newRateForm, buy_rate: e.target.value })}
+            value={formData.buy_rate || ''}
+            onChange={(e) => updateFormData({ buy_rate: parseFloat(e.target.value) })}
             sx={{ mt: 2 }}
           />
           <TextField
             fullWidth
             type="number"
             label={t('rates.sell')}
-            value={newRateForm.sell_rate}
-            onChange={(e) => setNewRateForm({ ...newRateForm, sell_rate: e.target.value })}
+            value={formData.sell_rate || ''}
+            onChange={(e) => updateFormData({ sell_rate: parseFloat(e.target.value) })}
             sx={{ mt: 2 }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateRateDialog(false)}>{t('common.cancel')}</Button>
-          <Button variant="contained" onClick={handleCreateRate}>{t('common.save')}</Button>
-        </DialogActions>
+        <DialogFooter onCancel={closeCreate} onConfirm={handleCreateRate} />
       </Dialog>
     </Container>
   );

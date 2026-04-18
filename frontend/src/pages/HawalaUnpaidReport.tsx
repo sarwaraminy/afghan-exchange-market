@@ -2,9 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
-  Container,
   Typography,
-  Paper,
   Box,
   MenuItem,
   TextField,
@@ -27,8 +25,6 @@ export const HawalaUnpaidReport = () => {
   const [minDays, setMinDays] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   useEffect(() => {
     fetchData();
@@ -209,63 +205,54 @@ export const HawalaUnpaidReport = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('hawala.unpaidHawalasReport') || 'Unpaid Hawalas Report'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('hawala.unpaidHawalasDescription') || 'View all pending and in-transit transactions with aging information'}
-        </Typography>
-      </Box>
-
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalUnpaid') || 'Total Unpaid'}
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5">
                 {summary.total}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalAmount') || 'Total Amount'}
               </Typography>
-              <Typography variant="h4" color="primary.main">
+              <Typography variant="h5" color="primary.main">
                 {formatCurrency(summary.totalAmount)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'warning.light' }}>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="warning.dark" gutterBottom variant="body2" fontWeight={600}>
                 {t('hawala.aged3Plus') || 'Aged 3+ Days'}
               </Typography>
-              <Typography variant="h4" color="warning.dark">
+              <Typography variant="h5" color="warning.dark">
                 {summary.aged}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'error.light' }}>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="error.dark" gutterBottom variant="body2" fontWeight={600}>
                 {t('hawala.expiringSoon') || 'Expiring Soon (5+ days)'}
               </Typography>
-              <Typography variant="h4" color="error.dark">
+              <Typography variant="h5" color="error.dark">
                 {summary.expiringSoon}
               </Typography>
             </CardContent>
@@ -273,29 +260,43 @@ export const HawalaUnpaidReport = () => {
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+      {/* Table */}
+      <MaterialReactTable
+        columns={columns}
+        data={transactions}
+        enableColumnActions={false}
+        enableColumnFilters={false}
+        enablePagination={true}
+        enableSorting={true}
+        enableBottomToolbar={true}
+        enableTopToolbar={true}
+        muiTableBodyRowProps={{ hover: true }}
+        state={{ isLoading: loading }}
+        initialState={{
+          density: 'compact',
+          sorting: [{ id: 'days_pending', desc: true }]
+        }}
+        renderTopToolbarCustomActions={() => (
+          <Box sx={{ p: 1, display: 'flex', gap: 1, flexWrap: 'wrap', width: '100%' }}>
             <TextField
               select
-              fullWidth
+              size="small"
               label={t('hawala.status') || 'Status'}
               value={selectedStatus}
               onChange={(e) => handleFilterChange(e.target.value, selectedHawaladar, minDays)}
+              sx={{ minWidth: 150 }}
             >
               <MenuItem value="all">{t('common.all') || 'All'}</MenuItem>
               <MenuItem value="pending">{t('hawala.statuses.pending') || 'Pending'}</MenuItem>
               <MenuItem value="in_transit">{t('hawala.statuses.in_transit') || 'In Transit'}</MenuItem>
             </TextField>
-          </Grid>
-          <Grid item xs={12} sm={4}>
             <TextField
               select
-              fullWidth
+              size="small"
               label={t('hawala.hawaladar') || 'Hawaladar'}
               value={selectedHawaladar}
               onChange={(e) => handleFilterChange(selectedStatus, Number(e.target.value), minDays)}
+              sx={{ minWidth: 180 }}
             >
               <MenuItem value={0}>{t('common.all') || 'All Hawaladars'}</MenuItem>
               {hawaladars.map((hawaladar) => (
@@ -304,14 +305,13 @@ export const HawalaUnpaidReport = () => {
                 </MenuItem>
               ))}
             </TextField>
-          </Grid>
-          <Grid item xs={12} sm={4}>
             <TextField
               select
-              fullWidth
+              size="small"
               label={t('hawala.minimumDays') || 'Minimum Days'}
               value={minDays}
               onChange={(e) => handleFilterChange(selectedStatus, selectedHawaladar, Number(e.target.value))}
+              sx={{ minWidth: 150 }}
             >
               <MenuItem value={0}>{t('common.all') || 'All'}</MenuItem>
               <MenuItem value={1}>1+ {t('common.days') || 'days'}</MenuItem>
@@ -319,29 +319,9 @@ export const HawalaUnpaidReport = () => {
               <MenuItem value={5}>5+ {t('common.days') || 'days'}</MenuItem>
               <MenuItem value={7}>7+ {t('common.days') || 'days'}</MenuItem>
             </TextField>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Table */}
-      <Paper>
-        <MaterialReactTable
-          columns={columns}
-          data={transactions}
-          enableColumnActions={false}
-          enableColumnFilters={false}
-          enablePagination={true}
-          enableSorting={true}
-          enableBottomToolbar={true}
-          enableTopToolbar={true}
-          muiTableBodyRowProps={{ hover: true }}
-          state={{ isLoading: loading }}
-          initialState={{
-            density: 'compact',
-            sorting: [{ id: 'days_pending', desc: true }]
-          }}
-        />
-      </Paper>
-    </Container>
+          </Box>
+        )}
+      />
+    </Box>
   );
 };

@@ -2,9 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
-  Container,
   Typography,
-  Paper,
   Box,
   MenuItem,
   TextField,
@@ -25,8 +23,6 @@ export const HawalaTransactionAgingReportPage = () => {
   const [selectedHawaladar, setSelectedHawaladar] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   useEffect(() => {
     fetchData();
@@ -68,7 +64,7 @@ export const HawalaTransactionAgingReportPage = () => {
     }).format(value);
   };
 
-  const getAgeBracketInfo = (bracket: string): { color: 'success' | 'info' | 'warning' | 'error', icon: React.ReactNode, label: string } => {
+  const getAgeBracketInfo = (bracket: string): { color: 'success' | 'info' | 'warning' | 'error', icon: React.ReactElement, label: string } => {
     if (bracket.includes('0-24')) {
       return { color: 'success', icon: <CheckCircle />, label: t('hawala.fresh') || '0-24 hours' };
     } else if (bracket.includes('1-3')) {
@@ -191,54 +187,45 @@ export const HawalaTransactionAgingReportPage = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('hawala.transactionAgingReport') || 'Transaction Aging Report'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('hawala.transactionAgingDescription') || 'Analyze pending transactions by age brackets'}
-        </Typography>
-      </Box>
-
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalPending') || 'Total Pending'}
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5">
                 {summary.totalTransactions.toLocaleString()}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalAmount') || 'Total Amount'}
               </Typography>
-              <Typography variant="h4" color="primary.main">
+              <Typography variant="h5" color="primary.main">
                 {formatCurrency(summary.totalAmount)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'warning.light' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CardContent sx={{ py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <Warning fontSize="small" />
                 <Typography color="warning.dark" variant="body2" fontWeight={600}>
                   {t('hawala.aging') || 'Aging (3-7 days)'}
                 </Typography>
               </Box>
-              <Typography variant="h4" color="warning.dark">
+              <Typography variant="h5" color="warning.dark">
                 {summary.aging.toLocaleString()}
               </Typography>
               {summary.totalTransactions > 0 && (
@@ -249,16 +236,16 @@ export const HawalaTransactionAgingReportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'error.light' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CardContent sx={{ py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <ErrorIcon fontSize="small" />
                 <Typography color="error.dark" variant="body2" fontWeight={600}>
                   {t('hawala.critical') || 'Critical (7+ days)'}
                 </Typography>
               </Box>
-              <Typography variant="h4" color="error.dark">
+              <Typography variant="h5" color="error.dark">
                 {summary.critical.toLocaleString()}
               </Typography>
               {summary.totalTransactions > 0 && (
@@ -271,31 +258,13 @@ export const HawalaTransactionAgingReportPage = () => {
         </Grid>
       </Grid>
 
-      {/* Filter */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          select
-          fullWidth
-          label={t('hawala.hawaladar') || 'Hawaladar'}
-          value={selectedHawaladar}
-          onChange={(e) => handleHawaladarChange(Number(e.target.value))}
-        >
-          <MenuItem value={0}>{t('common.all') || 'All Hawaladars'}</MenuItem>
-          {hawaladars.map((hawaladar) => (
-            <MenuItem key={hawaladar.id} value={hawaladar.id}>
-              {hawaladar.name}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Paper>
-
       {/* Visual Breakdown */}
       {reports.length > 0 && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <Box sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
             {t('hawala.agingBreakdown') || 'Aging Breakdown'}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1.5 }}>
             {reports.map((report) => {
               const info = getAgeBracketInfo(report.age_bracket);
               const percentage = summary.totalTransactions > 0
@@ -303,15 +272,15 @@ export const HawalaTransactionAgingReportPage = () => {
                 : 0;
 
               return (
-                <Card key={report.age_bracket} sx={{ flex: '1 1 200px', minWidth: 200 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Card key={report.age_bracket} sx={{ flex: '1 1 180px', minWidth: 180 }}>
+                  <CardContent sx={{ py: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       {info.icon}
                       <Typography variant="body2" fontWeight={600} color={`${info.color}.main`}>
                         {report.age_bracket}
                       </Typography>
                     </Box>
-                    <Typography variant="h5" color={`${info.color}.main`}>
+                    <Typography variant="h6" color={`${info.color}.main`}>
                       {report.count.toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -325,28 +294,45 @@ export const HawalaTransactionAgingReportPage = () => {
               );
             })}
           </Box>
-        </Paper>
+        </Box>
       )}
 
       {/* Table */}
-      <Paper>
-        <MaterialReactTable
-          columns={columns}
-          data={reports}
-          enableColumnActions={false}
-          enableColumnFilters={false}
-          enablePagination={false}
-          enableSorting={false}
-          enableBottomToolbar={false}
-          enableTopToolbar={false}
-          muiTableBodyRowProps={{ hover: true }}
-          state={{ isLoading: loading }}
-        />
-      </Paper>
+      <MaterialReactTable
+        columns={columns}
+        data={reports}
+        enableColumnActions={false}
+        enableColumnFilters={false}
+        enablePagination={false}
+        enableSorting={false}
+        enableBottomToolbar={false}
+        enableTopToolbar={true}
+        muiTableBodyRowProps={{ hover: true }}
+        state={{ isLoading: loading }}
+        renderTopToolbarCustomActions={() => (
+          <Box sx={{ p: 1 }}>
+            <TextField
+              select
+              size="small"
+              label={t('hawala.hawaladar') || 'Hawaladar'}
+              value={selectedHawaladar}
+              onChange={(e) => handleHawaladarChange(Number(e.target.value))}
+              sx={{ minWidth: 200 }}
+            >
+              <MenuItem value={0}>{t('common.all') || 'All Hawaladars'}</MenuItem>
+              {hawaladars.map((hawaladar) => (
+                <MenuItem key={hawaladar.id} value={hawaladar.id}>
+                  {hawaladar.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        )}
+      />
 
       {/* Alert for Critical Transactions */}
       {summary.critical > 0 && (
-        <Alert severity="error" sx={{ mt: 3 }}>
+        <Alert severity="error" sx={{ mt: 2 }}>
           <Typography variant="body2" fontWeight={600}>
             ⚠️ {t('hawala.criticalAlert') || 'Action Required'}
           </Typography>
@@ -357,7 +343,7 @@ export const HawalaTransactionAgingReportPage = () => {
       )}
 
       {summary.aging > 0 && summary.critical === 0 && (
-        <Alert severity="warning" sx={{ mt: 3 }}>
+        <Alert severity="warning" sx={{ mt: 2 }}>
           <Typography variant="body2" fontWeight={600}>
             {t('hawala.agingAlert') || 'Monitor Required'}
           </Typography>
@@ -366,6 +352,6 @@ export const HawalaTransactionAgingReportPage = () => {
           </Typography>
         </Alert>
       )}
-    </Container>
+    </Box>
   );
 };

@@ -2,9 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import {
-  Container,
   Typography,
-  Paper,
   Box,
   MenuItem,
   TextField,
@@ -26,8 +24,6 @@ export const HawalaCommissionReportPage = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const isRtl = i18n.language === 'fa' || i18n.language === 'ps';
 
   useEffect(() => {
     fetchData();
@@ -170,60 +166,51 @@ export const HawalaCommissionReportPage = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('hawala.commissionReport') || 'Commission Report'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('hawala.commissionReportDescription') || 'View commission earnings by hawaladar'}
-        </Typography>
-      </Box>
-
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalHawaladars') || 'Total Hawaladars'}
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5">
                 {summary.totalHawaladars}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="text.secondary" gutterBottom variant="body2">
                 {t('hawala.totalTransactions') || 'Total Transactions'}
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5">
                 {summary.totalTransactions.toLocaleString()}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'success.light' }}>
-            <CardContent>
+            <CardContent sx={{ py: 1.5 }}>
               <Typography color="success.dark" gutterBottom variant="body2" fontWeight={600}>
                 {t('hawala.totalCommission') || 'Total Commission'}
               </Typography>
-              <Typography variant="h4" color="success.dark">
+              <Typography variant="h5" color="success.dark">
                 {formatCurrency(summary.totalCommission)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'primary.light' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <CardContent sx={{ py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <TrendingUp fontSize="small" />
                 <Typography color="primary.dark" variant="body2" fontWeight={600}>
                   {t('hawala.topEarner') || 'Top Earner'}
@@ -240,36 +227,49 @@ export const HawalaCommissionReportPage = () => {
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+      {/* Table */}
+      <MaterialReactTable
+        columns={columns}
+        data={reports}
+        enableColumnActions={false}
+        enableColumnFilters={false}
+        enablePagination={true}
+        enableSorting={true}
+        enableBottomToolbar={true}
+        enableTopToolbar={true}
+        muiTableBodyRowProps={{ hover: true }}
+        state={{ isLoading: loading }}
+        initialState={{
+          density: 'compact',
+          sorting: [{ id: 'total_commission', desc: true }]
+        }}
+        renderTopToolbarCustomActions={() => (
+          <Box sx={{ p: 1, display: 'flex', gap: 1, flexWrap: 'wrap', width: '100%' }}>
             <TextField
-              fullWidth
+              size="small"
               type="date"
               label={t('common.startDate') || 'Start Date'}
               value={startDate}
               onChange={(e) => handleFilterChange(e.target.value, endDate, selectedHawaladar)}
               InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 150 }}
             />
-          </Grid>
-          <Grid item xs={12} sm={4}>
             <TextField
-              fullWidth
+              size="small"
               type="date"
               label={t('common.endDate') || 'End Date'}
               value={endDate}
               onChange={(e) => handleFilterChange(startDate, e.target.value, selectedHawaladar)}
               InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 150 }}
             />
-          </Grid>
-          <Grid item xs={12} sm={4}>
             <TextField
               select
-              fullWidth
+              size="small"
               label={t('hawala.hawaladar') || 'Hawaladar'}
               value={selectedHawaladar}
               onChange={(e) => handleFilterChange(startDate, endDate, Number(e.target.value))}
+              sx={{ minWidth: 180 }}
             >
               <MenuItem value={0}>{t('common.all') || 'All Hawaladars'}</MenuItem>
               {hawaladars.map((hawaladar) => (
@@ -278,29 +278,9 @@ export const HawalaCommissionReportPage = () => {
                 </MenuItem>
               ))}
             </TextField>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Table */}
-      <Paper>
-        <MaterialReactTable
-          columns={columns}
-          data={reports}
-          enableColumnActions={false}
-          enableColumnFilters={false}
-          enablePagination={true}
-          enableSorting={true}
-          enableBottomToolbar={true}
-          enableTopToolbar={true}
-          muiTableBodyRowProps={{ hover: true }}
-          state={{ isLoading: loading }}
-          initialState={{
-            density: 'compact',
-            sorting: [{ id: 'total_commission', desc: true }]
-          }}
-        />
-      </Paper>
-    </Container>
+          </Box>
+        )}
+      />
+    </Box>
   );
 };
